@@ -15,16 +15,17 @@
 #include <unistd.h>
 #include "my_pthread_t.h"
 
-//running threads queue
+//running threads queue - made up out of MPQ
 threadQueueNode headRunQueue;
 threadQueueNode tailRunQueue;
-
+//
+//We don't need a waiting queue, we're adding a list onto our mutexes and tcb
 //waiting threads queue
-threadQueueNode headWaitQueue;
-threadQueueNode tailWaitQueue;
+//threadQueueNode headWaitQueue;
+//threadQueueNode tailWaitQueue;
 
 //need a "maintenance cycle" method that changes around priorities.
-//	every 25ms this maintenace cycle will be called (set timer)
+//	every 25ms this maintenance cycle will be called (set timer)
 //	when called we need some sort of rules
 //Suggestions:
 //	**when would the following happen?  Can I design it so it doesn't?**
@@ -48,7 +49,7 @@ threadQueueNode tailWaitQueue;
 //
 
 //Signal Interrupts and Signal Handler:
-//	By setting setitimer, it will send SIGBVTALRM, which I should be catching with a signal handler?
+//	By setting setitimer, it will send SIGBVTALRM/SIGALRM, which I should be catching with a signal handler?
 //		then do either context switch or maintenance cycle?
 //
 
@@ -80,7 +81,8 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	it references exits. If value_ptr is not null, the return value of the exiting thread will be passed back.*/
 
 	//do you join instead of exiting? (i'm sure you do, but just making sure it's coded right)
-	
+	//	***NO, you join and then when the other thread exits, this resumes.
+	//	pass return value along to everyone that joined it.
 	return 0;
 };
 

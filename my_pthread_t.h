@@ -10,6 +10,10 @@
 
 #define _GNU_SOURCE
 
+#define MAX_THREADS 50
+#define MAX_MUTEX 50
+#define STACK_SIZE 4096
+
 /* include lib header files that you need here: */
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -35,25 +39,42 @@
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
 
+//as we kill off threads, push the newly available number (1-49) onto the bottom, 
+//pull one off the top when we need a new thread.
+typedef struct _nextThreadId{
+	mypthread_t threadId;
+	int* next;
+} nextThreadId;
 
 //unsigned int is thread identifier
 typedef uint my_pthread_t;
 
 typedef struct threadControlBlock {
 	/* add something here */
-	//Normally includes:
-	//threadIdentifier - unique id assigned to every new thread
+	
+	//threadIdentifier - unique id assigned to every new thread (index in array)
+	my_pthread_t tid; //should this be a my_pthread_t type?
+		//as it finishes, assign it to waiting queue
 	//stackPointer - points to thread's stack in the process
-	//program counter
-	//state of the thread (runnin, ready, waiting, start, done)
-	//thread's register values
-	//pointer to PCB of process thread lives on.
+	void* stackPtr;
+	//state of the thread (running, ready, waiting, start, done)
+	states threadState;
+	//retval of thread (so people waiting on me get return value)
+	int retval;
+	//list of people waiting on me (do it again for mutexes)
+	void* waitingThreads;
+	
+	//program counter - probably not
+	//thread's register values - probably not
+	//pointer to PCB of process thread lives on. - probably not
 } tcb; 
 
 /* mutex struct definition */
 typedef struct _my_pthread_mutex_t {
 	/* add something here */
 	//test-and-set instruction?
+	//list of people waiting on me
+		//don't unlock unless this pointer is null, otherwise hand off lock.
 	
 } my_pthread_mutex_t;
 
