@@ -39,7 +39,7 @@
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
 
-//as we kill off threads, push the newly available number (1-49) onto the bottom, 
+//as we kill off threads, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.
 typedef struct _nextThreadId{
 	mypthread_t threadId;
