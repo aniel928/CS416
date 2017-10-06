@@ -36,14 +36,38 @@
 
 
 
-/* * * * * * * * * * * * * * *
+//unsigned int is thread identifier
+typedef uint my_pthread_t;
 
-	define structs/enums
+typedef struct threadControlBlock {
+	/* add something here */
+	//Normally includes:
+	//threadIdentifier - unique id assigned to every new thread
+	//stackPointer - points to thread's stack in the process
+	//program counter
+	//state of the thread (runnin, ready, waiting, start, done)
+	//thread's register values
+	//pointer to PCB of process thread lives on.
+} tcb; 
 
- * * * * * * * * * * * * * * */
- 
-//enum for states (active, waiting, etc...) --may not be needed with different queues, but might still be nice to have.
-//doubly linked list to use as queue
+/* mutex struct definition */
+typedef struct _my_pthread_mutex_t {
+	/* add something here */
+	//test-and-set instruction?
+	
+} my_pthread_mutex_t;
+
+/* define your data structures here: */
+
+// Feel free to add your own auxiliary data structures
+
+//enum for states
+typedef enum _states{
+	ACTIVE, WAITING, DONE
+} states;
+
+
+//doubly linked list for running, waiting, and holding (mpq)
 typedef struct _threadQueueNode{
 	int priority;
 	void* prev;
@@ -51,30 +75,16 @@ typedef struct _threadQueueNode{
 	//fill with more stuff
 } threadQueueNode;
 
+//multi-priority queue
+typedef struct multiPriorityQueue{
+	//these will be linked lists.
+	threadQueueNode* level0ptr;//highest level priority 
+	threadQueueNode* level1ptr;
+	threadQueueNode* level2ptr;
+	threadQueueNode* level3ptr;//lowest level priority
+} mpq;
 
-//typedef uint my_pthread_t; //why is this an unsigned int and not struct??
 
-
-//need a struct, no?
-typedef struct _my_pthread_t{
-	//context
-	//threadID
-	//maybe state?
-	//fill with stuff
-} my_pthread_t;
-
-typedef struct threadControlBlock {
-	/* add something here */
-} tcb; 
-
-/* mutex struct definition */
-typedef struct _my_pthread_mutex_t {
-	/* add something here */
-} my_pthread_mutex_t;
-
-/* define your data structures here: */
-
-// Feel free to add your own auxiliary data structures
 
 
 /* Function Declarations: */
