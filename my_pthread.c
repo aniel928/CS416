@@ -99,8 +99,38 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 };
 
 
-int main(int argc, char** argv){
-	//need "main" to get rid of error, not sure what we'll put here.
-	//Testing crap?
+int i = 0;
+
+
+
+/*signal handler for timer*/
+void time_handle (int signum){
+	int count = 0;
+	printf("finished %d\n", signum);
+	i++;
 }
 
+int main(int argc, char** argv){
+	struct sigaction sigact;
+	struct itimerval timer;
+
+	memset(&sigact, 0, sizeof(sigact));
+	sigact.sa_handler = &time_handle;
+	sigaction (SIGVTALRM, &sigact, NULL);
+	
+	/*next value*/
+	timer.it_interval.tv_sec = 0;		//0 seconds
+	timer.it_interval.tv_usec = 25000;	//25 milliseconds / 1 quantum
+
+	/*current value*/	
+	timer.it_value.tv_sec = 0;		//0 seconds
+	timer.it_value.tv_usec = 25000; 	//25 milliseconds / 1 quantum
+	
+	
+	setitimer (ITIMER_VIRTUAL, &timer, NULL);
+
+	while (i<40){
+	
+	}
+
+}
