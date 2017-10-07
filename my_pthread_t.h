@@ -48,12 +48,16 @@ typedef enum _states{
 	ACTIVE, WAITING, DONE
 } states;
 
+typedef enum _bool{
+	FALSE, TRUE
+} bool;
+
 //as we kill off threads, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.
-typedef struct _nextThreadId{
+typedef struct _nextId{
 	int readyIndex;
 	int* next;
-} nextThreadId;
+} nextId;
 
 //unsigned int is thread identifier
 typedef uint my_pthread_t;
