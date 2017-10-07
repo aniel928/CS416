@@ -18,40 +18,30 @@
 //running threads queue - made up out of MPQ
 threadQueueNode headRunQueue;
 threadQueueNode tailRunQueue;
-//
-//We don't need a waiting queue, we're adding a list onto our mutexes and tcb
-//waiting threads queue
-//threadQueueNode headWaitQueue;
-//threadQueueNode tailWaitQueue;
+
+
+//Correction: We DO need waiting queues, but they're going to be off of the threads/mutexes, not on their own.
+
 
 //need a "maintenance cycle" method that changes around priorities.
-//	every 25ms this maintenance cycle will be called (set timer)
-//	when called we need some sort of rules
+
+
 //Suggestions:
-//	**when would the following happen?  Can I design it so it doesn't?**
-//	-if pulled from priority 0 and didn't get a chance to run, put it in front of 0
-//	-if pulled from priority 1/2 and didn't get a chance to run, put it in front of 1/2 
-//		//this gives better service than end of 0 if we do 3/1/0/3/1/0/3/1/1 repeated cycle on scheduler
 //	-if in 2 for more than 5 full maintenance cycle quantum, move to 1
 //	-if in 1 for more than 5 full maintenance cycle quantum, move to 0
 //	-figure out how to avoid priority inversion.
+	//if mutex waiting, do not promote?
 //	-need to figure out how to bring back in from waiting queue - what should happen with these?  
 //		Back to previous level?  Start at high? start at low?
-//	To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum
-//	If we schedule in terms of L0/L1/L2/L0/L1/L2/L0/L1/L2 and if we do 3/1/0/3/1/0/3/1/1, 
-//		then our maintenace would come around again every 24 quantum.
-//	***Do we have to schedule maintenance separately?  Or can i have it run every time the runnign queue is doen?
-//		Is that a design choice?**
+//	To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum, level 3 gets FIFO?
 
-//need a "context switch" method
-//	yield will call into this method and will be used between all process on running queue
-//	will pull next thread off of the "running" queue
-//
 
+//Do this as first step...
 //Signal Interrupts and Signal Handler:
 //	By setting setitimer, it will send SIGBVTALRM/SIGALRM, which I should be catching with a signal handler?
 //		then do either context switch or maintenance cycle?
 //
+
 
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
@@ -70,9 +60,7 @@ int my_pthread_yield() {
 void my_pthread_exit(void *value_ptr) {
 	/* Explicit call to the my_pthread_t library to end the pthread that called it. If the value_ptr isn't 
 	NULL, any return value from the thread will be saved. */
-	
 	//before exiting, check to see if anyone else joined.  If so, have both exit.	
-
 };
 
 /* wait for thread termination */
@@ -113,5 +101,6 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 
 int main(int argc, char** argv){
 	//need "main" to get rid of error, not sure what we'll put here.
+	//Testing crap?
 }
 
