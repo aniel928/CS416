@@ -10,9 +10,13 @@
 
 #define _GNU_SOURCE
 
-#define MAX_THREADS 50
-#define MAX_MUTEX 50
-#define STACK_SIZE 4096
+
+#define MAX_THREADS 50 //max threads
+#define MAX_MUTEX 50 //max mutexes
+#define STACK_SIZE 4096 //size of stack in bytes
+#define QUANTUM 25 //predefined in project spec
+#define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
+
 
 /* include lib header files that you need here: */
 #include <unistd.h>
@@ -20,12 +24,10 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-//might need these?
-//#include <string.h>
-//#include <ucontext.h>
-//#include <signal.h>
-//#include <sys/time.h>
+#include <string.h>
+#include <ucontext.h>
+#include <signal.h>
+#include <sys/time.h>
 
 
 //can i replace all parameters with just one x on each side?
@@ -38,25 +40,37 @@
 #define pthread_mutex_unlock( x ) my_pthread_mutex_unlock( x )
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
+//level 0 gets 1 quantum, level 1 gets 3, 2 gets 6, 3 gets FIFO (-1 so we can catch)
+int quantumPriority[4] = {1,3,6,-1};
+
+//enum for states
+typedef enum _states{
+	ACTIVE, WAITING, DONE
+} states;
 
 //as we kill off threads, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.
 typedef struct _nextThreadId{
-	mypthread_t threadId;
+	int readyIndex;
 	int* next;
 } nextThreadId;
 
 //unsigned int is thread identifier
 typedef uint my_pthread_t;
 
-typedef struct threadControlBlock {
+typedef struct _waitQueueNode{
+	my_pthread_t tid;
+	
+} waitQueueNode;
+
+typedef struct threadControlBlock{
 	/* add something here */
 	
 	//threadIdentifier - unique id assigned to every new thread (index in array)
 	my_pthread_t tid; //should this be a my_pthread_t type?
 		//as it finishes, assign it to waiting queue
 	//stackPointer - points to thread's stack in the process
-	void* stackPtr;
+	ucontext_t context;
 	//state of the thread (running, ready, waiting, start, done)
 	states threadState;
 	//retval of thread (so people waiting on me get return value)
@@ -71,8 +85,10 @@ typedef struct threadControlBlock {
 
 /* mutex struct definition */
 typedef struct _my_pthread_mutex_t {
-	/* add something here */
-	//test-and-set instruction?
+ 		/* add something here */
+	//what does mutex have mutual exclusion on
+	//thread owner
+	//locked yes or no
 	//list of people waiting on me
 		//don't unlock unless this pointer is null, otherwise hand off lock.
 	
@@ -82,10 +98,6 @@ typedef struct _my_pthread_mutex_t {
 
 // Feel free to add your own auxiliary data structures
 
-//enum for states
-typedef enum _states{
-	ACTIVE, WAITING, DONE
-} states;
 
 
 //doubly linked list for running, waiting, and holding (mpq)
@@ -97,13 +109,13 @@ typedef struct _threadQueueNode{
 } threadQueueNode;
 
 //multi-priority queue
-typedef struct multiPriorityQueue{
-	//these will be linked lists.
-	threadQueueNode* level0ptr;//highest level priority 
-	threadQueueNode* level1ptr;
-	threadQueueNode* level2ptr;
-	threadQueueNode* level3ptr;//lowest level priority
-} mpq;
+//typedef struct multiPriorityQueue{
+//	//these will be linked lists.
+//	threadQueueNode* level0ptr; //highest level priority 
+//	threadQueueNode* level1ptr;
+//	threadQueueNode* level2ptr;
+//	threadQueueNode* level3ptr; //lowest level priority
+//} mpq;
 
 
 
