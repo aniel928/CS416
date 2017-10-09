@@ -1,3 +1,4 @@
+//Henry's comment
 // File:	my_pthread.c
 // Author:	Yujie REN
 // Date:	09/23/2017
@@ -155,6 +156,8 @@ void time_handle (int signum){
 	i++;
 }
 
+
+//MIKE: make sure to move this out of main and into it's own method -- you can call that method in main =)  
 int main(int argc, char** argv){
 	struct sigaction sigact;
 	struct itimerval timer;
@@ -165,11 +168,11 @@ int main(int argc, char** argv){
 	
 	/*next value*/
 	timer.it_interval.tv_sec = 0;		//0 seconds
-	timer.it_interval.tv_usec = 25000;	//25 milliseconds / 1 quantum
+	timer.it_interval.tv_usec = QUANTUM;	//25 milliseconds / 1 quantum
 
 	/*current value*/	
 	timer.it_value.tv_sec = 0;		//0 seconds
-	timer.it_value.tv_usec = 25000; 	//25 milliseconds / 1 quantum
+	timer.it_value.tv_usec = QUANTUM; 	//25 milliseconds / 1 quantum
 	
 	
 	setitimer (ITIMER_VIRTUAL, &timer, NULL);
