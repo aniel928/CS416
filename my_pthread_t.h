@@ -13,9 +13,10 @@
 
 #define MAX_THREADS 50 //max threads
 #define MAX_MUTEX 50 //max mutexes
-#define STACK_SIZE 4096 //size of stack in bytes
+#define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
+#define PRIORITY_LEVELS 4//how many priority levels
 
 
 /* include lib header files that you need here: */
@@ -41,7 +42,7 @@
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
 //level 0 gets 1 quantum, level 1 gets 3, 2 gets 6, 3 gets FIFO (-1 so we can catch)
-int quantumPriority[4] = {1,3,6,-1};
+int quantumPriority[PRIORITY_LEVELS] = {1,3,6,-1};
 
 //enum for states
 typedef enum _states{
@@ -52,11 +53,11 @@ typedef enum _bool{
 	FALSE, TRUE
 } bool;
 
-//as we kill off threads, push the newly available number (0-49) onto the bottom, 
+//as we kill off threads/mutexes, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.
 typedef struct _nextId{
 	int readyIndex;
-	int* next;
+	void* next;
 } nextId;
 
 //unsigned int is thread identifier
@@ -64,7 +65,7 @@ typedef uint my_pthread_t;
 
 typedef struct _waitQueueNode{
 	my_pthread_t tid;
-	
+	my_pthread_t* next;
 } waitQueueNode;
 
 typedef struct threadControlBlock{
@@ -77,8 +78,10 @@ typedef struct threadControlBlock{
 	ucontext_t context;
 	//state of the thread (running, ready, waiting, start, done)
 	states threadState;
+	//current priority level
+	uint priority;
 	//retval of thread (so people waiting on me get return value)
-	int retval;
+	void* retval;
 	//list of people waiting on me (do it again for mutexes)
 	void* waitingThreads;
 	
@@ -102,26 +105,24 @@ typedef struct _my_pthread_mutex_t {
 
 // Feel free to add your own auxiliary data structures
 
+//declare MPQ array (0 - n)
+int mpq[PRIORITY_LEVELS] = {0};
 
+//fill array 0 through n
+// int i = 0;
 
-//doubly linked list for running, waiting, and holding (mpq)
-typedef struct _threadQueueNode{
-	int priority;
-	void* prev;
+// while(i < PRIORITY_LEVELS){
+	// mpq[i] = i;
+	// i++;
+// }
+
+//mpq node
+typedef struct _MPQNode{
+	my_pthread_t threadId;
 	void* next;
+	int ctr; //how long has it been on this level?
 	//fill with more stuff
-} threadQueueNode;
-
-//multi-priority queue
-//typedef struct multiPriorityQueue{
-//	//these will be linked lists.
-//	threadQueueNode* level0ptr; //highest level priority 
-//	threadQueueNode* level1ptr;
-//	threadQueueNode* level2ptr;
-//	threadQueueNode* level3ptr; //lowest level priority
-//} mpq;
-
-
+} MPQNode;
 
 
 /* Function Declarations: */
