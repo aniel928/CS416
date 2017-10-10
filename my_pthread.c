@@ -1,4 +1,3 @@
-//Henry's comment
 // File:	my_pthread.c
 // Author:	Yujie REN
 // Date:	09/23/2017
@@ -16,15 +15,20 @@
 #include <unistd.h>
 #include "my_pthread_t.h"
 
+/*Global Variables*/
+int timerCounter = 0;	//Used to stop infinite while loop for timer
+static ucontext_t uctx_main; //grabbed from Dan's code.
+
 //running threads queue - made up out of MPQ
 //To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum, level 3 gets FIFO?
 //how many of each before maintenance cycle?
 
-threadQueueNode headRunQueue;
-threadQueueNode tailRunQueue;
+//threadQueueNode headRunQueue;
+//threadQueueNode tailRunQueue;
 
 //initialize array of thread pointers to null.
 tcb* threads[MAX_THREADS] = {NULL};
+
 
 //initialize array of mutex pointers to null.
 my_pthread_mutex_t* mutexes[MAX_MUTEX] = {NULL};
@@ -82,7 +86,59 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 			//malloc context.uc_stack->ss_sp
 			//set context.uc_stack.ss_size = STACK_SIZE
 		//arg is the (one) argument that gets passed into function ^^
+	my_pthread_t ID = -1;
+	if (useThreadId == FALSE){
+		ID = threadCtr;
+		threadCtr++;
+		if(threadCtr == 50){
+			useThreadId = TRUE;	
+		}
+	}
+	else{
+		if(headThread != NULL){
+			ID = headThread->readyIndex;
+			headThread = (nextId*)headThread->next;
+		}
+		else{
+			printf("Throw error!");
+		}
+	}
+		//create a new tcb
+		ucontext_t uc;
+		char newStack[STACK_SIZE] ;
+		tcb* newNode = (tcb*)malloc(sizeof(tcb));
+		newNode->tid = ID;
+		printf("Don't break before this\n");
+		if(getcontext(&uc) == -1){
+			printf("Throw error\n");			
+		}
+		printf("get worked\n");
+		uc.uc_stack.ss_sp = newStack;
+		uc.uc_stack.ss_size = sizeof(newStack);
+		uc.uc_link = &uctx_main;
+		printf("Context crap worked\n");
+		ucontext_t uc2;
+		printf("Not happening here...\n");
+		makecontext(&uc2, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
+		printf("Of course it's segfaulting\n");
+		newNode->context = uc; //get, make, set context --- how???
+		newNode->priority = 0;
+		newNode->retval = NULL;
+		newNode->waitingThreads = NULL;
+		printf("node set worked\n");
+		threads[ID] = newNode;
+		
+		//"thread" is a pointer to a "buffer", store ID in that "buffer"
+			//basically call thread* = threadID (index)
+		*thread = ID;
+		//ignore attributes
+		//get and make contexts (this is where function argument comes in)
+			//malloc context.uc_stack->ss_sp
+			//set context.uc_stack.ss_size = STACK_SIZE
+		//arg is the (one) argument that gets passed into function ^^
 
+		
+		
 	return 0;
 };
 
@@ -156,9 +212,7 @@ void time_handle (int signum){
 	i++;
 }
 
-
-//MIKE: make sure to move this out of main and into it's own method -- you can call that method in main =)  
-int main(int argc, char** argv){
+void timer(){
 	struct sigaction sigact;
 	struct itimerval timer;
 
@@ -177,8 +231,18 @@ int main(int argc, char** argv){
 	
 	setitimer (ITIMER_VIRTUAL, &timer, NULL);
 
-	while (i<40){
+	while (timerCounter<40){
 	
 	}
-
 }
+  
+int main(int argc, char** argv){
+	printf("Calling function normally:\n");
+	timer();//Still for testing purpose, obviously move to wherever needed and remove this whenever
+	printf("Now trying to use a thread\n");
+	my_pthread_t mythread;
+	my_pthread_create(&mythread, NULL, (void*)&timer, NULL);
+	
+	
+}
+//
