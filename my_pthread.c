@@ -17,7 +17,7 @@
 
 /*Global Variables*/
 int timerCounter = 0;	//Used to stop infinite while loop for timer
-static ucontext_t uctx_main; //grabbed from Dan's code.
+//static ucontext_t uctx_main; //grabbed from Dan's code.
 
 //running threads queue - made up out of MPQ
 //To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum, level 3 gets FIFO?
@@ -104,24 +104,21 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		}
 	}
 		//create a new tcb
-		ucontext_t uc;
-		char newStack[STACK_SIZE] ;
 		tcb* newNode = (tcb*)malloc(sizeof(tcb));
 		newNode->tid = ID;
 		printf("Don't break before this\n");
-		if(getcontext(&uc) == -1){
+		if(getcontext(&newNode->context) == -1){
 			printf("Throw error\n");			
 		}
+		ucontext_t uc = newNode->context;
 		printf("get worked\n");
-		uc.uc_stack.ss_sp = newStack;
-		uc.uc_stack.ss_size = sizeof(newStack);
-		uc.uc_link = &uctx_main;
+		uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
+		uc.uc_stack.ss_size = STACK_SIZE;
+		uc.uc_link = NULL;
 		printf("Context crap worked\n");
-		ucontext_t uc2;
-		printf("Not happening here...\n");
-		makecontext(&uc2, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
-		printf("Of course it's segfaulting\n");
+		makecontext(&uc, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
 		newNode->context = uc; //get, make, set context --- how???
+		newNode->threadState = ACTIVE;
 		newNode->priority = 0;
 		newNode->retval = NULL;
 		newNode->waitingThreads = NULL;
@@ -202,14 +199,12 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	return 0;
 };
 
-//is this just for testing purposes?  It's global if it's declared here.
-int i = 0;
 
 /*signal handler for timer*/
 void time_handle (int signum){
 	int count = 0;
-	printf("finished %d\n", signum);
-	i++;
+	printf("finished %d %d\n", signum,timerCounter);
+	timerCounter++;
 }
 
 void timer(){
@@ -240,6 +235,7 @@ int main(int argc, char** argv){
 	printf("Calling function normally:\n");
 	timer();//Still for testing purpose, obviously move to wherever needed and remove this whenever
 	printf("Now trying to use a thread\n");
+	timerCounter=0;
 	my_pthread_t mythread;
 	my_pthread_create(&mythread, NULL, (void*)&timer, NULL);
 	
