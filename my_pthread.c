@@ -17,11 +17,64 @@
 
 /*Global Variables*/
 int timerCounter = 0;	//Used to stop infinite while loop for timer
-//static ucontext_t uctx_main; //grabbed from Dan's code.
+bool schedInit = FALSE;
+
+int currentThreadId = 0;
 
 //running threads queue - made up out of MPQ
 //To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum, level 3 gets FIFO?
 //how many of each before maintenance cycle?
+
+//Initialize head and tail of each queue assuming only 4 levels.
+MPQNode* level0Qhead = NULL;
+MPQNode* level1Qhead = NULL;
+MPQNode* level2Qhead = NULL;
+MPQNode* level3Qhead = NULL;
+MPQNode* level0Qtail = NULL;
+MPQNode* level1Qtail = NULL;
+MPQNode* level2Qtail = NULL;
+MPQNode* level3Qtail = NULL;
+
+
+void scheduler(){
+	
+/*	//declare MPQ array (0 - n)
+	MPQNode* mpq[PRIORITY_LEVELS] = {NULL};
+
+	//this can change quickly. Maybe not needed?
+	MPQNode[0] = level0Qhead;
+	MPQNode[1] = level1Qhead;
+	MPQNode[2] = level2Qhead;
+	MPQNode[3] = level3Qhead;
+
+	//fill array 0 through n
+	schedInit = TRUE;
+	*/
+}
+
+//add to MPQ (new thread, or back in from waiting/running), must pass in level queues.
+void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail){
+	MPQNode* newNode = (MPQNode*)malloc(sizeof(MPQNode));
+	
+	newNode->threadId = thread->tid;
+	newNode->next = NULL;
+	newNode->ctr = 0; 
+	
+		
+	if(*head == NULL){//list is empty
+		*head = newNode;
+		*tail = newNode;
+	}
+	else if((*head)->threadId == (*tail)->threadId){//list only has one element
+		(*head)->next = newNode;
+		*tail = newNode;
+	}
+	else{//list has more than 2 or more elements.
+		(*tail)->next = newNode;
+		*tail = newNode;
+	}	
+	
+}
 
 //threadQueueNode headRunQueue;
 //threadQueueNode tailRunQueue;
@@ -34,10 +87,10 @@ tcb* threads[MAX_THREADS] = {NULL};
 my_pthread_mutex_t* mutexes[MAX_MUTEX] = {NULL};
 
 //prevent linear search by having a queue of ready numbers.
-nextId* headThread = NULL;
-nextId* tailThread = NULL;
-nextId* headMutex = NULL;
-nextId* tailMutex = NULL;
+nextId* headThread;
+nextId* tailThread;
+nextId* headMutex;
+nextId* tailMutex;
 
 //don't use until array is filled to begin with
 int threadCtr = 0;
@@ -67,75 +120,72 @@ bool useMutexId = FALSE;
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	/* Creates a pthread that executes function. Attributes are ignored, arg is not. */
-	//DESIGN PLAN:
-	//if (useThreadId == FALSE):
-	//	ID = threadCtr
-	//	threadCtr++;
-	//	if(threadCtr == 50):
-	//		useThreadId = TRUE;		
-	//else:
-	//	ID = pop ID off of head
-	//	set head to head->next
-	//
-	//threads[ID] = new tcb node;
-		//create a new tcb
-		//"thread" is a pointer to a "buffer", store ID in that "buffer"
-			//basically call thread* = threadID (index)
-		//ignore attributes
-		//get and make contexts (this is where function argument comes in)
-			//malloc context.uc_stack->ss_sp
-			//set context.uc_stack.ss_size = STACK_SIZE
-		//arg is the (one) argument that gets passed into function ^^
+
+//	if(!schedInit){
+//		initializeScheduler();
+//	}
+
 	my_pthread_t ID = -1;
 	if (useThreadId == FALSE){
+		printf("use array\n");
 		ID = threadCtr;
 		threadCtr++;
-		if(threadCtr == 50){
+		if(threadCtr == MAX_THREADS){
 			useThreadId = TRUE;	
+			headThread = (nextId*)malloc(sizeof(nextId));
+			headThread->next = NULL;
+			headThread->readyIndex = -1;
 		}
 	}
 	else{
-		if(headThread != NULL){
+		printf("don't use array!\n");
+		if(headThread->readyIndex != -1){
+			printf("Not null?\n");
 			ID = headThread->readyIndex;
-			headThread = (nextId*)headThread->next;
+			nextId* tempThread = headThread;
+			if(headThread->next == NULL){ //this way we always have a dummy node
+				headThread->readyIndex = -1;
+			}
+			else{
+				headThread = (nextId*)headThread->next;
+				free(tempThread); //frees the thread that was previously head.
+			}
 		}
 		else{
-			printf("Throw error!");
+			printf("Throw error!\n");
+			return;
 		}
 	}
-		//create a new tcb
-		tcb* newNode = (tcb*)malloc(sizeof(tcb));
-		newNode->tid = ID;
-		printf("Don't break before this\n");
-		if(getcontext(&newNode->context) == -1){
-			printf("Throw error\n");			
-		}
-		ucontext_t uc = newNode->context;
-		printf("get worked\n");
-		uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
-		uc.uc_stack.ss_size = STACK_SIZE;
-		uc.uc_link = NULL;
-		printf("Context crap worked\n");
-		makecontext(&uc, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
-		newNode->context = uc; //get, make, set context --- how???
-		newNode->threadState = ACTIVE;
-		newNode->priority = 0;
-		newNode->retval = NULL;
-		newNode->waitingThreads = NULL;
-		printf("node set worked\n");
-		threads[ID] = newNode;
-		
-		//"thread" is a pointer to a "buffer", store ID in that "buffer"
-			//basically call thread* = threadID (index)
-		*thread = ID;
-		//ignore attributes
-		//get and make contexts (this is where function argument comes in)
-			//malloc context.uc_stack->ss_sp
-			//set context.uc_stack.ss_size = STACK_SIZE
-		//arg is the (one) argument that gets passed into function ^^
-
-		
-		
+	//create a new tcb
+	tcb* newNode = (tcb*)malloc(sizeof(tcb));
+	//assign thread ID
+	newNode->tid = ID;
+//	printf("Don't break before this\n");
+	if(getcontext(&(newNode->context)) == -1){
+		printf("Throw error\n");			
+	}
+	//do context stuff
+	ucontext_t uc = newNode->context;
+//	printf("get worked\n");
+	uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
+	uc.uc_stack.ss_size = STACK_SIZE;
+	uc.uc_link = NULL;//should be manager thread (scheduler? maintenance?)
+//	printf("Context crap worked\n");
+	//arg is the (one) argument that gets passed into function ^^
+	makecontext(&uc, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
+	newNode->context = uc; 
+	//assign other tcb stuff
+	newNode->threadState = ACTIVE;
+	newNode->priority = 0;
+	newNode->retval = NULL;
+	newNode->waitingThreads = NULL;
+//	printf("node set worked\n");
+	threads[ID] = newNode;
+	//"thread" is a pointer to a "buffer", store ID in that "buffer"
+	*thread = ID;		
+	
+	//add new thread to mpq level 0
+	addMPQ(threads[ID], &level0Qhead, &level0Qtail);
 	return 0;
 };
 
@@ -147,6 +197,8 @@ int my_pthread_yield() {
 	//call this function during context switch in running queue
 	//is this where we call swap_context?
 	
+//	currentThreadId = //next ID swapping into
+
 	return 0;
 };
 
@@ -159,6 +211,31 @@ void my_pthread_exit(void *value_ptr) {
 	//If so, pass return value on to each and put them back in ready queue.
 	//Pass ID into tailThread, set curr tail = to this number.
 	
+	
+	/*
+	
+	if(headThread->readyIndex == -1){//none in yet
+		headThread->readyIndex = currentThreadId;	
+		tailThread = headThread;
+	}
+	else if(headThread == tailThread){//only one in
+		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		tmpThread->readyIndex = currentThreadId;
+		tmpThread->next = NULL;
+		headThread->next = tmpThread;
+		tailThread = tempThread;
+	}
+	else{//two or more in
+		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		tmpThread->readyIndex = currentThreadId;
+		tmpThread->next = NULL;
+		tailThread->next = tmpThread;
+		tailThread = tempThread;
+	}
+	threads[currentThreadId] = NULL;
+	
+	*/
+	
 };
 
 /* wait for thread termination */
@@ -166,7 +243,11 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	/* Call to the my_pthread_t library ensuring that the calling thread will not continue execution until the one 
 	it references exits. If value_ptr is not null, the return value of the exiting thread will be passed back.*/
 
-	// put thread onto waiting queue in tcb for thread passed in.
+	//put thread onto waiting queue in tcb for thread passed in. How to get current thread ID? global var?
+//	waitQueueNode* newNode = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+//	newNode->
+//	(threads[thread])->waiting = WAITING
+	
 	//**value_ptr is a buffer waiting for ret val. (unless not null)
 
 	return 0;
@@ -236,9 +317,27 @@ int main(int argc, char** argv){
 	timer();//Still for testing purpose, obviously move to wherever needed and remove this whenever
 	printf("Now trying to use a thread\n");
 	timerCounter=0;
-	my_pthread_t mythread;
-	my_pthread_create(&mythread, NULL, (void*)&timer, NULL);
+	my_pthread_t mythread1, mythread2, mythread3, mythread4, mythread5, mythread6;
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread1, NULL, (void*)&timer, NULL);
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread2, NULL, (void*)&timer, NULL);
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread3, NULL, (void*)&timer, NULL);
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread4, NULL, (void*)&timer, NULL);
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread5, NULL, (void*)&timer, NULL);
+	printf("%d\n",threadCtr);
+	my_pthread_create(&mythread6, NULL, (void*)&timer, NULL);
+	printf("Should NOT be 6: %d\n",threadCtr);
 	
-	
+	MPQNode* tempQ = level0Qhead;
+	int count = 1;
+	while(tempQ != NULL){
+		printf("%d threads in queue\n", count);
+		count++;
+		tempQ = tempQ->next;
+	}
 }
 //
