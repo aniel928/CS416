@@ -19,7 +19,7 @@
 int timerCounter = 0;	//Used to stop infinite while loop for timer
 bool schedInit = FALSE;
 
-int currentThreadID = 0;
+int currentThreadId = 0;
 
 //running threads queue - made up out of MPQ
 //To build new queue: level 0 gets 1 quantum, level 1 gets 3 quantum, level 2 gets 6 quantum, level 3 gets FIFO?
@@ -87,10 +87,10 @@ tcb* threads[MAX_THREADS] = {NULL};
 my_pthread_mutex_t* mutexes[MAX_MUTEX] = {NULL};
 
 //prevent linear search by having a queue of ready numbers.
-nextId* headThread = NULL;
-nextId* tailThread = NULL;
-nextId* headMutex = NULL;
-nextId* tailMutex = NULL;
+nextId* headThread;
+nextId* tailThread;
+nextId* headMutex;
+nextId* tailMutex;
 
 //don't use until array is filled to begin with
 int threadCtr = 0;
@@ -132,17 +132,28 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		threadCtr++;
 		if(threadCtr == MAX_THREADS){
 			useThreadId = TRUE;	
+			headThread = (nextId*)malloc(sizeof(nextId));
+			headThread->next = NULL;
+			headThread->readyIndex = -1;
 		}
 	}
 	else{
-		printf("don't use array\n");
-		if(headThread == NULL){
+		printf("don't use array!\n");
+		if(headThread->readyIndex != -1){
 			printf("Not null?\n");
 			ID = headThread->readyIndex;
-			headThread = (nextId*)headThread->next;
+			nextId* tempThread = headThread;
+			if(headThread->next == NULL){ //this way we always have a dummy node
+				headThread->readyIndex = -1;
+			}
+			else{
+				headThread = (nextId*)headThread->next;
+				free(tempThread); //frees the thread that was previously head.
+			}
 		}
 		else{
-			printf("Throw error!");
+			printf("Throw error!\n");
+			return;
 		}
 	}
 	//create a new tcb
@@ -199,6 +210,31 @@ void my_pthread_exit(void *value_ptr) {
 	//before exiting, check to see if anyone else joined.
 	//If so, pass return value on to each and put them back in ready queue.
 	//Pass ID into tailThread, set curr tail = to this number.
+	
+	
+	/*
+	
+	if(headThread->readyIndex == -1){//none in yet
+		headThread->readyIndex = currentThreadId;	
+		tailThread = headThread;
+	}
+	else if(headThread == tailThread){//only one in
+		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		tmpThread->readyIndex = currentThreadId;
+		tmpThread->next = NULL;
+		headThread->next = tmpThread;
+		tailThread = tempThread;
+	}
+	else{//two or more in
+		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		tmpThread->readyIndex = currentThreadId;
+		tmpThread->next = NULL;
+		tailThread->next = tmpThread;
+		tailThread = tempThread;
+	}
+	threads[currentThreadId] = NULL;
+	
+	*/
 	
 };
 
@@ -294,7 +330,7 @@ int main(int argc, char** argv){
 	my_pthread_create(&mythread5, NULL, (void*)&timer, NULL);
 	printf("%d\n",threadCtr);
 	my_pthread_create(&mythread6, NULL, (void*)&timer, NULL);
-	printf("%d\n",threadCtr);
+	printf("Should NOT be 6: %d\n",threadCtr);
 	
 	MPQNode* tempQ = level0Qhead;
 	int count = 1;
