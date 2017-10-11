@@ -16,7 +16,7 @@
 #define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
-#define PRIORITY_LEVELS 4//how many priority levels
+#define PRIORITY_LEVELS 5//how many priority levels
 
 
 /* include lib header files that you need here: */
@@ -63,10 +63,10 @@ typedef struct _nextId{
 //unsigned int is thread identifier
 typedef uint my_pthread_t;
 
-typedef struct _waitQueueNode{
+typedef struct _queueNode{
 	my_pthread_t tid;
 	my_pthread_t* next;
-} waitQueueNode;
+} queueNode;
 
 typedef struct threadControlBlock{
 	/* add something here */
