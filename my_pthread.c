@@ -22,11 +22,11 @@ int timerCounter = 0;	//Used to stop infinite while loop for timer
 bool schedInit = FALSE;
 tcb* managerThread = NULL; //this is the main thread
 ucontext_t main_uctx;//main context
-queueNode* currentRunning = NULL; //the one currently running
 
 //running threads queue - made up out of MPQ
 queueNode* headRunning = NULL;
 queueNode* tailRunning = NULL;
+queueNode* currentRunning = NULL; //the one currently running
 
 //initialize array of thread pointers to null.
 tcb* threads[MAX_THREADS] = {NULL};
@@ -48,20 +48,20 @@ bool useMutexId = FALSE;
 
 
 //Initialize head, tail, and counter of each queue assuming only 4 levels.
-MPQNode* level0Qhead = NULL;
-MPQNode* level0Qtail = NULL;
+queueNode* level0Qhead = NULL;
+queueNode* level0Qtail = NULL;
 int level0Ctr = 0;			
 
-MPQNode* level1Qhead = NULL;
-MPQNode* level1Qtail = NULL;
+queueNode* level1Qhead = NULL;
+queueNode* level1Qtail = NULL;
 int level1Ctr = 0;
 
-MPQNode* level2Qhead = NULL;
-MPQNode* level2Qtail = NULL;
+queueNode* level2Qhead = NULL;
+queueNode* level2Qtail = NULL;
 int level2Ctr = 0;
 
-MPQNode* level3Qhead = NULL;
-MPQNode* level3Qtail = NULL;
+queueNode* level3Qhead = NULL;
+queueNode* level3Qtail = NULL;
 int level3Ctr = 0;
 
 
@@ -119,17 +119,17 @@ void createRunning(){
 	tailRunning->tid = -1;
 	tailRunning->next = NULL;
 	
-	MPQNode* templevel = level0Qhead;
+	queueNode* templevel = level0Qhead;
 	while(templevel != NULL){
 		if(headRunning->tid = -1){
 			printf("created first\n");
-			headRunning->tid = templevel->threadId;
+			headRunning->tid = templevel->tid;
 			tailRunning = headRunning;
 		}
 		else if(headRunning == tailRunning){
 			printf("created second\n");
 			queueNode* temp = (queueNode*)malloc(sizeof(queueNode));
-			temp->tid = templevel->threadId;
+			temp->tid = templevel->tid;
 			temp->next = NULL;
 			headRunning->next = (void*)temp;
 			tailRunning = temp;
@@ -137,7 +137,7 @@ void createRunning(){
 		else{
 			printf("created more than 2\n");
 			queueNode* temp = (queueNode*)malloc(sizeof(queueNode));
-			temp->tid = templevel->threadId;
+			temp->tid = templevel->tid;
 			temp->next = NULL;
 			tailRunning->next = (void*)temp;
 			tailRunning = temp;			
@@ -155,8 +155,10 @@ void runThreads(){
 	queueNode* temp = headRunning;
 	
 	while(temp != NULL){
-
+		//run the thread
 		my_pthread_yield();	
+		//if not preempted change status to DONE
+		//else change status to ACTIVE
 		temp = (queueNode*)temp->next;
 	}
 
@@ -164,6 +166,12 @@ void runThreads(){
 
 /*signal handler for timer*/
 void time_handle(int signum){
+
+	//change status to PREEMPTED
+	//change priority +1 on tcb node(unless bottom level)
+	//put back on tail of that new priority queue. (example in my_pthread_create())
+	//swapcontext back to main
+	
 	int count = 0;
 	printf("finished %d %d\n", signum,timerCounter);
 	timerCounter++;
@@ -195,10 +203,10 @@ void timer(){//int priority){
 }
 
 //add to MPQ (new thread, or back in from waiting/running), must pass in level queues.
-void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail){
-	MPQNode* newNode = (MPQNode*)malloc(sizeof(MPQNode));
+void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
+	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
 	
-	newNode->threadId = thread->tid;
+	newNode->tid = thread->tid;
 	newNode->next = NULL;
 	newNode->ctr = 0; 
 	
@@ -207,7 +215,7 @@ void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail){
 		*head = newNode;
 		*tail = newNode;
 	}
-	else if((*head)->threadId == (*tail)->threadId){//list only has one element
+	else if((*head)->tid == (*tail)->tid){//list only has one element
 		(*head)->next = newNode;
 		*tail = newNode;
 	}
@@ -434,7 +442,7 @@ int main(int argc, char** argv){
 	my_pthread_create(&mythread6, NULL, (void*)&timer, NULL);
 	printf("Should NOT be 6: %d\n",threadCtr);
 
-	MPQNode* tempQ = level0Qhead;
+	queueNode* tempQ = level0Qhead;
 	int count = 1;
 	while(tempQ != NULL){
 		printf("%d threads in queue\n", count);
