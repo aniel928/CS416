@@ -16,7 +16,7 @@
 #define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
-#define PRIORITY_LEVELS 5//how many priority levels
+#define PRIORITY_LEVELS 4//how many priority levels
 
 
 /* include lib header files that you need here: */
@@ -126,6 +126,14 @@ typedef struct _MPQNode{
 
 
 /* Function Declarations: */
+
+void schedulerInit();
+void maintenanceCycle();
+void createRunning();
+void runThreads();
+void time_handle(int signum);
+void timer();
+void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail);
 
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg);

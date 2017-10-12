@@ -13,35 +13,105 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <math.h>
 #include "my_pthread_t.h"
 
-/*Global Variables*/
+/**************** Global Variables ****************/
+
 int timerCounter = 0;	//Used to stop infinite while loop for timer
 bool schedInit = FALSE;
 tcb* managerThread = NULL; //this is the main thread
 ucontext_t main_uctx;//main context
 queueNode* currentRunning = NULL; //the one currently running
+
 //running threads queue - made up out of MPQ
 queueNode* headRunning = NULL;
 queueNode* tailRunning = NULL;
 
-//To build new queue: level 0 gets 2^0 = 1 quantum, level 1 gets 2^1 = 2 quantum, level 2 gets 2^2 quantum, level 3 2^3 quantum, level 4 gets FIFO?
-//how many of each before maintenance cycle?
+//initialize array of thread pointers to null.
+tcb* threads[MAX_THREADS] = {NULL};
 
-//Initialize head and tail of each queue assuming only 5 levels.
+//initialize array of mutex pointers to null.
+my_pthread_mutex_t* mutexes[MAX_MUTEX] = {NULL};
+
+//prevent linear search by having a queue of ready numbers.
+nextId* headThread = NULL;
+nextId* tailThread = NULL;
+nextId* headMutex = NULL;
+nextId* tailMutex = NULL;
+
+//don't use until array is filled to begin with
+int threadCtr = 0;
+bool useThreadId = FALSE;
+int mutexCtr = 0;
+bool useMutexId = FALSE;
+
+
+//Initialize head, tail, and counter of each queue assuming only 4 levels.
 MPQNode* level0Qhead = NULL;
-MPQNode* level1Qhead = NULL;
-MPQNode* level2Qhead = NULL;
-MPQNode* level3Qhead = NULL;
 MPQNode* level0Qtail = NULL;
-MPQNode* level1Qtail = NULL;
-MPQNode* level2Qtail = NULL;
-MPQNode* level3Qtail = NULL;
-MPQNode* level4Qhead = NULL;
-MPQNode* level4Qtail = NULL;
+int level0Ctr = 0;			
 
-//fix this to be a better running list, I'm just putting all threads in level0 in here for now.
+MPQNode* level1Qhead = NULL;
+MPQNode* level1Qtail = NULL;
+int level1Ctr = 0;
+
+MPQNode* level2Qhead = NULL;
+MPQNode* level2Qtail = NULL;
+int level2Ctr = 0;
+
+MPQNode* level3Qhead = NULL;
+MPQNode* level3Qtail = NULL;
+int level3Ctr = 0;
+
+
+/**************** Additional Methods ****************/
+
+//initializes and runs scheduler until no threads exist
+void schedulerInit(){	
+	/*
+	tcb* managerThread = (tcb*)malloc(sizeof(tcb));
+	managerThread->tid = -1;
+	managerThread->context = main_uctx;
+	currentThread = managerThread;
+	*/
+	
+	schedInit = TRUE;
+	while(schedInit){
+		maintenanceCycle();
+		runThreads();
+	} 
+	
+
+}
+
+//do some maintenance between running cycles
+void maintenanceCycle(){
+//		
+	
+	//To build new queue: level 0 gets 2^0 = 1 quantum, level 1 gets 2^1 = 2 quantum, level 2 gets 2^2 quantum, level 3 2^3 quantum, level 4 gets FIFO?
+	//how many of each before maintenance cycle?
+	
+	//need a "maintenance cycle" method that changes around priorities:
+	//Suggestions:
+	//	-if in 2 for more than 5 full maintenance cycle quantum, move to 1
+	//	-if in 1 for more than 5 full maintenance cycle quantum, move to 0
+	//	-figure out how to avoid priority inversion.
+		//if mutex waiting, do not promote?
+	//	-need to figure out how to bring back in from waiting queue - what should happen with these?  
+	//	Back to previous level?  Start at high? start at low?
+	
+	if(level0Ctr + level1Ctr + level2Ctr + level3Ctr == 0){
+			schedInit = FALSE;	
+	}
+	else{
+		createRunning(); //maybe we don't need a separate method, just put logic here.
+	}
+}
+
+//create list of threads to run between maintenance cycles
 void createRunning(){
+	//fix this to be a better running list, I'm just putting all threads in level0 in here for now
 	headRunning = (queueNode*)malloc(sizeof(queueNode));
 	headRunning->tid = -1;
 	headRunning->next = NULL;
@@ -79,6 +149,7 @@ void createRunning(){
 	return;
 }
 
+//Run them between cycles
 void runThreads(){
 
 	queueNode* temp = headRunning;
@@ -91,21 +162,36 @@ void runThreads(){
 
 }
 
-void schedulerInit(){	
-	/*
-	tcb* managerThread = (tcb*)malloc(sizeof(tcb));
-	managerThread->tid = -1;
-	managerThread->context = main_uctx;
-	currentThread = managerThread;
-	*/
-	createRunning();//just for testing.  This belongs somewhere else.
-	schedInit = TRUE;
-/*	while(schedInit){
-		//run a loop of maintenance cycles and running queue stuff
-		//when there's nothing left in running queue:
-			//schedInit = FALSE;
+/*signal handler for timer*/
+void time_handle(int signum){
+	int count = 0;
+	printf("finished %d %d\n", signum,timerCounter);
+	timerCounter++;
+}
+
+//add parameter for priority then take 2^priority and * QUANTUM
+void timer(){//int priority){
+	struct sigaction sigact;
+	struct itimerval timer;
+
+	memset(&sigact, 0, sizeof(sigact));
+	sigact.sa_handler = &time_handle;
+	sigaction (SIGVTALRM, &sigact, NULL);
+	
+	/*next value*/		//current timer interval? why next value?
+	timer.it_interval.tv_sec = 0;		//0 seconds
+	timer.it_interval.tv_usec = QUANTUM;// * (1 << priority) ;	//25 milliseconds / 1 quantum
+
+	/*current value*/	//current timer value?
+	timer.it_value.tv_sec = 0;		//0 seconds
+	timer.it_value.tv_usec = QUANTUM;// * (1 << priority) ;	//25 milliseconds / 1 quantum
+	
+	
+	setitimer (ITIMER_VIRTUAL, &timer, NULL);
+
+	while (timerCounter<40){
+	
 	}
-*/	
 }
 
 //add to MPQ (new thread, or back in from waiting/running), must pass in level queues.
@@ -132,45 +218,9 @@ void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail){
 	return;
 }
 
+/**************** Given Methods to Override ****************/
 
-
-//initialize array of thread pointers to null.
-tcb* threads[MAX_THREADS] = {NULL};
-
-//initialize array of mutex pointers to null.
-my_pthread_mutex_t* mutexes[MAX_MUTEX] = {NULL};
-
-//prevent linear search by having a queue of ready numbers.
-nextId* headThread = NULL;
-nextId* tailThread = NULL;
-nextId* headMutex = NULL;
-nextId* tailMutex = NULL;
-
-//don't use until array is filled to begin with
-int threadCtr = 0;
-bool useThreadId = FALSE;
-int mutexCtr = 0;
-bool useMutexId = FALSE;
-
-void maintenaceCycle(){
-//		
-	//need a "maintenance cycle" method that changes around priorities:
-	//Suggestions:
-	//	-if in 2 for more than 5 full maintenance cycle quantum, move to 1
-	//	-if in 1 for more than 5 full maintenance cycle quantum, move to 0
-	//	-figure out how to avoid priority inversion.
-		//if mutex waiting, do not promote?
-	//	-need to figure out how to bring back in from waiting queue - what should happen with these?  
-	//	Back to previous level?  Start at high? start at low?
-	
-	
-	//Do this as first step...
-	//Signal Interrupts and Signal Handler:
-	//	By setting setitimer, it will send SIGBVTALRM/SIGALRM, which I should be catching with a signal handler?
-	//		then do either context switch or maintenance cycle?
-	//
-}
-
+	/**************** Thread Methods ****************/
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	/* Creates a pthread that executes function. Attributes are ignored, arg is not. */
@@ -220,7 +270,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	ucontext_t uc = newNode->context;
 	uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
 	uc.uc_stack.ss_size = STACK_SIZE;
-	uc.uc_link = NULL;//should be manager thread (scheduler? maintenance?)
+	uc.uc_link = &main_uctx;//should be manager thread (scheduler? maintenance?)
 
 	//arg is the (one) argument that gets passed into function ^^
 	makecontext(&uc, (void(*)(void))*function,1,arg); //THIS IS NOT WORKING!
@@ -324,6 +374,7 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	return 0;
 };
 
+	/**************** Mutex Methods ****************/
 /* initial the mutex lock */
 int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexattr) {
 	/* Initializes a my_pthread_mutex_t created by the calling thread. Attributes are ignored. */
@@ -356,38 +407,13 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 };
 
 
-/*signal handler for timer*/
-void time_handle (int signum){
-	int count = 0;
-	printf("finished %d %d\n", signum,timerCounter);
-	timerCounter++;
-}
 
-void timer(){
-	struct sigaction sigact;
-	struct itimerval timer;
-
-	memset(&sigact, 0, sizeof(sigact));
-	sigact.sa_handler = &time_handle;
-	sigaction (SIGVTALRM, &sigact, NULL);
-	
-	/*next value*/
-	timer.it_interval.tv_sec = 0;		//0 seconds
-	timer.it_interval.tv_usec = QUANTUM;	//25 milliseconds / 1 quantum
-
-	/*current value*/	
-	timer.it_value.tv_sec = 0;		//0 seconds
-	timer.it_value.tv_usec = QUANTUM; 	//25 milliseconds / 1 quantum
-	
-	
-	setitimer (ITIMER_VIRTUAL, &timer, NULL);
-
-	while (timerCounter<40){
-	
-	}
-}
-  
+//need main to keep errors from occurring - use for trivial testing.
 int main(int argc, char** argv){
+
+
+	/* TESTING */
+
 	printf("Calling function normally:\n");
 	timer();//Still for testing purpose, obviously move to wherever needed and remove this whenever
 	printf("Now trying to use a thread\n");
@@ -407,8 +433,7 @@ int main(int argc, char** argv){
 	printf("%d\n",threadCtr);
 	my_pthread_create(&mythread6, NULL, (void*)&timer, NULL);
 	printf("Should NOT be 6: %d\n",threadCtr);
-	//Run through list:
-	runThreads();
+
 	MPQNode* tempQ = level0Qhead;
 	int count = 1;
 	while(tempQ != NULL){
@@ -417,4 +442,3 @@ int main(int argc, char** argv){
 		tempQ = tempQ->next;
 	}
 }
-//
