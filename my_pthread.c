@@ -27,6 +27,7 @@ ucontext_t main_uctx;//main context
 queueNode* headRunning = NULL;
 queueNode* tailRunning = NULL;
 queueNode* currentRunning = NULL; //the one currently running
+queueNode* nextRunning = NULL; //the one that's next to run
 
 //initialize array of thread pointers to null.
 tcb* threads[MAX_THREADS] = {NULL};
@@ -67,8 +68,16 @@ int levelCtrs[4] = {0};
 
 void testThreads(){
 	printf("Printing\n");
+	my_pthread_yield();
 	return;
 }
+
+void testThreadsWithExit(){
+	printf("Printing\n");
+	my_pthread_exit(NULL);
+	return;
+}
+
 //initializes and runs scheduler until no threads exist
 void schedulerInit(){	
 	/*
@@ -153,6 +162,7 @@ void createRunning(){
 	printf("Move level0Qhead over to headRunning\n");
 	headRunning = level0Qhead;
 	level0Qhead = NULL;
+	levelCtrs[0] = 0;
 	//sets it so that the first thread to run is stored in global variable.
 	//maybe belongs in runThreads?
 	return;
@@ -162,24 +172,35 @@ void createRunning(){
 void runThreads(){
 
 	printf("Assign head running to current running\n");
-	currentRunning = headRunning;
-	while(currentRunning){
+	nextRunning = headRunning;
+	while(nextRunning){
 		printf("made it to while loop\n");
 		//run the thread
 		my_pthread_yield();	
+		currentRunning = NULL;
 		//if not preempted change status to DONE
-		if(threads[currentRunning->tid]->threadState == PREEMPTED){
+		if(threads[nextRunning->tid] == NULL){
+			printf("Done\n");
+		}
+		else if(threads[nextRunning->tid]->threadState == PREEMPTED){
 			printf("Preempted\n");
-			threads[currentRunning->tid]->threadState = ACTIVE;
+			threads[nextRunning->tid]->threadState = ACTIVE;
+			levelCtrs[threads[(nextRunning->tid)]->priority] -= 1;
+		}
+		else if(threads[nextRunning->tid]->threadState == YIELDED){
+			printf("Yielded\n");
+			threads[nextRunning->tid]->threadState = ACTIVE;
+			levelCtrs[threads[(nextRunning->tid)]->priority] -= 1;
 		}
 		//else change status to ACTIVE
 		else{
 			printf("Done\n");
-			threads[currentRunning->tid]->threadState = DONE;
-			levelCtrs[((threads[currentRunning->tid])->priority)] -= 1;
+			threads[nextRunning->tid]->threadState = DONE;
+			levelCtrs[threads[(nextRunning->tid)]->priority] -= 1;
 		}
 		//next becomes "current"
-		currentRunning = (queueNode*)currentRunning->next; //this is not working??
+		nextRunning = (queueNode*)nextRunning->next; //this is not working??
+		printf("restart loop\n");
 	}
 }
 
@@ -231,14 +252,17 @@ void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
 	
 		
 	if(*head == NULL){//list is empty
+		printf("added to head of MPQ\n");
 		*head = newNode;
 		*tail = newNode;
 	}
 	else if((*head)->tid == (*tail)->tid){//list only has one element
+		printf("added as 2nd element of MPQ\n");
 		(*head)->next = newNode;
 		*tail = newNode;
 	}
 	else{//list has more than 2 or more elements.
+		printf("added to end of MPQ\n");
 		(*tail)->next = newNode;
 		*tail = newNode;
 	}	
@@ -330,8 +354,17 @@ int my_pthread_yield() {
 	/* Explicit call to the my_pthread_t scheduler requesting that the current context can be swapped out 
 	and another can be scheduled if one is waiting. */
 	printf("In yield\n");
+	if(currentRunning == NULL){
+		currentRunning = nextRunning;
+		swapcontext(&(main_uctx),&((threads[currentRunning->tid])->context));
+	}
+	else{
+		threads[currentRunning->tid]->threadState = YIELDED;
+		swapcontext(&((threads[currentRunning->tid])->context),&(main_uctx));
+	}
+
 	//always swap out of main into next, will always return back to main between.
-	swapcontext(&(main_uctx),&((threads[currentRunning->tid])->context));	//swapcontext(&(where to save),&(new one to run))
+		//swapcontext(&(where to save),&(new one to run))
 	return 0;
 };
 
@@ -339,22 +372,27 @@ int my_pthread_yield() {
 void my_pthread_exit(void *value_ptr) {
 	/* Explicit call to the my_pthread_t library to end the pthread that called it. If the value_ptr isn't 
 	NULL, any return value from the thread will be saved. */
+	printf("In my pthread exit\n");
 	
 	//before exiting, check to see if anyone else joined.
+	if(threads[currentRunning->tid]->waitingThreads != NULL){
+		printf("pass on a return value");
+	}
+	else{
+		printf("No threads waiting.\n");		
+	}
 	//If so, pass return value on to each and put them back in ready queue.
-	//Pass ID into tailThread, set curr tail = to this number.
 	
 	
-	
-	
-	
-	/*	
-	
+	//Pass ID into tailThread, set curr tail = to this number.	
 	if(headThread->readyIndex == -1){//none in yet
+		printf("First thread ID\n");
 		headThread->readyIndex = currentRunning->tid;	
+		headThread->next = NULL;
 		tailThread = headThread;
 	}
 	else if(headThread == tailThread){//only one in
+		printf("Second thread ID\n");
 		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
 		tmpThread->readyIndex = currentRunning->tid;
 		tmpThread->next = NULL;
@@ -362,6 +400,7 @@ void my_pthread_exit(void *value_ptr) {
 		tailThread = tmpThread;
 	}
 	else{//two or more in
+		printf("Lots in\n");
 		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
 		tmpThread->readyIndex = currentRunning->tid;
 		tmpThread->next = NULL;
@@ -370,8 +409,7 @@ void my_pthread_exit(void *value_ptr) {
 	}
 	threads[currentRunning->tid] = NULL;
 	
-	*/
-	
+	return;
 	
 };
 
@@ -444,8 +482,7 @@ int main(int argc, char** argv){
 	printf("%d\n",threadCtr);
 	my_pthread_create(&mythread4, NULL, (void*)&testThreads, NULL);
 	printf("%d\n",threadCtr);
-	my_pthread_create(&mythread5, NULL, (void*)&testThreads, NULL);
-	//my_pthread_exit(NULL);
+	my_pthread_create(&mythread5, NULL, (void*)&testThreadsWithExit, NULL);
 	printf("%d\n",threadCtr);
 	my_pthread_create(&mythread6, NULL, (void*)&testThreads, NULL);
 	printf("Should NOT be 6: %d\n",threadCtr);

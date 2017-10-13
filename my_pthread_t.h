@@ -46,7 +46,7 @@ int quantumPriority[PRIORITY_LEVELS] = {1,3,6,-1};
 
 //enum for states
 typedef enum _states{
-	ACTIVE, WAITING, PREEMPTED, DONE
+	ACTIVE, WAITING, YIELDED, PREEMPTED, DONE
 } states;
 
 typedef enum _bool{
