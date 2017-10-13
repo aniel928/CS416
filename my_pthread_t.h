@@ -67,6 +67,7 @@ typedef struct _queueNode{
 	my_pthread_t tid;
 	void* next;
 	int ctr; //how long has it been on this level?
+	void* retval;
 } queueNode;
 
 typedef struct threadControlBlock{

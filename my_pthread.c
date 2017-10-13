@@ -373,10 +373,18 @@ void my_pthread_exit(void *value_ptr) {
 	/* Explicit call to the my_pthread_t library to end the pthread that called it. If the value_ptr isn't 
 	NULL, any return value from the thread will be saved. */
 	printf("In my pthread exit\n");
-	
+
 	//before exiting, check to see if anyone else joined.
+	/*Unable to test this part until we figure out how to ref library in other file. */
+	queueNode* tempNode = NULL;
 	if(threads[currentRunning->tid]->waitingThreads != NULL){
-		printf("pass on a return value");
+		queueNode* currentNode = threads[currentRunning->tid]->waitingThreads;
+		while(currentNode){
+			currentNode->retval = value_ptr;
+			tempNode = currentNode;
+			currentNode = currentNode->next;
+			free(tempNode);
+		}
 	}
 	else{
 		printf("No threads waiting.\n");		
@@ -413,16 +421,30 @@ void my_pthread_exit(void *value_ptr) {
 	
 };
 
-/* wait for thread termination */
+/* wait for thread termination */ 
 int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	/* Call to the my_pthread_t library ensuring that the calling thread will not continue execution until the one 
 	it references exits. If value_ptr is not null, the return value of the exiting thread will be passed back.*/
 
+	if(threads[thread] = NULL){
+		printf("Thread does not exist, cannot join.\n");
+		return -1;
+	}
 	//put thread onto waiting queue in tcb for thread passed in. How to get current thread ID? global var?
-//	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
-//	newNode->
-//	(threads[thread])->waiting = WAITING
-	
+	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
+	newNode->tid = thread;
+	newNode->next = NULL;
+	newNode->retval = value_ptr;
+	if(threads[thread]->waitingThreads = NULL){
+		threads[thread]->waitingThreads = newNode;
+	}
+	else{
+		queueNode* currentNode = threads[thread]->waitingThreads;
+		while(currentNode->next){
+			currentNode = currentNode->next;
+		}
+		currentNode->next = newNode;
+	}
 	//**value_ptr is a buffer waiting for ret val. (unless not null)
 
 	return 0;
@@ -442,6 +464,9 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 	/* Locks a given mutex, other threads attempting to access this mutex will not run until it is unlocked. */
 	//if mutex already locked, add to wait queue
+	
+	//right before returning yield - is this correct (from Sakai)
+	my_pthread_yield();
 	return 0;
 };
 
@@ -450,6 +475,10 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 	/* Unlocks a given mutex. */
 	//check to see if anyone is waiting, if so, do not unlock, just "pass" the mutex on.  
 	//Only unlock when no one else is waiting.
+	
+	
+	//right before returning yield - is this correct (from Sakai)
+	my_pthread_yield();
 	return 0;
 };
 
