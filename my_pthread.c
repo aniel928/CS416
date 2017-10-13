@@ -179,12 +179,7 @@ void runThreads(){
 			levelCtrs[((threads[currentRunning->tid])->priority)] -= 1;
 		}
 		//next becomes "current"
-		if(currentRunning->next == NULL ){
-			currentRunning = NULL;
-		}
-		else{
-			currentRunning = (queueNode*)currentRunning->next;
-		}
+		currentRunning = (queueNode*)currentRunning->next; //this is not working??
 	}
 }
 
@@ -430,12 +425,12 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 
 
 //need main to keep errors from occurring - use for trivial testing.
-//int main(int argc, char** argv){
+int main(int argc, char** argv){
 
 
 	/* TESTING */
 
-/*	printf("Calling function normally:\n");
+	printf("Calling function normally:\n");
 	timer();//Still for testing purpose, obviously move to wherever needed and remove this whenever
 	printf("Now trying to use a thread\n");
 	timerCounter=0;
@@ -463,4 +458,3 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 		tempQ = tempQ->next;
 	}
 }
-*/
