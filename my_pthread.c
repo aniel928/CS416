@@ -118,6 +118,17 @@ void maintenanceCycle(){
 			schedInit = FALSE;	
 	}
 	else{
+		//move up in priority
+		//mostly pseudocode:
+		//i = 0
+		//while i < PRIORITY_LEVELS:
+		//	current = MPQheads[i]
+		//	while current:
+		//		if current->ctr > CYCLES:
+		//		threads[current->tid]->priority += 1
+		//		current = current->next;
+		
+		
 		//pull a list of threads from MPQ to run.
 		createRunning();
 	}
@@ -125,6 +136,35 @@ void maintenanceCycle(){
 
 //create list of threads to run between maintenance cycles
 void createRunning(){
+	//TODO: all pseudocode.
+	//if more than 8 in level 0:
+		//move first 8 into running
+		//make 9th new head of 0.
+	//else:
+		//move entire queue into running
+		//make head of 0 = NULL
+	//if more than 5 in level 1:
+		//move first 5 into running
+		//make 6th new head of 1.
+	//else:
+		//move entire queue into running
+		//make head of 1 = NULL
+	//if more than 3 in level 2:
+		//move first 3 into running
+		//make 4th new head of 2.
+	//else:
+		//move entire queue into running
+		//make head of 2 = NULL
+	//if more than 1 in level 3:
+		//move first into running
+		//make 2nd new head of 3.
+	//else:
+		//move entire queue into running
+		//make head of 3 = NULL
+	
+	//don't bother filling with more nodes from other levels, this round will just be shorter.
+	
+	
 	//fix this to be a better running list, I'm just putting all threads in level0 in here for now
 	printf("Move level0Qhead over to headRunning\n");
 	headRunning = level0Qhead;
@@ -360,17 +400,19 @@ void my_pthread_exit(void *value_ptr) {
 		queueNode* currentNode = threads[currentRunning->tid]->waitingThreads;
 		while(currentNode){
 			currentNode->retval = value_ptr;
+			
+			//TODO: put back on mpq!  I think this code will work, but cannot test it yet, and might really blow up.
+			//mpqTails[threads[currentNode->tid]->priority]->next = currentNode;
+			//mpqTails[threads[currentNode->tid]->priority] = currentNode;
+			
 			tempNode = currentNode;
 			currentNode = currentNode->next;
-			free(tempNode);
 		}
 	}
 	else{//no waiting threads - no one joined.
 		printf("No threads waiting.\n");		
 	}
-	//If so, pass return value on to each and put them back in ready queue.
-	
-	
+		
 	//Pass ID into tailThread, set curr tail = to this number.	
 	if(headThread->readyIndex == -1){//none in queue yet
 		printf("First thread ID\n");
