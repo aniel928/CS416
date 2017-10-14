@@ -41,8 +41,6 @@
 #define pthread_mutex_unlock( x ) my_pthread_mutex_unlock( x )
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
-//level 0 gets 1 quantum, level 1 gets 3, 2 gets 6, 3 gets FIFO (-1 so we can catch)
-int quantumPriority[PRIORITY_LEVELS] = {1,3,6,-1};
 
 //enum for states
 typedef enum _states{
@@ -129,7 +127,9 @@ typedef struct _my_pthread_mutex_t {
 
 /* Function Declarations: */
 
+
 void schedulerInit();
+void scheduler();
 void maintenanceCycle();
 void createRunning();
 void runThreads();
