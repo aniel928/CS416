@@ -376,10 +376,21 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 
 	/**************** Mutex Methods ****************/
 /* initial the mutex lock */
+//returns 0 upon succes or errno value when there is an error
 int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexattr) {
 	/* Initializes a my_pthread_mutex_t created by the calling thread. Attributes are ignored. */
 	
+	if(mutex == NULL)
+		return EINVAL; //errno for invalid argument
+
 	//create new my_pthread_mutex_t struct.
+	mutex->lockState = 0;
+	mutex->waitQueue = (basicQueue*)malloc(sizeof(basicQueue));
+
+	//init the wait queue
+	mutex->waitQueue->head = NULL;
+	mutex->waitQueue->tail = NULL;
+	mutex->waitQueue->queueSize = 0;	
 	
 	return 0;
 };
@@ -387,15 +398,76 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 /* aquire the mutex lock */
 int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 	/* Locks a given mutex, other threads attempting to access this mutex will not run until it is unlocked. */
-	//if mutex already locked, add to wait queue
+	/*if mutex already locked, add to wait queue
+	if(mutex->lockState == 0){
+		mutex->lockState == 1;
+
+	}else{*/
+
+	while (test_and_set(mutex->lockState) == TRUE){
+	
+		//make the thread wait
+		threads[currentRunning->tid]->threadState = WAITING;
+
+		//and add it to wait queue
+		if(mutex->waitQueue->queueSize == 0){
+			
+			//create node
+			waitQueueNode *firstNode = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+			firstNode->thread = threads[currentRunning->tid];
+			firstNode->next = NULL;
+			
+			//set to head and tail			
+			mutex->waitQueue->head = firstNode;
+			mutex->waitQueue->tail = firstNode;
+
+		}else{
+
+			waitQueueNode *newTail = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+			newTail->thread = threads[currentRunning->tid];
+			newTail->next = NULL;
+
+			mutex->waitQueue->tail->next = newTail;
+			mutex->waitQueue->tail = newTail;
+
+		}
+
+		mutex->waitQueue->queueSize++;
+		//toss back to scheduler?
+
+	}
+
 	return 0;
 };
 
 /* release the mutex lock */
 int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
-	/* Unlocks a given mutex. */
+	/* Unlocks a give n mutex. */
 	//check to see if anyone is waiting, if so, do not unlock, just "pass" the mutex on.  
 	//Only unlock when no one else is waiting.
+
+	if(mutex->waitQueue->queueSize == 0){
+		mutex->lockState = 0;
+
+	}else{
+
+		//dequeue node from wait queue
+
+		//grab the thread
+		tcb *nextThread = mutex->waitQueue->head->thread;
+
+		//remove first node in waitQueue
+		waitQueueNode *temp = mutex->waitQueue->head->next; //might have a problem here if its null but probably not
+		free(mutex->waitQueue->head);
+		mutex->waitQueue->head = temp;
+		
+		mutex->waitQueue->queueSize--;
+
+		//pass the dequeued thread to the scheduler
+		
+
+	}
+
 	return 0;
 };
 
@@ -403,6 +475,17 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	/* Destroys a given mutex. Mutex should be unlocked before doing so. */
 	//check to make sure mutex is not locked first.
+	
+	//throw error if mutex does not exist
+	if(mutex == NULL)
+		return EINVAL;
+
+	//throw error if mutex is lock (currently in use)
+	if(mutex->lockState == 1)
+		return EBUSY;
+
+	free(mutex->waitQueue);
+
 	return 0;
 };
 

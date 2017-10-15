@@ -29,6 +29,7 @@
 #include <ucontext.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <errno.h>
 
 
 //can i replace all parameters with just one x on each side?
@@ -90,6 +91,22 @@ typedef struct threadControlBlock{
 	//pointer to PCB of process thread lives on. - probably not
 } tcb; 
 
+typedef struct _waitQueueNode{
+
+	tcb *thread;
+	struct _waitQueueNode *next;
+
+} waitQueueNode;
+
+//used for the wait queue on mutexes
+typedef struct _basicQueue{
+
+    waitQueueNode *head;
+    waitQueueNode *tail;
+    int queueSize;
+
+} basicQueue;
+
 /* mutex struct definition */
 typedef struct _my_pthread_mutex_t {
  		/* add something here */
@@ -98,7 +115,11 @@ typedef struct _my_pthread_mutex_t {
 	//locked yes or no
 	//list of people waiting on me
 		//don't unlock unless this pointer is null, otherwise hand off lock.
-	
+
+	my_pthread_t owner; //thread owner of this mutex
+	int lockState; //1 is locked 0 is unlocked
+	basicQueue *waitQueue; //keeps track of the threads waiting on this mutex
+
 } my_pthread_mutex_t;
 
 /* define your data structures here: */
@@ -123,7 +144,6 @@ typedef struct _MPQNode{
 	int ctr; //how long has it been on this level?
 	//fill with more stuff
 } MPQNode;
-
 
 /* Function Declarations: */
 
