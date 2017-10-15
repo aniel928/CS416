@@ -42,12 +42,10 @@
 #define pthread_mutex_unlock( x ) my_pthread_mutex_unlock( x )
 #define pthread_mutex_destroy( x ) my_pthread_mutex_destroy( x )
 
-//level 0 gets 1 quantum, level 1 gets 3, 2 gets 6, 3 gets FIFO (-1 so we can catch)
-int quantumPriority[PRIORITY_LEVELS] = {1,3,6,-1};
 
 //enum for states
 typedef enum _states{
-	ACTIVE, WAITING, DONE
+	ACTIVE, WAITING, YIELDED, PREEMPTED, DONE
 } states;
 
 typedef enum _bool{
@@ -66,7 +64,9 @@ typedef uint my_pthread_t;
 
 typedef struct _queueNode{
 	my_pthread_t tid;
-	my_pthread_t* next;
+	void* next;
+	int ctr; //how long has it been on this level?
+	void* retval;
 } queueNode;
 
 typedef struct threadControlBlock{
@@ -77,7 +77,7 @@ typedef struct threadControlBlock{
 		//as it finishes, assign it to waiting queue
 	//stackPointer - points to thread's stack in the process
 	ucontext_t context;
-	//state of the thread (running, ready, waiting, start, done)
+	//state of the thread (active, waiting, preempted, done)
 	states threadState;
 	//current priority level
 	uint priority;
@@ -127,7 +127,7 @@ typedef struct _my_pthread_mutex_t {
 // Feel free to add your own auxiliary data structures
 
 //declare MPQ array (0 - n)
-int mpq[PRIORITY_LEVELS] = {0};
+//int mpq[PRIORITY_LEVELS] = {0};
 
 //fill array 0 through n
 // int i = 0;
@@ -138,22 +138,24 @@ int mpq[PRIORITY_LEVELS] = {0};
 // }
 
 //mpq node
-typedef struct _MPQNode{
-	my_pthread_t threadId;
-	void* next;
-	int ctr; //how long has it been on this level?
-	//fill with more stuff
-} MPQNode;
+// typedef struct _MPQNode{
+// 	my_pthread_t threadId;
+// 	void* next;
+// 	int ctr; 
+// 	//fill with more stuff
+// } MPQNode;
 
 /* Function Declarations: */
 
+
 void schedulerInit();
+void scheduler();
 void maintenanceCycle();
 void createRunning();
 void runThreads();
 void time_handle(int signum);
 void timer();
-void addMPQ(tcb* thread, MPQNode** head, MPQNode** tail);
+void addMPQ(tcb* thread, queueNode** head, queueNode** tail);
 
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg);
