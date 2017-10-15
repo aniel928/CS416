@@ -1,8 +1,12 @@
 #include "my_pthread_t.h"
 
 void testThreads(){
-	while(1){
+	int i = 0;
+	while(i<100000){
+		i++;
+		
 	}
+	printf("thsifjas;lkdfja;dslkfj;lasdkjf;ladskfj;lads\n");
 	return;
 }
 
