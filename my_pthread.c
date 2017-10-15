@@ -110,6 +110,17 @@ void maintenanceCycle(){
 	//	-if in 2 for more than 5 full maintenance cycle quantum, move to 1
 	//	-if in 1 for more than 5 full maintenance cycle quantum, move to 0
 	//	-figure out how to avoid priority inversion.
+	/*
+		Priority Inversion Solution
+		- Priority Inheritence
+		  - Lets say a low level thread A locks a resource
+		  - it gets interrupted by a higher level B  thread
+		  - thread B also requires resource used by A
+		  - thread A "inherits" high priority and finishes
+		  - thread B can now obtain the resource and finishes
+		  - all other medium/low level threads will not run before B now
+
+	*/
 		//if mutex waiting, do not promote?
 	
 	//once there are no more threads left change scheduler to 
@@ -772,7 +783,9 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 		}
 
 		mutex->waitQueue->queueSize++;
-		//toss back to scheduler?
+
+		//call scheduler
+		runThreads();
 
 	}
 
@@ -791,7 +804,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 
 		//dequeue node from wait queue
 
-		//grab the thread
+		//grab the nextThread waiting in the mutex's queue
 		tcb *nextThread = mutex->waitQueue->head->thread;
 
 		//remove first node in waitQueue
@@ -802,7 +815,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 		mutex->waitQueue->queueSize--;
 
 		//pass the dequeued thread to the scheduler
-		
+		addMPQ(nextThread, mpqHeads[nextThread->priority], mpqTails[nextThread->priority]);
 
 	}
 
