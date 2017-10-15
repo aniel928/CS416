@@ -150,200 +150,233 @@ void maintenanceCycle(){
 
 //create list of threads to run between maintenance cycles
 void createRunning(){
-
-//TODO: all pseudocode.
-	//if more than 7 in level 0:
-		//move first 7 into running
-		//make 9th new head of 0.
-		//make 8th node->next = null;
-		//levelCtrs[0] -= 7;
-	//else:
-		//move entire queue into running
-		//make head of 0 = NULL
-		//levelCtrs[0] = 0;
-	//if more than 5 in level 1:
-		//move first 5 into running
-		//make 6th new head of 1.
-		//levelCtrs[1] -= 5;
-	//else:
-		//move entire queue into running
-		//make head of 1 = NULL
-		//levelCtrs[1] = 0;
-	//if more than 3 in level 2:
-		//move first 3 into running
-		//make 4th new head of 2.
-		//levelCtrs[2] -= 3;
-	//else:
-		//move entire queue into running
-		//make head of 2 = NULL
-		//levelCtrs[2] = 0;
-	//if more than 1 in level 3:
-		//move first into running
-		//make 2nd new head of 3.
-		//levelCtrs[3] -= 1;
-	//else:
-		//move entire queue into running
-		//make head of 3 = NULL
-		//levelCtrs[3] = 0;
 	
-	//don't bother filling with more nodes from other levels, this round will just be shorter.
-	
-	
-	//fix this to be a better running list, I'm just putting all threads in level0 in here for now
-/*	printf("Move level0Qhead over to headRunning\n");
-	headRunning = level0Qhead;
-	level0Qhead = NULL;
-	levelCtrs[0] = 0;
-	return;
-*/
-
-
-
-
-
-
-
+	printf("In createRunning\nCurrent Counts: \nleve0: %d\n Level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
 	/***Max nodes to be selected from priorty queue levels***/
-	int L0Max = 7;
-	int L1Max = 5;
-	int L2Max = 3;
-	int L3Max = 1;
-
-	int iterator = 0;
-	
-	queueNode* freeNode =  NULL;
-
-	/***Creating Head and Tail of Running Queue***/
 	headRunning = (queueNode*)malloc(sizeof(queueNode));
 	headRunning->tid = -1;
 	headRunning->next = NULL;
 	tailRunning = (queueNode*)malloc(sizeof(queueNode));
 	tailRunning->tid = -1;
 	tailRunning->next = NULL;
-	freeNode = (queueNode*)malloc(sizeof(queueNode));
-	freeNode->tid = -1;
-	freeNode->next = NULL;
+	queueNode*  tempRunning = (queueNode*)malloc(sizeof(queueNode));
+	tempRunning->tid = -1;
+	tempRunning->next = NULL;
+	int L0Max = 7;
+	int L1Max = 5;
+	int L2Max = 3;
+	int L3Max = 1;
+	bool headSet = FALSE;
+	int iterator = 0;
 
-	/***Set Head and Tail equal to eachother because queue is empty***/
-	tailRunning = headRunning;
-	
-	/********Begin to add nodes to running queue*********/	
-	while(iterator < L0Max && level0Qhead != NULL){	//While iterator < level max and its not NULL..
-		/*building an identical thread in the running queue*/
-		tailRunning->tid = level0Qhead->tid;		//set tail (which is also head currently) to be the beginning of the level 0 queue			
-		tailRunning->next = NULL;			//set next value to NULL
-		tailRunning->ctr = level0Qhead->ctr;		//
-		tailRunning->retval = level0Qhead->retval;	//
-
-		/*move the head of level 0 to the next position and freeing the first*/
-//		freeNode = level0Qhead;
-		level0Qhead = level0Qhead->next;
-//		free(freeNode); //?? this won't cause issues right??
-		tailRunning->next = level0Qhead;
-		levelCtrs[0]--; //subtract 1 from counter
-		//printf("iterator: %d, current thread id: %d\n", iterator, tailRunning->tid);
-		iterator++;
-		if(headRunning->tid == -1){
-			headRunning = tailRunning;
+/********Adding level 0************/
+	//if more than 7 in level 0:
+		if (levelCtrs[0] > L0Max ){ //more than max in level 0
+		printf("In if, %d > %d\n", levelCtrs[0], L0Max);
+			
+			headRunning = level0Qhead;	//head is the beginning of level 0 head;
+			tailRunning = NULL;	//tail is the same as head
+			headRunning->next = tailRunning;
+			headSet = TRUE;							//head is set
+			level0Qhead= level0Qhead->next;
+		
+		//move first 7 into running
+			while(iterator < L0Max ){
+				printf("in loop0 --%d\n", iterator);
+				tailRunning = level0Qhead;
+				level0Qhead = level0Qhead->next;
+				iterator++;
+			}
+		tailRunning->next = NULL;//make 9th new head of 0.
+		//make 8th node->next = null;
+		levelCtrs[0] -= L0Max;
 		}
-	}
-
-	printf("out of while0\n");
-	iterator = 0;
-	while(iterator < L1Max && level1Qhead != NULL){	//While iterator < level max and its not NULL..
+	else if (levelCtrs[0] > 0){	// at least one, move entire level0 into running 
+		printf("In else if, %d <= %d\n", levelCtrs[0], L0Max);
+		headRunning = level0Qhead;	//headRunning is the beginning of level 0
+		tailRunning = level0Qtail;	//tailRunning is the end of level0
+		level0Qhead = NULL;					//clear head of level 0
+		level0Qtail = NULL;					//clear tail of level 0
+		headSet = TRUE;							//head is set
+		levelCtrs[0] = 0;						//counter is empty
 		
-		/*building an identical thread in the running queue*/
-		tailRunning->tid = level1Qhead->tid;		//set tail (which is also head currently) to be the beginning of the level 0 queue			
-		tailRunning->next = NULL;			//set next value to NULL
-		tailRunning->ctr = level1Qhead->ctr;		//
-		tailRunning->retval = level1Qhead->retval;	//
-		/*move the head of level 1 to the next position and freeing the first*/
-		freeNode = level1Qhead;
-		level1Qhead = level1Qhead->next;
-		free(freeNode); //?? this won't cause issues right??
-		tailRunning = tailRunning->next;		//move to next value
-		levelCtrs[1]--;//subtract 1 from counter
-		iterator++;
+		printf("headRunning tid: %d \n tailRunning tid %d\n", headRunning->tid, tailRunning->tid);
+		 
 	}
-	printf("out of while1\n");
-	
+	tempRunning = headRunning;
 	iterator = 0;
-	while(iterator < L2Max && level2Qhead != NULL){	//While iterator < level max and its not NULL..
-		
-		/*building an identical thread in the running queue*/
-		tailRunning->tid = level2Qhead->tid;		//set tail (which is also head currently) to be the beginning of the level 0 queue			
-		tailRunning->next = NULL;			//set next value to NULL
-		tailRunning->ctr = level2Qhead->ctr;		//
-		tailRunning->retval = level2Qhead->retval;	//
-		/*move the head of level 1 to the next position and freeing the first*/
-		freeNode = level2Qhead;
-		level2Qhead = level2Qhead->next;
-		free(freeNode); //?? this won't cause issues right??
-		tailRunning = tailRunning->next;		//move to next value
-		levelCtrs[2]--;//subtract 1 from counter
-		iterator++;
+	printf("about to go in while loop 0\n");
+	while (tempRunning != NULL){
+		printf("%d : %d \n", iterator, tempRunning->tid);
+		tempRunning = tempRunning->next;	
+		iterator++;		
 	}
-	printf("out of while2\n");
 	
 		iterator = 0;
-	while(iterator < L3Max && level3Qhead != NULL){	//While iterator < level max and its not NULL..
+	
+
 		
-		/*building an identical thread in the running queue*/
-		tailRunning->tid = level3Qhead->tid;		//set tail (which is also head currently) to be the beginning of the level 0 queue			
-		tailRunning->next = NULL;			//set next value to NULL
-		tailRunning->ctr = level3Qhead->ctr;		//
-		tailRunning->retval = level3Qhead->retval;	//
-		/*move the head of level 1 to the next position and freeing the first*/
-		freeNode = level3Qhead;
-		level3Qhead = level3Qhead->next;
-		free(freeNode); //?? this won't cause issues right??
-		tailRunning = tailRunning->next;		//move to next value
-		levelCtrs[3]--;//subtract 1 from counter
-		iterator++;
+/********Adding level 1************/
+	if (levelCtrs[1] > L1Max){
+		printf("in if\n");
+		if (headSet == FALSE){
+			
+			headRunning = level1Qhead;
+			tailRunning = level1Qhead;
+			headSet = TRUE;
+			level1Qhead = level1Qhead->next;			
+		}
+		tailRunning = tailRunning->next;
+		while (iterator < L1Max){
+			tailRunning = level1Qhead;
+			level1Qhead = level1Qhead->next;
+			iterator++;
+		}
+		tailRunning->next = NULL;
+		levelCtrs[1]-=L1Max;
+		
+		
 	}
-	printf("out of while3\n");
+	else if (levelCtrs[1]>0){
+		if (headSet == FALSE){
+			headRunning = level1Qhead;
+			tailRunning = level1Qhead;
+			level1Qhead = NULL;
+			level1Qtail = NULL;
+			headSet = TRUE;
+			levelCtrs[1] = 0;	
+			printf("finished else if ->if\n");			
+		}
+		else{
+			tailRunning->next = level1Qhead;
+			tailRunning = level1Qtail;
+			level1Qhead = NULL;
+			level1Qtail = NULL;
+			levelCtrs[1]= 0;
+			printf("finished else if ->else\n");
+		}
+		tailRunning->next = NULL;
+				
+	}
+/********Adding level 2************/
+		iterator = 0;
+		printf("about to go in while loop 1\n");
+		tempRunning = headRunning;
+	while (tempRunning != NULL){
+		printf("%d : %d \n", iterator, tempRunning->tid);
+		tempRunning = tempRunning->next;	
+iterator++;		
+	}
+		iterator = 0;
+		if (levelCtrs[2] > L2Max){
+		if (headSet == FALSE){
+			headRunning = level2Qhead;
+			tailRunning = level2Qhead;
+			headSet = TRUE;
+			level2Qhead = level2Qhead->next;			
+		}
+		tailRunning = tailRunning->next;
+		while (iterator < L2Max){
+			tailRunning = level2Qhead;
+			level2Qhead = level2Qhead->next;
+			iterator++;
+		}
+		tailRunning->next = NULL;
+		levelCtrs[2]-=L2Max;
+	}
+	else if (levelCtrs[2] > 0){
+		if (headSet == FALSE){					//checking if head was set
+			headRunning = level2Qhead;
+			tailRunning = level2Qhead;
+			level2Qhead = NULL;
+			level2Qtail = NULL;
+			headSet = TRUE;						//headset = true
+			levelCtrs[2] = 0;		
+		}
+		else{														//head wasn't set
+			tailRunning->next = level2Qhead;	//next value is set to level 2 head
+			tailRunning = level2Qtail;		//tail running is the end of level 2
+			level2Qhead = NULL;
+			level2Qtail = NULL;
+			levelCtrs[2]= 0;							//all nodes were used so count is empty
+			
+		}
+		
+		tailRunning->next = NULL;
+				
+	}
+		
+		/********Adding level 3************/
+			iterator = 0;
+	printf("about to go in while loop 2\n");
+	tempRunning = headRunning;
+	while (tempRunning != NULL){
+		printf("%d : %d \n", iterator, tempRunning->tid);
+		tempRunning = tempRunning->next;	
+iterator++;		
+	}
+			iterator = 0;
+		if (levelCtrs[3] > L3Max){	//more than max 
+			if (headSet == FALSE){					//head hasn't been set
+				headRunning = level3Qhead;		//head is set to beginning of level 3 q
+				tailRunning = level3Qhead;		//tail is set to head also??
+				headSet = TRUE;								//head has been set
+				level3Qhead = level3Qhead->next;			//move head over
+			}
+			tailRunning = tailRunning->next;			// move tail running to next for while loop
+		while (iterator < L3Max){					//add first L3Max to running queue
+			tailRunning = level3Qhead;
+			level3Qhead = level3Qhead->next;
+			iterator++;
+		}
+		tailRunning->next = NULL;
+		levelCtrs[3]-=L3Max;		
+	}
+	else if (levelCtrs[3] > 0){					//there is at least 1
+		if (headSet == FALSE){						//head has not been set previously
+			headRunning = level3Qhead;			//head of running is head of level 3
+			tailRunning = level3Qhead;			//tail of running is tail of level 3
+			level3Qhead = NULL;
+			level3Qtail = NULL;
+			headSet = TRUE;									//head was set
+			levelCtrs[3] = 0;								//all nodes have been taken so count is 0
+		}
+		else{				//head has already been set
+			tailRunning->next = level3Qhead;	//set next to the beginning of the third level
+			tailRunning = level3Qtail;				//set the end to the end of the third level
+			level3Qhead = NULL;
+			level3Qtail = NULL;
+			levelCtrs[3]= 0;									//taken all nodes so count is 0
+		}			
+			tailRunning->next = NULL;
+	}
+		
+	iterator = 0;
+	printf("about to go in while loop 3\n");
+	tempRunning = headRunning;
+	while (tempRunning != NULL){
+		printf("%d : %d \n", iterator, tempRunning->tid);
+		tempRunning = tempRunning->next;	
+		iterator++;		
+	}
+	iterator = 0;
+		
+		
+	printf("PRINTING OUT RUNNING QUEUE TID's\n");
 	
-	/*********Running queue should be finished and have 16 values max********/
-	printf("running queue built\n");
-
-
-
-
-
-	//if more than 5 in level 1:
-		//move first 5 into running
-		//make 6th new head of 1.
-	//else:
-		//move entire queue into running
-		//make head of 1 = NULL
-	//if more than 3 in level 2:
-		//move first 3 into running
-		//make 4th new head of 2.
-	//else:
-		//move entire queue into running
-		//make head of 2 = NULL
-	//if more than 1 in level 3:
-		//move first into running
-		//make 2nd new head of 3.
-	//else:
-		//move entire queue into running
-		//make head of 3 = NULL
+	while (tempRunning != NULL){
+		printf("%d : %d \n", iterator, tempRunning->tid);
+		tempRunning = tempRunning->next;		
+	}
 	
-	//don't bother filling with more nodes from other levels, this round will just be shorter.
+	printf("FINISHED PRINTING RUNNING QUEUE TID'S\n");
+
+
 	
-	
-	//fix this to be a better running list, I'm just putting all threads in level0 in here for now
-	/*printf("Move level0Qhead over to headRunning\n");
-	headRunning = level0Qhead;
-	level0Qhead = NULL;
-	levelCtrs[0] = 0;*/
+
 	return;
 }
 
-//create list of threads to run between maintenance cycles
-void createRunning(){
-	
-}
 
 //Run them between cycles
 void runThreads(){
