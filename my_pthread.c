@@ -102,15 +102,15 @@ void scheduler(){
 	} 	
 }
 
-//do some maintenance between running cycles
-void maintenanceCycle(){
-	
+ //do some maintenance between running cycles
+void maintenanceCycle(){	
+	//once there are no more threads left change scheduler to 
 	if(levelCtrs[0] + levelCtrs[1] + levelCtrs[2] + levelCtrs[3] == 0){
 			schedInit = FALSE;	
 	}
 	else{
 		int i = 0;
-		queueNode* maintRunning
+		queueNode* maintRunning = NULL;
 		while (i < PRIORITY_LEVELS){	//while i < PRIORITY_LEVELS: //right now this is 4
 			maintRunning = *mpqHeads[i];	//	current = MPQheads[i]
 			while (maintRunning != NULL){	//	while current:
@@ -120,10 +120,11 @@ void maintenanceCycle(){
 				maintRunning = maintRunning->next;		//		current = current->next;		
 			}
 			i++;
-		}	
+		}
 		createRunning();
 	}
 }
+
 
 //create list of threads to run between maintenance cycles
 void createRunning(){
