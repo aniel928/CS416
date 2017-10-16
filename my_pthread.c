@@ -103,8 +103,8 @@ void scheduler(){
 }
 
 //do some maintenance between running cycles
-void maintenanceCycle(){	
-	//once there are no more threads left change scheduler to 
+void maintenanceCycle(){
+	
 	if(levelCtrs[0] + levelCtrs[1] + levelCtrs[2] + levelCtrs[3] == 0){
 			schedInit = FALSE;	
 	}
@@ -119,7 +119,7 @@ void maintenanceCycle(){
 				currentRunning = currentRunning->next;		//		current = current->next;		
 			}
 			i++;
-		}
+		}	
 		createRunning();
 	}
 }
@@ -365,6 +365,7 @@ void runThreads(){
 			printf("Yielded\n");//debugging statement
 			threads[nextRunning->tid]->threadState = ACTIVE;
 			//put back on MPQ
+			addMPQ(threads[nextRunning->tid], mpqHeads[threads[nextRunning->tid]->priority], mpqTails[threads[nextRunning->tid]->priority]);
 		}
 		//otherwise it finished on it's own, but never called exit.
 		else{
@@ -373,6 +374,7 @@ void runThreads(){
 			//do not put back on MPQ
 			//will have to remove it manually.  Either put that logic here, or in maintenance.  I vote for here. (faster)
 			manualExit = nextRunning;
+			my_pthread_exit(NULL);
 		}
 		//move to next node.
 //		levelCtrs[threads[nextRunning->tid]->priority] -= 1;
@@ -391,16 +393,12 @@ void time_handle(int signum){
 	//change status to PREEMPTED
 	threads[currentRunning->tid]->threadState = PREEMPTED;
 	//change priority +1 on tcb node(unless bottom level)
-	if(threads[currentRunning->tid]->priority != (PRIORITY_LEVELS -1)){ //if we do more than 4 levels, change this number!
-		threads[currentRunning->tid]->priority += 1;}
-	//put back on tail of that new priority queue. (example in my_pthread_create())
-	//careful to keep it here for when it swaps back in to main.
+	if(threads[currentRunning->tid]->priority != (PRIORITY_LEVELS -1)){ 
+		threads[currentRunning->tid]->priority += 1;
+	}
 	//swapcontext back to main
 	my_pthread_yield();
 	
-// 	int count = 0;
-// 	printf("finished %d %d\n", signum,timerCounter);
-// 	timerCounter++;
 }
 
 //add parameter for priority then take 2^priority and * QUANTUM
@@ -463,7 +461,13 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	printf("Creating thread\n");
 	//initialize to some fake value
 	my_pthread_t ID = -1;
-
+	
+	if(!headThread){
+		headThread = (nextId*)malloc(sizeof(nextId));
+		headThread->next = NULL;
+		headThread->readyIndex = -1;
+	}
+	
 	//fill up array before moving to linked list of readyIndexes
 	if (useThreadId == FALSE){
 		printf("use array\n");
@@ -472,9 +476,6 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		//thread is full, switch bool to TRUE.
 		if(threadCtr == MAX_THREADS){
 			useThreadId = TRUE;	
-			headThread = (nextId*)malloc(sizeof(nextId));
-			headThread->next = NULL;
-			headThread->readyIndex = -1;
 		}
 	}
 	//array is filled, move over to linked list of readyIndexes
@@ -519,6 +520,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		threads[0] = newNode;
 		
 		addMPQ(threads[0], &level0Qhead, &level0Qtail);
+		levelCtrs[0]+=1;
 	}
 	if(getcontext(&(newNode->context)) == -1){
 		printf("Couldn't get new context.\n");
@@ -554,6 +556,8 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	//Initialize the scheduler if it's not already initialized
 	if(!schedInit){
 		schedulerInit();
+	}else{
+		my_pthread_yield();
 	}
 	return 0;
 };
@@ -579,11 +583,10 @@ int my_pthread_yield() {
 		if((swapcontext(&(sched_uctx),&((threads[currentRunning->tid])->context))) != 0){
 			printf("Fuck\n");
 		}
-		printf("Back in yield??\n");	
 	}
 	//otherwise the currently running thread rquested to yield.
 	else{
-		if(threads[currentRunning->tid]->threadState != PREEMPTED){
+		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
 			threads[currentRunning->tid]->threadState = YIELDED;
 		}
 		if((swapcontext(&((threads[currentRunning->tid])->context),&(sched_uctx))) != 0){
@@ -591,7 +594,6 @@ int my_pthread_yield() {
 		}
 		printf("What about now?\n");
 	}
-	printf("Back in yield\n");
 	//swapcontext(&(where to save),&(new one to run))
 	return 0;
 };
@@ -618,7 +620,7 @@ void my_pthread_exit(void *value_ptr) {
 	if(threads[currentRunning->tid]->waitingThreads != NULL){//there are waiting threads
 		queueNode* currentNode = threads[currentRunning->tid]->waitingThreads;
 		while(currentNode){
-			currentNode->retval = value_ptr;
+			(currentNode->retval) = value_ptr;
 			
 			//TODO: put back on mpq!  I think this code will work, but cannot test it yet, and might really blow up.
 			//mpqTails[threads[currentNode->tid]->priority]->next = currentNode;
@@ -631,9 +633,8 @@ void my_pthread_exit(void *value_ptr) {
 	else{//no waiting threads - no one joined.
 		printf("No threads waiting.\n");		
 	}
-		
 	//Pass ID into tailThread, set curr tail = to this number.	
-	if(headThread->readyIndex == -1){//none in queue yet
+	if(headThread == NULL || headThread->readyIndex == -1){//none in queue yet
 		printf("First thread ID\n");
 		headThread->readyIndex = currentRunning->tid;	
 		headThread->next = NULL;
@@ -657,7 +658,7 @@ void my_pthread_exit(void *value_ptr) {
 	}
 	free((threads[currentRunning->tid]));
 	threads[currentRunning->tid] = NULL;
-	
+	printf("leaving exit\n");
 	return;
 	
 };
@@ -672,7 +673,6 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 		printf("Nothing running.\n");
 		return -1;
 	}
-	
 	//check for valid thread.
 	if(threads[thread] == NULL){
 		printf("Thread does not exist, cannot join.\n");
@@ -735,7 +735,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 
 	}else{*/
 
-	while (test_and_set(mutex->lockState) == TRUE){
+	while (__sync_lock_test_and_set(&(mutex->lockState), TRUE)){
 	
 		//make the thread wait
 		threads[currentRunning->tid]->threadState = WAITING;
@@ -766,7 +766,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 		mutex->waitQueue->queueSize++;
 
 		//call scheduler
-		scheduler();
+		my_pthread_yield();
 
 	}
 
