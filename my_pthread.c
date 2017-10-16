@@ -103,42 +103,23 @@ void scheduler(){
 }
 
 //do some maintenance between running cycles
-void maintenanceCycle(){
-	
-	//need a "maintenance cycle" method that changes around priorities:
-	//Suggestions:
-	//	-if in 2 for more than 5 full maintenance cycle quantum, move to 1
-	//	-if in 1 for more than 5 full maintenance cycle quantum, move to 0
-	//	-figure out how to avoid priority inversion.
-	/*
-		Priority Inversion Solution
-		- Priority Inheritence
-		  - Lets say a low level thread A locks a resource
-		  - it gets interrupted by a higher level B  thread
-		  - thread B also requires resource used by A
-		  - thread A "inherits" high priority and finishes
-		  - thread B can now obtain the resource and finishes
-		  - all other medium/low level threads will not run before B now
-
-	*/
-		//if mutex waiting, do not promote?
-	
+void maintenanceCycle(){	
 	//once there are no more threads left change scheduler to 
 	if(levelCtrs[0] + levelCtrs[1] + levelCtrs[2] + levelCtrs[3] == 0){
 			schedInit = FALSE;	
 	}
 	else{
-		//move up in priority
-		//mostly pseudocode:
-		//i = 0
-		//while i < PRIORITY_LEVELS: //right now this is 4
-		//	current = MPQheads[i]
-		//	while current:
-		//		if current->ctr > CYCLES:  //right now this is 5
-		//		threads[current->tid]->priority += 1
-		//		current = current->next;
-		
-		//pull a list of threads from MPQ to run.
+		int i = 0;
+		while (i < PRIORITY_LEVELS){	//while i < PRIORITY_LEVELS: //right now this is 4
+			currentRunning = *mpqHeads[i];	//	current = MPQheads[i]
+			while (currentRunning != NULL){	//	while current:
+				if (currentRunning->ctr > CYCLES){	//		if current->ctr > CYCLES:  
+					threads[currentRunning->tid]->priority +=1;		//		threads[current->tid]->priority += 1
+					}
+				currentRunning = currentRunning->next;		//		current = current->next;		
+			}
+			i++;
+		}
 		createRunning();
 	}
 }
