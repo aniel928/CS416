@@ -785,7 +785,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 		mutex->waitQueue->queueSize++;
 
 		//call scheduler
-		runThreads();
+		scheduler();
 
 	}
 
