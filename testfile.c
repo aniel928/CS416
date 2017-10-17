@@ -2,7 +2,7 @@
 
 void testThreads(void* arg){
 	int i = 0;
-	while(i<10000000){
+	while(i<100000000){
 		i++;
 		
 	}
@@ -10,8 +10,13 @@ void testThreads(void* arg){
 	return;
 }
 
-void testThreadsWithExit(){
-	printf("Printing\n");
+void testThreadsWithExit(void* arg){
+	int i = 0;
+	while(i<100000000){
+		i++;
+		
+	}
+	printf("thread%d\n", *((int*)arg));
 	my_pthread_exit(NULL);
 	return;
 }
@@ -32,18 +37,18 @@ int* fives = &five;
 int six = 6;
 int* sixs = &six;
 
-my_pthread_create(&mythread1, NULL, (void*)&testThreads, (void*)ones);
-printf("%d\n",mythread1);
-my_pthread_create(&mythread2, NULL, (void*)&testThreads, (void*)twos);
-printf("%d\n",mythread2);
-my_pthread_create(&mythread3, NULL, (void*)&testThreads, (void*)threes);
-printf("%d\n",mythread3);
-my_pthread_create(&mythread4, NULL, (void*)&testThreads, (void*)fours);
-printf("%d\n",mythread4);
-my_pthread_create(&mythread5, NULL, (void*)&testThreads, (void*)fives);
-printf("%d\n",mythread5);
-my_pthread_create(&mythread6, NULL, (void*)&testThreads, (void*)sixs);
-printf("%d\n",mythread6);
+my_pthread_create(&mythread1, NULL, (void*)&testThreadsWithExit, (void*)ones);
+printf("Thread # %d!\n",mythread1);
+my_pthread_create(&mythread2, NULL, (void*)&testThreadsWithExit, (void*)twos);
+printf("Thread # %d!\n",mythread2);
+my_pthread_create(&mythread3, NULL, (void*)&testThreadsWithExit, (void*)threes);
+printf("Thread # %d!\n",mythread3);
+my_pthread_create(&mythread4, NULL, (void*)&testThreadsWithExit, (void*)fours);
+printf("Thread # %d!\n",mythread4);
+my_pthread_create(&mythread5, NULL, (void*)&testThreadsWithExit, (void*)fives);
+printf("Thread # %d!\n",mythread5);
+my_pthread_create(&mythread6, NULL, (void*)&testThreadsWithExit, (void*)sixs);
+printf("Thread # %d!\n",mythread6);
 my_pthread_join(mythread1, NULL);
 my_pthread_join(mythread2, NULL);
 my_pthread_join(mythread3, NULL);

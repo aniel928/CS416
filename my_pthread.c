@@ -903,7 +903,3 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	runThreads();
 <<<<<<< HEAD
 }*/
-=======
-
-}*/
->>>>>>> 0b6d4ddeec73fe3f7623c174ca38d5c9b7fbd2a8
