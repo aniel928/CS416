@@ -901,5 +901,4 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	}
 	printf("%d\n", i);
 	runThreads();
-<<<<<<< HEAD
 }*/
