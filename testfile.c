@@ -50,6 +50,7 @@ printf("Thread # %d!\n",mythread5);
 my_pthread_create(&mythread6, NULL, (void*)&testThreadsWithExit, (void*)sixs);
 printf("Thread # %d!\n",mythread6);
 my_pthread_join(mythread1, NULL);
+printf("please don't print this after joining thread 1.\n");
 my_pthread_join(mythread2, NULL);
 my_pthread_join(mythread3, NULL);
 my_pthread_join(mythread4, NULL);
