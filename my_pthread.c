@@ -28,6 +28,9 @@ queueNode* headRunning = NULL;
 queueNode* tailRunning = NULL;
 queueNode* currentRunning = NULL; //the one currently running
 queueNode* nextRunning = NULL; //the one that's next to run
+queueNode* maintRunning;	//thread iterator used for maintenenance cycle
+queueNode* notUsedRunning = NULL;
+ 
 
 //initialize array of thread pointers to null.
 tcb* threads[MAX_THREADS] = {NULL};
@@ -102,7 +105,7 @@ void scheduler(){
 	} 	
 }
 
- //do some maintenance between running cycles
+//do some maintenance between running cycles
 void maintenanceCycle(){	
 	//once there are no more threads left change scheduler to 
 	if(levelCtrs[0] + levelCtrs[1] + levelCtrs[2] + levelCtrs[3] == 0){
@@ -110,7 +113,6 @@ void maintenanceCycle(){
 	}
 	else{
 		int i = 0;
-		queueNode* maintRunning = NULL;
 		while (i < PRIORITY_LEVELS){	//while i < PRIORITY_LEVELS: //right now this is 4
 			maintRunning = *mpqHeads[i];	//	current = MPQheads[i]
 			while (maintRunning != NULL){	//	while current:
@@ -124,7 +126,6 @@ void maintenanceCycle(){
 		createRunning();
 	}
 }
-
 
 //create list of threads to run between maintenance cycles
 void createRunning(){
@@ -329,6 +330,26 @@ void createRunning(){
 		//**debugging**/
 		iterator = 0;
 		tempRunning = headRunning;
+		
+		
+		
+		/********Incrementing count for threads not used**********/
+		printf("Incrementing counters for threads not used.....");
+		int headCount = 0;
+		while (headCount < PRIORITY_LEVELS){
+			notUsedRunning = *mpqHeads[headCount];
+			while (notUsedRunning != NULL){
+				notUsedRunning->ctr++;
+				notUsedRunning = notUsedRunning->next;
+			}
+			headCount++;
+		}
+		printf("complete!\n");
+		
+		
+		
+		
+		
 		printf("PRINTING OUT RUNNING QUEUE TID's\n");
 		while (tempRunning != NULL){
 			printf("%d : %d \n", iterator, tempRunning->tid);
@@ -880,4 +901,9 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	}
 	printf("%d\n", i);
 	runThreads();
+<<<<<<< HEAD
 }*/
+=======
+
+}*/
+>>>>>>> 0b6d4ddeec73fe3f7623c174ca38d5c9b7fbd2a8
