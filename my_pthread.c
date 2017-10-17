@@ -192,7 +192,7 @@ void createRunning(){
 /********Adding level 1************/
 	iterator = 0;
 	if (levelCtrs[1] > L1Max){
-		printf("in if\n");
+//		printf("in if\n");
 		if (headSet == FALSE){			
 			headRunning = level1Qhead;
 			tailRunning = level1Qhead;
@@ -343,7 +343,7 @@ void createRunning(){
 		
 		
 	/********Incrementing count for threads not used**********/
-//	printf("Incrementing counters for threads not used.....");
+//	printf("Incrementing counters for threads not used.....\n");
 	int headCount = 0;
 	while (headCount < PRIORITY_LEVELS){
 		notUsedRunning = *mpqHeads[headCount];
@@ -356,9 +356,11 @@ void createRunning(){
 //	printf("complete!\n");
 		
 	printf("PRINTING OUT RUNNING QUEUE TID's\n");
+	iterator = 0;
 	while (tempRunning != NULL){
 		printf("%d : %d \n", iterator, tempRunning->tid);
 		tempRunning = tempRunning->next;		
+		iterator++;
 	}
 	printf("FINISHED PRINTING RUNNING QUEUE TID'S\n");
 	return;
@@ -372,6 +374,7 @@ void runThreads(){
 	nextRunning = headRunning;
 	while(nextRunning){
 		//call to pthread_yield to swap contexts.
+//		printf("id: %d priority: %d\n",nextRunning->tid, threads[nextRunning->tid]->priority);
 		timer(threads[nextRunning->tid]->priority);
 		my_pthread_yield();	
 		currentRunning = NULL; //(so if yield is called now, there's not a thread currently running).
@@ -604,12 +607,13 @@ int my_pthread_yield() {
 	/* Explicit call to the my_pthread_t scheduler requesting that the current context can be swapped out 
 	and another can be scheduled if one is waiting. */
 	printf("In my_pthread_yield()\n");//debugging statement
-
+//	printf("Current running id: %d\n",nextRunning->tid);
 	//in case someone calls this before calling create.
 	if(nextRunning == NULL){
 		printf("Nothing running.\n");
 		return -1;
 	}	
+//	printf("nextRunning not null\n");
 	
 	//TODO: Add more logic for main thread vs scheduler thread
 	
@@ -617,15 +621,20 @@ int my_pthread_yield() {
 	//if currentRunning is null, then this is being called by the main program on purpose
 	if(currentRunning == NULL){
 		currentRunning = nextRunning;
+//		printf("it was null about to swap\n");
 		if((swapcontext(&(sched_uctx),&((threads[currentRunning->tid])->context))) != 0){
 			printf("Fuck\n");
 		}
 	}
 	//otherwise the currently running thread rquested to yield.
 	else{
+//		printf("currentRunning not null %d\n",currentRunning->tid);
 		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
+//			printf("not preempted or waiting\n");
 			threads[currentRunning->tid]->threadState = YIELDED;
-		}
+//		}else{
+//			printf("prempted or waiting\n");
+//		}
 		if((swapcontext(&((threads[currentRunning->tid])->context),&(sched_uctx))) != 0){
 			printf("Fuck\n");
 		}
@@ -647,8 +656,9 @@ void my_pthread_exit(void *value_ptr) {
 		return;
 	}
 	else if(currentRunning == NULL && manualExit != NULL){
+//		printf("manual\n");
 		currentRunning = manualExit;
-		return;
+		manualExit = NULL;
 	}
 
 	//before exiting, check to see if anyone else joined.
@@ -671,9 +681,6 @@ void my_pthread_exit(void *value_ptr) {
 			currentNode = currentNode->next;
 		}
 	}
-//	else{//no waiting threads - no one joined.
-//		printf("No threads waiting.\n");		
-//	}
 	//Pass ID into tailThread, set curr tail = to this number.	
 	if(headThread == NULL || headThread->readyIndex == -1){//none in queue yet
 //		printf("First thread ID\n");
@@ -700,6 +707,8 @@ void my_pthread_exit(void *value_ptr) {
 	free((threads[currentRunning->tid]));
 	threads[currentRunning->tid] = NULL;
 //	printf("leaving exit\n");
+	currentRunning = NULL;
+	
 	return;
 	
 };
@@ -752,10 +761,11 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 //returns 0 upon succes or errno value when there is an error
 int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *mutexattr) {
 	/* Initializes a my_pthread_mutex_t created by the calling thread. Attributes are ignored. */
-	printf("my_pthread_mutex_init()\n");
-	if(mutex == NULL)
+//	printf("my_pthread_mutex_init()\n");
+	if(mutex == NULL){
+//		printf("NULL\n");
 		return EINVAL; //errno for invalid argument
-
+	}
 	//create new my_pthread_mutex_t struct.
 	mutex->lockState = FALSE;
 	mutex->owner = (tcb*)malloc(sizeof(tcb));
@@ -765,7 +775,7 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 	mutex->waitQueue->head = NULL;
 	mutex->waitQueue->tail = NULL;
 	mutex->waitQueue->queueSize = 0;	
-	
+//	printf("initialized\n");
 	return 0;
 };
 
@@ -778,8 +788,9 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 
 	}else{*/
 	printf("my_pthread_mutex_lock()\n");
-	while (__sync_lock_test_and_set(&(mutex->lockState), TRUE)){
 	
+	while (__sync_lock_test_and_set(&(mutex->lockState), TRUE)){
+//		printf("in the while\n");  //this never prints
 		//make the thread wait
 		threads[currentRunning->tid]->threadState = WAITING;
 
@@ -829,6 +840,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 			mutex->waitQueue->queueSize++;
 
 			//call scheduler
+//			printf("%d\n", currentRunning->tid);
 			my_pthread_yield();
 
 		}
@@ -837,6 +849,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 	
 	//fetch owner of the lock
 	mutex->owner = threads[currentRunning->tid];
+//	printf("owner: %d\n",mutex->owner->tid);
 	return 0;
 
 };
@@ -846,12 +859,12 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 	/* Unlocks a give n mutex. */
 	//check to see if anyone is waiting, if so, do not unlock, just "pass" the mutex on.  
 	//Only unlock when no one else is waiting.
-
+	printf("mutex_unlock\n");
 	if(mutex->waitQueue->queueSize == 0){
 		mutex->lockState = 0;
-
+//		printf("no one waiting\n");
 	}else{
-
+//		printf("someone waiting\n");
 		//dequeue node from wait queue
 
 		//grab the nextThread waiting in the mutex's queue
@@ -872,6 +885,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 		levelCtrs[nextThread->priority] += 1;
 
 	}
+//	printf("current: %d\n", currentRunning->tid);
 	return 0;
 };
 
@@ -879,7 +893,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	/* Destroys a given mutex. Mutex should be unlocked before doing so. */
 	//check to make sure mutex is not locked first.
-	
+	printf("mutex_destroy\n");
 	//throw error if mutex does not exist
 	if(mutex == NULL)
 		return EINVAL;  
