@@ -717,7 +717,8 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 		return EINVAL; //errno for invalid argument
 
 	//create new my_pthread_mutex_t struct.
-	mutex->lockState = 0;
+	mutex->lockState = FALSE;
+	mutex->owner = (tcb*)malloc(sizeof(tcb));
 	mutex->waitQueue = (basicQueue*)malloc(sizeof(basicQueue));
 
 	//init the wait queue
@@ -742,35 +743,59 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 		//make the thread wait
 		threads[currentRunning->tid]->threadState = WAITING;
 
-		//and add it to wait queue
-		if(mutex->waitQueue->queueSize == 0){
-			
-			//create node
-			waitQueueNode *firstNode = (waitQueueNode*)malloc(sizeof(waitQueueNode));
-			firstNode->thread = threads[currentRunning->tid];
-			firstNode->next = NULL;
-			
-			//set to head and tail			
-			mutex->waitQueue->head = firstNode;
-			mutex->waitQueue->tail = firstNode;
+		//dealing with priority inversion with priority inheritance
+		if((threads[currentRunning->tid]->priority) > (mutex->owner->priority)){
+
+			//put new thread at head of wait queue
+			waitQueueNode *newHead = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+			newHead->thread = threads[currentRunning->tid];
+
+			newHead->next = mutex->waitQueue->head;
+			mutex->waitQueue->head = newHead;
+
+			//run owner and then the new high priority thread
+			if(swapcontext(&(newHead->thread->context),&(mutex->owner->context)) != 0){
+				//print errno if it did not go through
+				errno = ENOMEM;
+				perror("Error with swapcontext in pthread_mutex_lock ");
+			}
 
 		}else{
 
-			waitQueueNode *newTail = (waitQueueNode*)malloc(sizeof(waitQueueNode));
-			newTail->thread = threads[currentRunning->tid];
-			newTail->next = NULL;
+			//put new thread at end of wait queue
+			if(mutex->waitQueue->queueSize == 0){
+			
+				//create node
+				waitQueueNode *firstNode = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+				firstNode->thread = threads[currentRunning->tid];
+				firstNode->next = NULL;
+			
+				//set to head and tail			
+				mutex->waitQueue->head = firstNode;
+				mutex->waitQueue->tail = firstNode;
 
-			mutex->waitQueue->tail->next = newTail;
-			mutex->waitQueue->tail = newTail;
+			}else{
+
+				waitQueueNode *newTail = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+				newTail->thread = threads[currentRunning->tid];
+				newTail->next = NULL;
+
+				mutex->waitQueue->tail->next = newTail;
+				mutex->waitQueue->tail = newTail;
+
+			}
+
+			mutex->waitQueue->queueSize++;
+
+			//call scheduler
+			my_pthread_yield();
 
 		}
 
-		mutex->waitQueue->queueSize++;
-
-		//call scheduler
-		my_pthread_yield();
-
 	}
+	
+	//fetch owner of the lock
+	mutex->owner = threads[currentRunning->tid];
 
 };
 
@@ -791,7 +816,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 		tcb *nextThread = mutex->waitQueue->head->thread;
 
 		//remove first node in waitQueue
-		waitQueueNode *temp = mutex->waitQueue->head->next; //might have a problem here if its null but probably not
+		waitQueueNode *temp = mutex->waitQueue->head->next; //might have a problem here if its null but probably not		
 		free(mutex->waitQueue->head);
 		mutex->waitQueue->head = temp;
 		

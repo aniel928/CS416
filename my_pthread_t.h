@@ -116,7 +116,7 @@ typedef struct _my_pthread_mutex_t {
 	//list of people waiting on me
 		//don't unlock unless this pointer is null, otherwise hand off lock.
 
-	my_pthread_t owner; //thread owner of this mutex
+	tcb *owner; //thread owner of this mutex
 	int lockState; //1 is locked 0 is unlocked
 	basicQueue *waitQueue; //keeps track of the threads waiting on this mutex
 
