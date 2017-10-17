@@ -600,7 +600,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 //		my_pthread_yield();
 	}
 	return 0;
-};
+}	
 
 /* give CPU pocession to other user level threads voluntarily */
 int my_pthread_yield() {
@@ -632,6 +632,7 @@ int my_pthread_yield() {
 		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
 //			printf("not preempted or waiting\n");
 			threads[currentRunning->tid]->threadState = YIELDED;
+		}
 //		}else{
 //			printf("prempted or waiting\n");
 //		}
@@ -642,7 +643,7 @@ int my_pthread_yield() {
 	}
 	//swapcontext(&(where to save),&(new one to run))
 	return 0;
-};
+}
 
 /* terminate a thread */
 void my_pthread_exit(void *value_ptr) {
@@ -711,7 +712,7 @@ void my_pthread_exit(void *value_ptr) {
 	
 	return;
 	
-};
+}
 
 /* wait for thread termination */ 
 int my_pthread_join(my_pthread_t thread, void **value_ptr) {
@@ -754,7 +755,7 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	//**value_ptr is a buffer waiting for ret val. (unless not null)
 
 	return 0;
-};
+}
 
 	/**************** Mutex Methods ****************/
 /* initial the mutex lock */
@@ -777,7 +778,7 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 	mutex->waitQueue->queueSize = 0;	
 //	printf("initialized\n");
 	return 0;
-};
+}
 
 /* aquire the mutex lock */
 int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
@@ -852,7 +853,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 //	printf("owner: %d\n",mutex->owner->tid);
 	return 0;
 
-};
+}
 
 /* release the mutex lock */
 int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
@@ -887,7 +888,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 	}
 //	printf("current: %d\n", currentRunning->tid);
 	return 0;
-};
+}
 
 /* destroy the mutex */
 int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
@@ -905,13 +906,13 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	free(mutex->waitQueue);
 
 	return 0;
-};
+}
 
 /*void testThreads(){
 	return;
-}*/
+}
 
-/*int main(int argc, char** argv){
+int main(int argc, char** argv){
 	my_pthread_t mythread1, mythread2, mythread3, mythread4 = 0;
 	my_pthread_create(&mythread1, NULL, (void*)&testThreads, NULL);
 	my_pthread_create(&mythread2, NULL, (void*)&testThreads, NULL);
