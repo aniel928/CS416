@@ -69,20 +69,23 @@ queueNode* level3Qtail = NULL;
 queueNode** mpqHeads[PRIORITY_LEVELS] = {&level0Qhead, &level1Qhead, &level2Qhead, &level3Qhead};
 queueNode** mpqTails[PRIORITY_LEVELS] = {&level0Qtail, &level1Qtail, &level2Qtail, &level3Qtail};
 
-int levelCtrs[4] = {0};
+int levelCtrs[PRIORITY_LEVELS] = {0};
+
+//needs to change if there are more than 4 priority levels
+int levelMax[PRIORITY_LEVELS] = {50, 9, 3, 2};//never make last priority level less than 2.
 
 //global variable for when threads don't exit.
 queueNode* manualExit = NULL;
 
 /**************** Additional Methods ****************/
 
-void schedulerInit(){
-	printf("schedulerInit()\n");
+int schedulerInit(){
 	schedInit = TRUE;
-	//create context to call scheduler (do not recursively call create)
+
+	//create context to call scheduler 
 	if(getcontext(&(sched_uctx)) == -1){
 		printf("Couldn't get context.\n");
-		return;			
+		return -1;			
 	}
 	ucontext_t uc = sched_uctx;
 	uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
@@ -92,11 +95,12 @@ void schedulerInit(){
 	makecontext(&uc, scheduler,1,NULL); 
 	sched_uctx = uc;
 	swapcontext(&(threads[0]->context), &sched_uctx);
+	return 0;
 }
 
 //initializes and runs scheduler until no threads exist
 void scheduler(){	
-	printf("scheduler()\n");
+//	printf("scheduler()\n");
 	//until no threads are left keep maintaining, then running, maintaining, then running.
 	while(schedInit){
 		maintenanceCycle();
@@ -108,7 +112,7 @@ void scheduler(){
 
 //do some maintenance between running cycles
 void maintenanceCycle(){	
-	printf("maintenanceCycle()\n");
+//	printf("maintenanceCycle()\n");
 	//once there are no more threads left change scheduler to 
 	if(levelCtrs[0] + levelCtrs[1] + levelCtrs[2] + levelCtrs[3] == 0){
 			schedInit = FALSE;	
@@ -116,12 +120,16 @@ void maintenanceCycle(){
 	else{
 		int i = 0;
 		while (i < PRIORITY_LEVELS){	//while i < PRIORITY_LEVELS: //right now this is 4
-			maintRunning = *mpqHeads[i];	//	current = MPQheads[i]
+			maintRunning = (*(mpqHeads[i]));	//	current = MPQheads[i]
+//			printf("1\n");
 			while (maintRunning != NULL){	//	while current:
-				if (maintRunning->ctr > CYCLES){	//		if current->ctr > CYCLES:  
+//				printf("2\n");
+				if (maintRunning->ctr > CYCLES && threads[maintRunning->tid]->priority > 0){	//		if current->ctr > CYCLES:  
+//					printf("3\n");
 					threads[maintRunning->tid]->priority -=1;		//		threads[current->tid]->priority -= 1
-					}
+				}
 				maintRunning = maintRunning->next;		//		current = current->next;		
+//				printf("4\n");
 			}
 			i++;
 		}
@@ -130,8 +138,8 @@ void maintenanceCycle(){
 }
 
 //create list of threads to run between maintenance cycles
-void createRunning(){
-	printf("In createRunning\nCurrent Counts: \n level0: %d\n level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
+/*void createRunning(){
+//	printf("In createRunning\nCurrent Counts: \n level0: %d\n level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
 	//Max nodes to be selected from priorty queue levels
 	headRunning = (queueNode*)malloc(sizeof(queueNode));
 	headRunning->tid = -1;
@@ -147,7 +155,7 @@ void createRunning(){
 	bool headSet = FALSE;
 	int i = 0;
 
-	//********Adding level 0************/
+	//-********Adding level 0***********
 	if (levelCtrs[0] > levelMax[0]){
 		
 				printf("In if\n");
@@ -166,12 +174,12 @@ void createRunning(){
 		level0Qhead = level0Qhead->next;	
 
 		headSet = TRUE;
-			printf("In if\n");
-		/*decrement counter for level 0 by max*/
+//			printf("In if\n");
+		//-*decrement counter for level 0 by max*
 		levelCtrs[0] -= levelMax[0];
 //		printf("level 0 max = %d, level counter for 0: %d\n", levelMax[0], levelCtrs[0]);
 //		printf("In createRunning\nCurrent Counts: \n level0: %d\n level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
-		/*increment counter for nodes not used*/
+		//-*increment counter for nodes not used*
 		tempRunningHead = level0Qhead;
 		tempRunningTail = level0Qtail;
 		tempRunningTail->ctr += 1;
@@ -193,9 +201,9 @@ void createRunning(){
 //		printf("headRunning tid: %d \n tailRunning tid %d\n", headRunning->tid, tailRunning->tid);
 
 	}
-printf("Finished adding level 0\n");
+//printf("Finished adding level 0\n");
 	
-/********Adding level 1************/
+//-********Adding level 1************
 //still need to decrement count for each level and add counters for nodes not used
 	i = 0;
 	if (levelCtrs[1] > levelMax[1]){
@@ -219,10 +227,10 @@ printf("Finished adding level 0\n");
 			level1Qhead = level1Qhead->next;
 			
 		}
-		/*decrement counter for level 0 by max*/
+		//-*decrement counter for level 0 by max*
 		levelCtrs[1] -= levelMax[1];
 		
-		/*increment counter for nodes not used*/
+		//-*increment counter for nodes not used*
 		tempRunningHead = level1Qhead;
 		tempRunningTail = level1Qtail;
 		tempRunningTail->ctr += 1;
@@ -254,8 +262,8 @@ printf("Finished adding level 0\n");
 		tailRunning->next = NULL;				
 	}
 i=0;
-printf("Finished adding level 1\n");
-/********Adding level 2************/
+//printf("Finished adding level 1\n");
+//-********Adding level 2************
 if (levelCtrs[2] > levelMax[2]){
 		tempRunningHead = level2Qhead;
 		while(i < levelMax[2]){
@@ -277,10 +285,10 @@ if (levelCtrs[2] > levelMax[2]){
 			
 		}
 		
-		/*decrement counter for level 0 by max*/
+		//-*decrement counter for level 0 by max*
 		levelCtrs[2] -= levelMax[2];
 		
-		/*increment counter for nodes not used*/
+		//-*increment counter for nodes not used*
 		tempRunningHead = level2Qhead;
 		tempRunningTail = level2Qtail;
 		tempRunningTail->ctr += 1;
@@ -309,8 +317,8 @@ if (levelCtrs[2] > levelMax[2]){
 		tailRunning->next = NULL;		
 	}
 
-	printf("Finished adding level 2\n");
-/********Adding level 3************/
+//	printf("Finished adding level 2\n");
+//-*******Adding level 3************
 //if l3Max becomes greater than 1 this code needs to change
 	i = 0;
 	if (levelCtrs[3] > levelMax[3]){
@@ -334,10 +342,10 @@ if (levelCtrs[2] > levelMax[2]){
 			
 		}
 		
-		/*decrement counter for level 0 by max*/
+		//-*decrement counter for level 0 by max*
 		levelCtrs[3] -= levelMax[3];
 		
-		/*increment counter for nodes not used*/
+		//-*increment counter for nodes not used*
 		tempRunningHead = level3Qhead;
 		tempRunningTail = level3Qtail;
 		tempRunningTail->ctr += 1;
@@ -365,7 +373,7 @@ if (levelCtrs[2] > levelMax[2]){
 		tailRunning->next = NULL;			
 		
 	}
-	printf("Finished adding level 3\n");
+//	printf("Finished adding level 3\n");
 	
 	i = 0;
 		
@@ -380,9 +388,9 @@ if (levelCtrs[2] > levelMax[2]){
 	printf("FINISHED PRINTING RUNNING QUEUE TID'S\n");
 	return;
 }
-
-/*void createRunning(){
-	printf("In createRunning\nCurrent Counts: \nleve0: %d\n Level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
+*/
+void createRunning(){
+//	printf("In createRunning\nCurrent Counts: \nleve0: %d\n Level1: %d\n level2: %d\n level3: %d\n", levelCtrs[0], levelCtrs[1], levelCtrs[2], levelCtrs[3]);
 	//Max nodes to be selected from priorty queue levels
 	headRunning = (queueNode*)malloc(sizeof(queueNode));
 	headRunning->tid = -1;
@@ -395,91 +403,100 @@ if (levelCtrs[2] > levelMax[2]){
 	//tempRunning->next = NULL;
 	queueNode* tempHeadRunning = NULL;
 	queueNode* tempTailRunning = NULL;
-	int levelMax[4] = {7, 5, 3, 1};
 
 
-int j = 0;
-while(j < PRIORITY_LEVELS){
-	printf("%d\n", j);
-	//Level 0:
-	if(levelCtrs[j] > levelMax[j]){
-		//take first 7
-		printf("greater\n");
-		tempHeadRunning = *(mpqHeads[j]);//level0Qhead; //set to head
-		int i = 0;
-		//move forward 6 times (for total of 7)
-		while (i < levelMax[j]-1){
-			printf("%d\n", i);
+	int j = 0;
+	while(j < (PRIORITY_LEVELS )){
+//		printf("priority %d\n", j);
+		if(levelCtrs[j] > levelMax[j]){
+			//take max
+//			printf("greater\n");
+			tempHeadRunning = *(mpqHeads[j]);//level0Qhead; //set to head
+			int i = 0;
+			//move forward 6 times (for total of 7)
+			while (i < levelMax[j]-1){
+//				printf("%d\n", i);
+				tempRunning = *mpqHeads[j];
+				tempRunning = tempRunning->next;
+				*(mpqHeads[j]) = (tempRunning);
+				tempTailRunning = *(mpqHeads[j]);
+				i++;
+			}
+//			printf("out of while\n");
+//			printf("tid in greater: %d\n", (*(mpqHeads[j]))->tid);
 			tempRunning = *mpqHeads[j];
 			tempRunning = tempRunning->next;
-			mpqHeads[j] = &(tempRunning);
-			tempTailRunning = *(mpqHeads[j]);
-			i++;
-		}
-		printf("out of while\n");
-		printf("tid: %d\n", (*(mpqHeads[j]))->tid);
-		tempRunning = *mpqHeads[j];
-		tempRunning = tempRunning->next;
-		tempTailRunning->next = NULL;
-		if(headRunning->tid == -1){
-			headRunning = tempHeadRunning;
-		}
-		else{
-			tailRunning->next = tempHeadRunning;
-			if(headRunning->tid == tailRunning->tid){
-				headRunning->next = tempHeadRunning;
+			*(mpqHeads[j]) = (tempRunning);
+			tempTailRunning->next = NULL;
+			if(headRunning->tid == -1){
+				headRunning = tempHeadRunning;
 			}
-		}
-		tailRunning = tempTailRunning;
-		mpqHeads[j] = &(tempRunning);
-		printf("tid: %d\n", (*(mpqHeads[j]))->tid);
-		
-		//increment other ctrs
-		tempHeadRunning = *mpqHeads[j];
-		while(tempHeadRunning){
-			tempHeadRunning->ctr += 1;
-			tempHeadRunning = tempHeadRunning->next;
-		}
-		
-		//subtract 7 from levelCtrs
-		levelCtrs[j] -= levelMax[j];
-	}
-	else if (levelCtrs[j] > 0){
-		printf("not greater\n");
-		//take whole list
-		tempHeadRunning = *(mpqHeads[j]);
-		tempTailRunning = *(mpqTails[j]);
-		
-		if(headRunning->tid == -1){
-			headRunning = tempHeadRunning;
-		}
-		else{
-			tailRunning->next = tempHeadRunning;
-			if(headRunning->tid == tailRunning->tid){
-				headRunning->next = tempHeadRunning;
+			else{
+				tailRunning->next = tempHeadRunning;
+				if(headRunning->tid == tailRunning->tid){
+					headRunning->next = tempHeadRunning;
+				}
 			}
+			tailRunning = tempTailRunning;
+			//mpqHeads[j] = &(tempRunning);
+//			printf("tid: %d\n", (*(mpqHeads[j]))->tid);
+		
+			//increment other ctrs
+			tempHeadRunning = *mpqHeads[j];
+			while(tempHeadRunning){
+				tempHeadRunning->ctr += 1;
+				tempHeadRunning = tempHeadRunning->next;
+			}
+		
+			//subtract 7 from levelCtrs
+			levelCtrs[j] -= levelMax[j];
 		}
-		tailRunning = tempTailRunning;
-		*(mpqHeads[j]) = NULL;
-		*(mpqTails[j]) = NULL;
-		levelCtrs[j] = 0;
+		else if (levelCtrs[j] > 0){
+//			printf("not greater\n");
+			//take whole list
+			tempHeadRunning = *(mpqHeads[j]);
+			tempTailRunning = *(mpqTails[j]);
+		
+			if(headRunning->tid == -1){
+				headRunning = tempHeadRunning;
+			}
+			else{
+				tailRunning->next = tempHeadRunning;
+				if(headRunning->tid == tailRunning->tid){
+					headRunning->next = tempHeadRunning;
+				}
+			}
+			tailRunning = tempTailRunning;
+			*(mpqHeads[j]) = NULL;
+			*(mpqTails[j]) = NULL;
+			levelCtrs[j] = 0;
+		}
+		j++;
 	}
-	j++;
-}
 
-tempRunning = headRunning;
-printf("start\n");
-while(tempRunning){
-	printf("tid: %d\n", tempRunning->tid);	
-	tempRunning = tempRunning->next;
-}
-printf("end\n");
+	//tempRunning = headRunning;
+	//printf("start\n");
+	//while(tempRunning)
+	//	printf("tid: %d\n", tempRunning->tid);	
+	//	tempRunning = tempRunning->next;
+	//
+	//printf("end\n");
 
-}*/
+	j =0;
+	while (j < PRIORITY_LEVELS){
+		tempRunning = *(mpqHeads[j]);
+		int i = 0;
+		while(tempRunning){
+			tempRunning->ctr += 1;
+			tempRunning = tempRunning->next;
+		}
+		j++;
+	}
+}
 
 //Run them between cycles
 void runThreads(){
-	printf("start runThreads()\n");
+//	printf("start runThreads()\n");
 	queueNode* tempRunning = NULL;
 //	printf("Assign head running to current running\n");
 	nextRunning = headRunning;
@@ -487,6 +504,7 @@ void runThreads(){
 		//call to pthread_yield to swap contexts.
 //		printf("id: %d priority: %d\n",nextRunning->tid, threads[nextRunning->tid]->priority);
 		my_pthread_yield();	
+//		printf("back in run\n");
 		currentRunning = NULL; //(so if yield is called now, there's not a thread currently running).
 		//if my_pthread_exit is called, then this will be null, check that first.
 		if(threads[nextRunning->tid] == NULL){
@@ -496,11 +514,13 @@ void runThreads(){
 		}//if not null, check if status is preempted so we can lower priority
 		else if(threads[nextRunning->tid]->threadState == PREEMPTED){
 //			printf("Preempted\n");//debugging statement
+//			printf("%d\n", threads[nextRunning->tid]->priority);
 			threads[nextRunning->tid]->threadState = ACTIVE;
 			//put back on MPQ
+//			printf("add\n");
 			addMPQ(threads[nextRunning->tid], mpqHeads[threads[nextRunning->tid]->priority], mpqTails[threads[nextRunning->tid]->priority]);
+//			printf("done adding\n");
 			tempRunning = nextRunning;
-			levelCtrs[threads[nextRunning->tid]->priority] += 1;
 		}
 		else if(threads[nextRunning->tid]->threadState == WAITING){
 //			printf("Waiting\n");
@@ -512,7 +532,6 @@ void runThreads(){
 			threads[nextRunning->tid]->threadState = ACTIVE;
 			//put back on MPQ
 			addMPQ(threads[nextRunning->tid], mpqHeads[threads[nextRunning->tid]->priority], mpqTails[threads[nextRunning->tid]->priority]);
-			levelCtrs[threads[nextRunning->tid]->priority] += 1;
 			tempRunning = nextRunning;
 		}
 		//otherwise it finished on it's own, but never called exit.
@@ -531,13 +550,13 @@ void runThreads(){
 		if(tempRunning != NULL){
 			free(tempRunning);	//frees unless it's waiting
 		}
-		printf("restart loop\n"); //debugging statement.
+//		printf("restart loop\n"); //debugging statement.
 	}
 }
 
 /*signal handler for timer*/
 void time_handle(int signum){
-	printf("time_handler\n");
+//	printf("time_handler\n");
 	//change status to PREEMPTED
 	threads[currentRunning->tid]->threadState = PREEMPTED;
 	//change priority +1 on tcb node(unless bottom level)
@@ -553,7 +572,7 @@ void time_handle(int signum){
 
 //add parameter for priority then take 2^priority and * QUANTUM
 void timer(int priority){
-	printf("set timer()\n");
+//	printf("set timer()\n");
 	struct sigaction sigact;
 	struct itimerval timer;
 
@@ -577,7 +596,7 @@ void timer(int priority){
 
 //add to MPQ (new thread, or back in from waiting/running), must pass in level queues.
 void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
-	printf("addMPQ()\n");
+//	printf("addMPQ()\n");
 	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
 	
 	//prep new node 
@@ -601,6 +620,9 @@ void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
 		(*tail)->next = newNode;
 		*tail = newNode;
 	}	
+//	printf("out\n");
+	levelCtrs[threads[newNode->tid]->priority] += 1;
+//	printf("exiting\n");
 	return;
 }
 
@@ -610,7 +632,7 @@ void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
 /* create a new thread */  /* DONE */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	/* Creates a pthread that executes function. Attributes are ignored, arg is not. */
-	printf("my_pthread_create()\n");
+//	printf("my_pthread_create()\n");
 	//initialize to some fake value
 	my_pthread_t ID = -1;
 	
@@ -645,7 +667,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 			}
 		}
 		else{
-			printf("No threads available.\n");
+//			printf("No threads available.\n");
 			return -1; //couldn't create it, array is full.
 		}
 	}
@@ -656,8 +678,8 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	if(!threads[0]){
 //		printf("Create main\n");
 		if(getcontext(&(main_uctx)) == -1){
-			printf("Couldn't get main context.\n");
-			return -1;			
+//			printf("Couldn't get main context.\n");
+			return -2;			
 		}
 		main_uctx.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
 		main_uctx.uc_stack.ss_size = STACK_SIZE;
@@ -672,11 +694,10 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		threads[0] = newNode;
 		
 		addMPQ(threads[0], &level0Qhead, &level0Qtail);
-		levelCtrs[0]+=1;
 	}
 	if(getcontext(&(newNode->context)) == -1){
-		printf("Couldn't get new context.\n");
-		return -1;			
+//		printf("Couldn't get new context.\n");
+		return -2;			
 	}
 	
 	//do context stuff
@@ -703,11 +724,12 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	//add new thread to mpq level 0
 	addMPQ(threads[ID], &level0Qhead, &level0Qtail);
 //	printf("OTHER IN MPQ!\n");
-	levelCtrs[0] += 1;
 	
 	//Initialize the scheduler if it's not already initialized
 	if(!schedInit){
-		schedulerInit();
+		if(schedulerInit() != 0){
+			return -3;
+		}
 //	}else{
 //		my_pthread_yield();
 	}
@@ -718,12 +740,12 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 int my_pthread_yield() {
 	/* Explicit call to the my_pthread_t scheduler requesting that the current context can be swapped out 
 	and another can be scheduled if one is waiting. */
-	printf("In my_pthread_yield()\n");//debugging statement
+//	printf("In my_pthread_yield()\n");//debugging statement
 //	printf("Current running id: %d\n",nextRunning->tid);
 	//in case someone calls this before calling create.
 	if(nextRunning == NULL){
-		printf("Nothing running.\n");
-		return -1;  //change to ERRNO
+//		printf("Error. Nothing running, cannot yield.\n");
+		return -1;  
 	}	
 //	printf("nextRunning not null\n");
 	
@@ -733,11 +755,11 @@ int my_pthread_yield() {
 	//if currentRunning is null, then this is being called by the main program on purpose
 	if(currentRunning == NULL){
 		currentRunning = nextRunning;
-//		printf("it was null about to swap\n");
+//		printf("it was null about to swap %d\n", threads[nextRunning->tid]->priority);
 		timer(threads[nextRunning->tid]->priority);
 		if((swapcontext(&(sched_uctx),&((threads[currentRunning->tid])->context))) != 0){
-			printf("couldn't swap contexts\n");
-			return -1; //change to ERRNO
+//			printf("couldn't swap contexts\n");
+			return -2;
 		}
 	}
 	//otherwise the currently running thread rquested to yield.
@@ -746,13 +768,14 @@ int my_pthread_yield() {
 		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
 //			printf("not preempted or waiting\n");
 			threads[currentRunning->tid]->threadState = YIELDED;
+		
 		}
-//		}else{
+//		else{
 //			printf("prempted or waiting\n");
 //		}
 		if((swapcontext(&((threads[currentRunning->tid])->context),&(sched_uctx))) != 0){
-			printf("couldn't swap context\n");
-			return -1;
+//			printf("couldn't swap context\n");
+			return -2;
 		}
 //		printf("What about now?\n");
 	}
@@ -764,11 +787,11 @@ int my_pthread_yield() {
 void my_pthread_exit(void *value_ptr) {
 	/* Explicit call to the my_pthread_t library to end the pthread that called it. If the value_ptr isn't 
 	NULL, any return value from the thread will be saved. */
-	printf("In my_pthread_exit()\n");
+//	printf("In my_pthread_exit()\n");
 	
 	//in case someone calls this before calling create.
 	if(currentRunning == NULL  && manualExit == NULL){
-		printf("Nothing running.\n");
+//		printf("Nothing running.\n");
 		return;
 	}
 	else if(currentRunning == NULL && manualExit != NULL){
@@ -793,7 +816,6 @@ void my_pthread_exit(void *value_ptr) {
 //			printf("%d %d\n",currentRunning->tid, currentNode->tid);
 			addMPQ(threads[currentNode->tid], mpqHeads[threads[currentNode->tid]->priority], mpqTails[threads[currentNode->tid]->priority]);
 			
-			levelCtrs[threads[currentNode->tid]->priority] += 1;
 			currentNode = currentNode->next;
 		}
 	}
@@ -833,16 +855,16 @@ void my_pthread_exit(void *value_ptr) {
 int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	/* Call to the my_pthread_t library ensuring that the calling thread will not continue execution until the one 
 	it references exits. If value_ptr is not null, the return value of the exiting thread will be passed back.*/
-	printf("in my_pthread_join()\n");
+//	printf("in my_pthread_join()\n");
 	//in case someone calls this before calling create.	
 	if(currentRunning == NULL){
-		printf("Nothing running.\n");
+//		printf("Nothing running.\n");
 		return -1;
 	}
 	//check for valid thread.
 	if(threads[thread] == NULL){
-		printf("Thread does not exist, cannot join.\n");
-		return -1;
+//		printf("Thread does not exist, cannot join.\n");
+		return -2;
 	}
 	//put thread onto waiting queue in tcb for thread passed in.
 	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
@@ -898,11 +920,9 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 /* aquire the mutex lock */
 int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 	/* Locks a given mutex, other threads attempting to access this mutex will not run until it is unlocked. */
-	
+//	printf("my_pthread_mutex_lock()\n");
 	if(mutex == NULL)
 		return EINVAL;  
-
-	printf("my_pthread_mutex_lock()\n");
 	
 	while (__sync_lock_test_and_set(&(mutex->lockState), TRUE)){
 		printf("in the while\n");  //this never prints
@@ -978,7 +998,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 	/* Unlocks a give n mutex. */
 	//check to see if anyone is waiting, if so, do not unlock, just "pass" the mutex on.  
 	//Only unlock when no one else is waiting.
-	printf("mutex_unlock\n");
+//	printf("mutex_unlock\n");
 	if(mutex == NULL)
 		return EINVAL;  
 	
@@ -1004,7 +1024,6 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 		
 		//pass the dequeued thread to the scheduler
 		addMPQ(nextThread, mpqHeads[nextThread->priority], mpqTails[nextThread->priority]);
-		levelCtrs[nextThread->priority] += 1;
 		
 		//give them the lock.
 
@@ -1017,7 +1036,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	/* Destroys a given mutex. Mutex should be unlocked before doing so. */
 	//check to make sure mutex is not locked first.
-	printf("mutex_destroy\n");
+//	printf("mutex_destroy\n");
 	//throw error if mutex does not exist
 	if(mutex == NULL)
 		return EINVAL;  
