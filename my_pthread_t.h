@@ -11,7 +11,7 @@
 #define _GNU_SOURCE
 
 #define USE_MY_PTHREAD 1
-#define MAX_THREADS 5 //max threads
+#define MAX_THREADS 50 //max threads
 #define MAX_MUTEX 50 //max mutexes
 #define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
@@ -87,6 +87,7 @@ typedef struct threadControlBlock{
 	void* retval;
 	//list of people waiting on me (do it again for mutexes)
 	void* waitingThreads;
+	bool mutexWaiting;
 	
 	//program counter - probably not
 	//thread's register values - probably not
