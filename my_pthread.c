@@ -72,7 +72,7 @@ queueNode** mpqTails[PRIORITY_LEVELS] = {&level0Qtail, &level1Qtail, &level2Qtai
 int levelCtrs[PRIORITY_LEVELS] = {0};
 
 //needs to change if there are more than 4 priority levels
-int levelMax[PRIORITY_LEVELS] = {50, 9, 3, 2};//never make last priority level less than 2.
+int levelMax[PRIORITY_LEVELS] = {38, 17, 7, 2};//never make last priority level less than 2.
 
 //global variable for when threads don't exit.
 queueNode* manualExit = NULL;
