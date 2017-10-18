@@ -77,6 +77,28 @@ int levelMax[PRIORITY_LEVELS] = {50, 9, 3, 2};//never make last priority level l
 //global variable for when threads don't exit.
 queueNode* manualExit = NULL;
 
+/*
+//DEBUGGING FUNCTION
+void printWaitQueueMutex(basicQueue *waitQueue){
+
+    printf("print Queue:\n");
+    waitQueueNode *temp = waitQueue->head;
+    int i;
+    for(i = 0; i < waitQueue->queueSize; i++){
+
+        if(temp == NULL)
+            printf("NULL\n");
+        else{
+            printf("ThreadID: %d\n", temp->thread->tid);
+            temp = temp->next;
+        }
+    }
+
+    printf("EndPrint\n\n");
+
+    return;
+}*/
+
 /**************** Additional Methods ****************/
 
 int schedulerInit(){
@@ -926,6 +948,11 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 	
 	while (__sync_lock_test_and_set(&(mutex->lockState), TRUE)){
 		printf("in the while\n");  //this never prints
+
+		//if owner enters here, pass it through
+		if(mutex->owner->tid == currentRunning->tid)
+			return 0;
+
 		//make the thread wait
 		threads[currentRunning->tid]->threadState = WAITING;
 
@@ -941,6 +968,8 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 
 			mutex->owner->priority = 0;
 			mutex->owner->mutexWaiting = TRUE;
+
+//			printWaitQueueMutex(mutex->waitQueue); //DEBUGGING
 
 			//run owner and then the new high priority thread
 //			if(swapcontext(&(newHead->thread->context),&(mutex->owner->context)) != 0){
@@ -977,7 +1006,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 			}
 
 			mutex->waitQueue->queueSize++;
-
+//			printWaitQueueMutex(mutex->waitQueue); //DEBUGGING
 			//call scheduler
 //			printf("%d\n", currentRunning->tid);
 			my_pthread_yield();
@@ -1022,6 +1051,11 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 		//change status back to active (from waiting)
 		nextThread->threadState = ACTIVE;
 		
+		//set owner
+		mutex->owner = nextThread;
+		
+//		printWaitQueueMutex(mutex->waitQueue); //DEBUGGING
+
 		//pass the dequeued thread to the scheduler
 		addMPQ(nextThread, mpqHeads[nextThread->priority], mpqTails[nextThread->priority]);
 		
