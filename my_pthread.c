@@ -126,6 +126,7 @@ void maintenanceCycle(){
 	else{
 		queueNode* maintRunning = NULL;	//iterate through MPQ
 		queueNode* freeRunning = NULL;	//store node to free.
+		queueNode* prevMaint = NULL;
 		int i = 0;
 		//go through each priority level
 		while (i < PRIORITY_LEVELS){	
@@ -134,11 +135,19 @@ void maintenanceCycle(){
 			while (maintRunning != NULL){	
 				if (maintRunning->ctr > CYCLES && threads[maintRunning->tid]->priority > 0){	
 					//reschedule (which creates new node, so store current node to free)
-					addMPQ(threads[maintRunning->tid], mpqHeads[threads[maintRunning->tid]->priority], mpqTails[threads[maintRunning->tid]->priority]);
 					threads[maintRunning->tid]->priority -=1;	
+					//this may be wrong.
 					freeRunning = maintRunning;
+					//if it's the head, move forward first.
+					if (maintRunning == (*(mpqHeads[i]))){
+						(*(mpqHeads[i])) = (*(mpqHeads[i]))->next;
+					}
+					levelCtrs[i]--; //about to add to another queue, so remove from this one.
+					addMPQ(threads[maintRunning->tid], mpqHeads[threads[maintRunning->tid]->priority], mpqTails[threads[maintRunning->tid]->priority]);
 				}
 				//move forward and free current if necessary.
+				if(freeRunning == NULL){
+				}
 				maintRunning = maintRunning->next;
 				if(freeRunning != NULL){
 					free(freeRunning);
@@ -157,8 +166,7 @@ void createRunning(){
 //	printf("In createRunning()\n");
 	//Max nodes to be selected from priority queue levels
 	//needs to change if there are more than 4 priority levels
-	int levelMax[PRIORITY_LEVELS] = {38, 17, 7, 2};//never make last priority level less than 2.
-	
+	int levelMax[PRIORITY_LEVELS] = {7, 4, 3, 2};//never make last priority level less than 2.
 	//set dummy nodes
 	headRunning = (queueNode*)malloc(sizeof(queueNode));
 	headRunning->tid = -1;
@@ -169,9 +177,11 @@ void createRunning(){
 	queueNode*  tempRunning = NULL;
 	queueNode* tempHeadRunning = NULL;  
 	queueNode* tempTailRunning = NULL;
+	
 
 
 	int j = 0;
+
 	//go through each priority level
 	while(j < (PRIORITY_LEVELS )){
 		//if there are more in the list than the maximum to run, take the first x amount (where x is max per level)
@@ -188,15 +198,15 @@ void createRunning(){
 			}
 			//move forward one last time and store back as level head.
 			tempRunning = *mpqHeads[j];
-			tempRunning = tempRunning->next;
-			*(mpqHeads[j]) = (tempRunning);
+			tempRunning = (*mpqHeads[j])->next;
+			
+			*(mpqHeads[j]) = tempRunning;
 			
 			//set last node of running list to NULL (b/c it's last)
 			tempTailRunning->next = NULL;
-			
 			//if head is not already set, set it
 			if(headRunning->tid == -1){
-				free(headRunning);
+//				free(headRunning);
 				headRunning = tempHeadRunning;
 			}
 			else{
@@ -206,12 +216,14 @@ void createRunning(){
 					headRunning->next = tempHeadRunning;
 				}
 			}
+			
 			//no matter what, set tail
 			tailRunning = tempTailRunning;
 
 			//increment ctrs for those that didn't get put onto the running queue.
 			tempHeadRunning = *mpqHeads[j];
 			while(tempHeadRunning){
+
 				tempHeadRunning->ctr += 1;
 				tempHeadRunning = tempHeadRunning->next;
 			}
@@ -227,7 +239,7 @@ void createRunning(){
 
 			//if head is not already set, set it 		
 			if(headRunning->tid == -1){
-				free(headRunning);
+//				free(headRunning);
 				headRunning = tempHeadRunning;
 			}
 			else{
