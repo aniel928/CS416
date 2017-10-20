@@ -110,7 +110,7 @@ void scheduler(){
 	my_pthread_mutex_destroy(mutexManualExit);
 
 	free_things();
-
+	printf("DONE\n");
 }
 
 //do some maintenance between running cycles
@@ -378,7 +378,9 @@ void exit_thread(queueNode* node, void* value_ptr){
 		while(currentNode){
 //			char* ptr = (char*)threads[currentNode->tid]->retval;
 //			ptr = (char*)value_ptr;
-			*(threads[currentNode->tid]->retval) = (char*)value_ptr;//is this right?? test it.
+			if(value_ptr != NULL){
+				*(threads[currentNode->tid]->retval) = (char*)value_ptr;//is this right?? test it.
+			}	
 			addMPQ(threads[currentNode->tid], mpqHeads[threads[currentNode->tid]->priority], mpqTails[threads[currentNode->tid]->priority]);		
 			tempNode = currentNode;
 			currentNode = currentNode->next;
@@ -414,6 +416,7 @@ void exit_thread(queueNode* node, void* value_ptr){
 
 //when scheduler gets uninitialized, free this stuff.
 void free_things(){
+//	printf("free things\n");
 	//dummy node for thread ID linked list.
 	nextId* tempThread = NULL;
 	while(headThread!= NULL){
@@ -425,6 +428,7 @@ void free_things(){
 	
 	
 	free(sched_uctx.uc_stack.ss_sp);
+	sched_uctx.uc_stack.ss_sp = NULL;
 	
 }
 
