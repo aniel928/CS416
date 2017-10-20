@@ -12,7 +12,7 @@
 
 #define USE_MY_PTHREAD 1
 #define MAX_THREADS 128 //max threads
-#define MAX_MUTEX 128 //max mutexes
+//#define MAX_MUTEX 128 //max mutexes
 #define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
@@ -76,22 +76,18 @@ typedef struct threadControlBlock{
 	
 	//threadIdentifier - unique id assigned to every new thread (index in array)
 	my_pthread_t tid; //should this be a my_pthread_t type?
-		//as it finishes, assign it to waiting queue
 	//stackPointer - points to thread's stack in the process
 	ucontext_t context;
-	//state of the thread (active, waiting, preempted, done)
+	//state of the thread (active, waiting, preempted, yielded, done)
 	states threadState;
 	//current priority level
 	uint priority;
 	//retval of thread (so people waiting on me get return value)
-	void* retval;
+	char** retval;
 	//list of people waiting on me (do it again for mutexes)
 	void* waitingThreads;
+	//for priority inversion
 	bool mutexWaiting;
-	
-	//program counter - probably not
-	//thread's register values - probably not
-	//pointer to PCB of process thread lives on. - probably not
 } tcb; 
 
 typedef struct _waitQueueNode{
@@ -112,44 +108,13 @@ typedef struct _basicQueue{
 
 /* mutex struct definition */
 typedef struct _my_pthread_mutex_t {
- 		/* add something here */
-	//what does mutex have mutual exclusion on
-	//thread owner
-	//locked yes or no
-	//list of people waiting on me
-		//don't unlock unless this pointer is null, otherwise hand off lock.
-
+ 		/* add something here */\
+ 		
 	tcb *owner; //thread owner of this mutex
 	int lockState; //1 is locked 0 is unlocked
 	basicQueue *waitQueue; //keeps track of the threads waiting on this mutex
 
 } my_pthread_mutex_t;
-
-/* define your data structures here: */
-
-// Feel free to add your own auxiliary data structures
-
-//declare MPQ array (0 - n)
-//int mpq[PRIORITY_LEVELS] = {0};
-
-//fill array 0 through n
-// int i = 0;
-
-// while(i < PRIORITY_LEVELS){
-	// mpq[i] = i;
-	// i++;
-// }
-
-//mpq node
-// typedef struct _MPQNode{
-// 	my_pthread_t threadId;
-// 	void* next;
-// 	int ctr; 
-// 	//fill with more stuff
-// } MPQNode;
-
-/* Function Declarations: */
-
 
 int schedulerInit();
 void scheduler();
@@ -159,6 +124,8 @@ void runThreads();
 void time_handle(int signum);
 void timer(int priority);
 void addMPQ(tcb* thread, queueNode** head, queueNode** tail);
+void exit_thread(queueNode* node, void* value_ptr);
+void free_things();
 
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg);
