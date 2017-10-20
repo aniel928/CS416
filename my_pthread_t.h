@@ -12,7 +12,6 @@
 
 #define USE_MY_PTHREAD 1
 #define MAX_THREADS 128 //max threads
-//#define MAX_MUTEX 128 //max mutexes
 #define STACK_SIZE 16384 //size of stack in bytes
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
