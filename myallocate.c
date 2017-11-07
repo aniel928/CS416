@@ -42,11 +42,21 @@ showData(){
 			else{
 				boolVal = "FALSE";
 			}
-			printf("Page number: %d, Page count: %d, inUse? %s \n", i, memTest->pageCount, boolVal);
+			printf("Page number: %d, Page count: %d, inUse? %s, Addr: %d\n", i, memTest->pageCount, boolVal, memTest);
 			memTest = memTest->next;
 			i++;
 		}
 	}
+}
+
+int usedPages(){
+	memStruct * memUP = memHead;
+	int count = 0;
+	while (memUP != NULL){
+		count += memUP->pageCount;
+		memUP = memUP->next;
+	}
+	return count;
 }
 
 
@@ -55,6 +65,11 @@ char* myallocate(int size, char* file, int line, int type){
 		//I think this is going to cause an issue because I wanted to make it global but it wasn't letting memHead
 		//I tested something and it actually seems to be working fine but I'm leaving this here for now just in case [Don't even know if this array is necessary]
 		char* pageArr[(NUMOFPAGES)]; 
+		
+		int usePgs= usedPages();
+		printf("Total amount of pages: %d, pages used so far: %d\n", NUMOFPAGES, usePgs);
+		
+
 		
 		//determining how many pages are needed to return
 		int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
@@ -101,16 +116,20 @@ char* myallocate(int size, char* file, int line, int type){
 			}
 			//find next available page
 			memNew = memFollow->next;
-			if (memNew != NULL){
-				while(memNew->inUse == TRUE || memNew->pageCount < pageCount){
-					if (memNew == NULL){
-						break;
-					}
-					memFollow = memNew;
-					memNew = memNew->next;				
-				}
+		
+		while (memNew != NULL){
+			if (memNew->inUse == FALSE && memNew->pageCount >= pageCount){
+				break;
+			}
+			memFollow = memNew;
+			memNew = memNew->next;		
 		}
 		if(memNew == NULL){ //found page is NULL
+			//need to make sure that the available space can hold the requested size
+				if ((usePgs + pageCount) > NUMOFPAGES){
+					printf("Can't give this many bytes/pages for this malloc, returning\n");
+					return ;
+				}			
 			memNew = (memStruct*)(memory +(totalPages * PAGESIZE - 1)); //This line is the cause of about an hour worth of segfaulting
 			memFollow->next = memNew;
 			memNew->inUse = TRUE;
@@ -124,23 +143,36 @@ char* myallocate(int size, char* file, int line, int type){
 			memNew->currUsed = sizeof(memStruct)+size;
 			//If the amount of pages that this previously used page is more than what is needed, create a new memStruct for the leftover pages and set its inUse to false
 			if (memNew->pageCount > pageCount){
-				int index = totalPages * PAGESIZE - 1 + (memNew->pageCount - pageCount) * PAGESIZE;
+				//cant get memNext set to the right value
+				int index = (int)memNew;
+				printf("index: %d\n", index);
+				index = index + pageCount * PAGESIZE;
+				index = memory - index;
+				printf("index: %d\n");
+				printf("this should be the index for the next.. %d\n", index);
+				//(memNew->pageCount - pageCount) * PAGESIZE;
 				printf("Creating a new node for extra pages, value of index: %d\n", index);
-				memNext = (memStruct*)memory + index;
-				printf("current index: %d, the next is %d\n", totalPages * PAGESIZE, index);
+				memNext = (memStruct*)(memory + index);
+				printf("current index: %d, the next is %d\n", memNew, memNext);
 				memNext->inUse = FALSE;
+				printf("1\n");
 				memNext->pageCount = memNew->pageCount - pageCount;
+				printf("2\n");
 				memNext->next = memNew->next;
+				printf("3\n");
 				memNext->prev = memNew;
+				printf("4\n");
 				memNew->next = memNext;
+				printf("5\n");
 				memNew->currUsed = sizeof(memStruct);
+				printf("finished\n");
 			}
 		}
-		printf("Need this number: %d, Have these: %d | %d | %d\n", (memory +(totalPages * PAGESIZE - 1)), &memNew, memNew, *memNew);
+		//printf("Need this number: %d, Have these: %d | %d | %d\n", (memory +(totalPages * PAGESIZE - 1)), &memNew, memNew, *memNew);
 		char* retStr = (char*)(memNew +sizeof(memStruct));
 		
 		//+ sizeof(memStruct));//(memory + sizeof(memStruct)+(totalPages * PAGESIZE - 1));
-		printf("This is the address being returned: %d size: %d\n For some reason its adding 1024 and not 32 like it should be\n", retStr, sizeof(memStruct));
+		//printf("This is the address being returned: %d size: %d\n For some reason its adding 1024 and not 32 like it should be\n", retStr, sizeof(memStruct));
 		return retStr;
 	}
 }
@@ -149,17 +181,17 @@ void mydeallocate(char* ptr, char* file, int line, int type){
 	printf("Free stuff\n");
 	int a = 0;
 	bool found = FALSE;		//will flip if found in loop
-	int pageNum =  (ptr +1  - memory)/PAGESIZE + 1;
+	int pageNum =  ((ptr +1  - memory)/PAGESIZE + 1)-1;
 	int search = 0;
 	memStruct * memFree = memHead;
 	printf("&ptr = %d, &memory = %d,result is this: %d\n", ptr+1, memory, pageNum);
 	printf("mfpc: %d",memFree->pageCount);
 	while (search <= pageNum && memFree != NULL){
 		printf("search: %d pageNum: %d\n", search, pageNum);
-		printf("search before: %d\n", search);
 		search += memFree->pageCount;
 		printf("value of search: %d, (just added %d)\n", search, memFree->pageCount);
 		if (search == pageNum){
+			printf("address being freed: %d\n", memFree);
 			memFree->inUse = FALSE;
 			found = TRUE;
 			printf("By George, I think I've got it.\n");
@@ -193,13 +225,15 @@ int main(int argc, char** argv){
 		printf("memory size: %d\n", MEMORYSIZE);
 	  char	* tester1 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester2 = myallocate(1024*1024, __FILE__, __LINE__, 1);
-		/*char	* tester3 = myallocate(1024*1024, __FILE__, __LINE__, 1);
-		/*char	* tester4 = myallocate(1024*1024, __FILE__, __LINE__, 1);
+		char	* tester3 = myallocate(1024*1024, __FILE__, __LINE__, 1);
+		char	* tester4 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester5 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester6 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester7 = myallocate(1024*1024, __FILE__, __LINE__, 1);
-		char	* tester8 = myallocate(1024*1024, __FILE__, __LINE__, 1);
-		char	* tester9 = myallocate(1024*1024, __FILE__, __LINE__, 1);
+		mydeallocate(tester4,__FILE__, __LINE__, 1);
+		char	* tester8 = myallocate(300*300, __FILE__, __LINE__, 1);
+	//	char * tester9 = myallocate (200*500, __FILE__, __LINE__, 1);
+	/*	char	* tester9 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester10 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester11 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		char	* tester12 = myallocate(1024*1024, __FILE__, __LINE__, 1);
