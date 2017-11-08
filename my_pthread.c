@@ -310,7 +310,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 void mydeallocate(void* ptr, char* file, int line, int threadId){
 	printf("Free stuff\n");
 	
-	if(!currentRunning){
+	if(!threadId){
 		printf("Coming from library.\n");
 		((metaData*)((long)ptr - sizeof(metaData)))->used = 0;
 		printf("I think i freed it?\n");
@@ -643,7 +643,7 @@ void exit_thread(queueNode* node, void* value_ptr){
 		while(currentNode){
 //			char* ptr = (char*)threads[currentNode->tid]->retval;
 //			ptr = (char*)value_ptr;
-			if(value_ptr != NULL){
+			if(value_ptr != NULL && (threads[currentNode->tid]->retval) != NULL){
 				*(threads[currentNode->tid]->retval) = (char*)value_ptr;//is this right?? test it.
 			}	
 			addMPQ(threads[currentNode->tid], mpqHeads[threads[currentNode->tid]->priority], mpqTails[threads[currentNode->tid]->priority]);		
