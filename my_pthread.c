@@ -1,11 +1,3 @@
-// File:	my_pthread.c
-// Author:	Yujie REN
-// Date:	09/23/2017
-
-// name:
-// username of iLab:
-// iLab Server:
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +59,267 @@ queueNode* manualExit = NULL;
 my_pthread_mutex_t* mutexManualExit = NULL;
 
 
+//MALLOC DECLARATIONS:
+typedef struct _metaData{
+	int used; //0 if free, 1 if used
+	int bytes; //how many bytes were requested.
+	struct _metaData* ptr; //point to next - wanted to avoid, but having trouble traversing list without.
+}metaData;
+
+typedef struct _pageTable{
+	int pageNumber;
+	metaData* ptr;
+	metaData* next;
+} pageTable;
+
+//declare 8MB chunk of data for malloc
+static char memory[MEMORYSIZE];
+metaData* headUser = NULL;
+metaData* currMD = NULL;
+metaData* prevMD = NULL;
+metaData* headOS = NULL;
+metaData* iterMD = NULL;
+
+/***************** Malloc Stuff *********************/
+
+void* myallocate(int size, char* file, int line, int threadId){
+	//error catching in case trying to malloc 0 bytes.
+	if(size == 0){
+			printf("No bytes requested, file: %s, line: %d\n", file, line);
+			return NULL;
+	}
+	else{
+		printf("%d bytes requested\n", size);
+	}
+
+	//library request - don't use paging.
+	//ADD EXTRA --> needs to be THREADREQ for when main file calls before creating any threads
+	if(!threadId){
+		printf("Coming from library\nUse OS section\n");
+
+		//if no head is set yet
+		if(!headOS){
+			printf("no head yet - total bytes: %d/%d\n", sizeof(metaData)+size, 1024*1024);
+			currMD = (metaData*)memory;
+			currMD->used = 1;
+			currMD->bytes = size;
+			currMD->ptr = NULL;
+			headOS = currMD;
+		}
+		//if head has been used and then freed.
+		else if (headOS->used == 0){
+			printf("head used, but freed\n");
+			currMD = headOS;
+			iterMD = currMD;
+			//these bytes are free for sure.
+			int bytesFree = currMD->bytes;
+			
+			while(iterMD->ptr && (iterMD->ptr)->used == 0){
+				//if the next one, or two, or several are free, combine them.
+				iterMD = iterMD->ptr;
+				bytesFree += sizeof(metaData) + iterMD->bytes;
+			}
+			printf("bytes free: %d\n", bytesFree);
+			/*************TWO CHOICES:
+			1.ONLY GIVE SPACE IF IT'S EXACTLY THE SAME SIZE OR LARGE ENOUGH TO HOLD METADATA (16B) FOR REMAINING SPACE
+			2.IF LESS THAN ENOUGH SPACE FOR METADATA, INSTEAD OF DENYING SPACE, RETURN BACK ENTIRE BLOCK (ASKED FOR 5BYTES, BUT 9BYTES FREE, GIVE THEM 9BYTES.
+			
+			I'm programming in #2 for now.  Also did it below in while loop for "ELSE" section for when head is in use.
+			
+			*/
+			
+			//if it's at least as big as space, but less than enough space to put metadata
+			if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
+				currMD->used = 1;
+				printf("Asked for %d,  got %d\n",size,currMD->bytes);
+			}
+			//if it's bigger than the space and there's enough room for metadata
+			else if(bytesFree > size){
+				currMD->used = 1;
+				currMD->bytes = size;
+				currMD->ptr = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+				iterMD = currMD->ptr;
+				iterMD->used = 0;
+				iterMD->bytes = bytesFree - size - sizeof(metaData); //bytes reamining are total counted above minus the size we allocated and the size of this metadata
+				iterMD->ptr = (metaData*)((long)iterMD + sizeof(metaData) + iterMD->bytes);				
+			}
+			//won't fit
+			else{
+				printf("get into 'else' below somehow\n");
+				//set currentMD to head;
+				prevMD = headOS;
+				currMD = headOS;
+				printf("headOS ptr: %p; currMD ptr: %p\n", headOS->ptr, currMD->ptr);
+				printf("almost in while\n");
+				//while ptr != NULL, move forward.
+				while(currMD->ptr){ 
+				
+//					printf("In while\n");
+					prevMD = currMD;
+					currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+					if(currMD->used == 0){
+						printf("need to add in logic to look for free space between.\n");
+						int bytesFree = currMD->bytes;
+						iterMD = currMD;
+						
+						while(iterMD->ptr && (iterMD->ptr)->used == 0){
+							iterMD = iterMD->ptr;
+							bytesFree += sizeof(metaData) + iterMD->bytes;
+						}
+						
+						printf("bytes free: %d\n", bytesFree);
+						
+						if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
+							currMD->used = 1;
+							printf("Asked for %d,  got %d\n",size,currMD->bytes);
+							return (void*)((long)currMD + sizeof(metaData));
+						}
+						//if it's bigger than the space and there's enough room for metadata
+						else if(bytesFree > size){
+							currMD->used = 1;
+							currMD->bytes = size;
+							currMD->ptr = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+							iterMD = currMD->ptr;
+							iterMD->used = 0;
+							iterMD->bytes = bytesFree - size - sizeof(metaData); //bytes reamining are total counted above minus the size we allocated and the size of this metadata
+							iterMD->ptr = (metaData*)((long)iterMD + sizeof(metaData) + iterMD->bytes);			
+							printf("ok\n");
+							return (void*)((long)currMD + sizeof(metaData));
+						}
+						//else if it won't fit, keep looping through.
+					}
+//					printf("forward\n");
+				}
+				printf("Just out of while\n");
+				prevMD = currMD;
+				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+				printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, 1024*1024);
+				if((long)currMD - (long)headOS > (1024*1024)){
+					printf("No more space in OS space.  Make bigger.\n");
+					return NULL;
+				}
+				currMD->used = 1;
+				currMD->bytes = size;
+				currMD->ptr = NULL;
+				prevMD->ptr = currMD;
+			}
+			return (void*)((long)currMD + sizeof(metaData));
+		}
+		//head is being used currently
+		else{
+			printf("head currently in use\n");
+			//set currentMD to head;
+			prevMD = headOS;
+			currMD = headOS;
+			printf("headOS ptr: %p; currMD ptr: %p\n", headOS->ptr, currMD->ptr);
+			printf("almost in while\n");
+			//while ptr != NULL, move forward.
+			while(currMD->ptr){ 
+			
+//				printf("In while\n");
+				prevMD = currMD;
+				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+				if(currMD->used == 0){
+					printf("need to add in logic to look for free space between.\n");
+					int bytesFree = currMD->bytes;
+					iterMD = currMD;
+					
+					while(iterMD->ptr && (iterMD->ptr)->used == 0){
+						iterMD = iterMD->ptr;
+						bytesFree += sizeof(metaData) + iterMD->bytes;
+					}
+					
+					printf("bytes free: %d\n", bytesFree);
+					
+					if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
+						currMD->used = 1;
+						printf("Asked for %d,  got %d\n",size,currMD->bytes);
+						return (void*)((long)currMD + sizeof(metaData));
+					}
+					//if it's bigger than the space and there's enough room for metadata
+					else if(bytesFree > size){
+						currMD->used = 1;
+						currMD->bytes = size;
+						currMD->ptr = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+						iterMD = currMD->ptr;
+						iterMD->used = 0;
+						iterMD->bytes = bytesFree - size - sizeof(metaData); //bytes reamining are total counted above minus the size we allocated and the size of this metadata
+						iterMD->ptr = (metaData*)((long)iterMD + sizeof(metaData) + iterMD->bytes);			
+						printf("ok\n");
+						return (void*)((long)currMD + sizeof(metaData));
+					}
+					//else if it won't fit, keep looping through.
+				}
+//				printf("forward\n");
+			}
+			printf("Just out of while\n");
+			prevMD = currMD;
+			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+			printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, 1024*1024);
+			if((long)currMD - (long)headOS > (1024*1024)){
+				printf("No more space in OS space.  Make bigger.\n");
+				return NULL;
+			}
+			currMD->used = 1;
+			currMD->bytes = size;
+			currMD->ptr = NULL;
+			prevMD->ptr = currMD;
+		}
+		return (void*)((long)currMD + sizeof(metaData));
+	}
+	//thread request - use paging
+	else{
+		int tid = -1;
+		if(!currentRunning){
+			tid = 0; //in case main calls malloc before creating thread.
+		}
+		else{
+			tid = currentRunning->tid;
+		}
+		printf("Coming from macro\nUse User section\n");
+		printf("Thread number: %d\n", tid);
+		printf("page size: %d\n", PAGESIZE);
+		
+		if(size < (PAGESIZE - sizeof(metaData))){
+			printf("return a page\n");
+			printf("add to page table\n");
+		}
+		else{
+			printf("return more than a page\n");
+			printf("add to page table\n");
+		}
+		
+		//Asking for 0 bytes
+		
+		//first spot free.
+		if(memory[0] == 0){
+			printf("it worked\n");
+		}
+		else{
+			int i = 0;
+			while(memory[i] != 0){
+				i += PAGESIZE; //check page
+			}
+			
+			printf("nope\n");
+		}
+	}
+	return NULL;
+}
+
+void mydeallocate(void* ptr, char* file, int line, int threadId){
+	printf("Free stuff\n");
+	
+	if(!currentRunning){
+		printf("Coming from library.\n");
+		((metaData*)((long)ptr - sizeof(metaData)))->used = 0;
+		printf("I think i freed it?\n");
+	}
+	else{
+		printf("Coming from thread number %d\n",currentRunning->tid);
+	}
+}
+
 /**************** Additional Methods ****************/
 
 
@@ -79,7 +332,7 @@ int schedulerInit(){
 		return -1;			
 	}
 	ucontext_t uc = sched_uctx;
-	uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
+	uc.uc_stack.ss_sp = (char*)myallocate(STACK_SIZE, __FILE__,__LINE__,LIBREQ);
 	uc.uc_stack.ss_size = STACK_SIZE;
 	uc.uc_link = NULL;
 	
@@ -150,7 +403,7 @@ void maintenanceCycle(){
 				}
 				maintRunning = maintRunning->next;
 				if(freeRunning != NULL){
-					free(freeRunning);
+					mydeallocate(freeRunning,__FILE__,__LINE__,LIBREQ);
 					freeRunning = NULL;
 				}
 			}
@@ -168,7 +421,7 @@ void createRunning(){
 	//needs to change if there are more than 4 priority levels
 	int levelMax[PRIORITY_LEVELS] = {7, 4, 3, 2};//never make last priority level less than 2.
 	//set dummy nodes
-	headRunning = (queueNode*)malloc(sizeof(queueNode));
+	headRunning = (queueNode*)myallocate(sizeof(queueNode),__FILE__,__LINE__,LIBREQ);
 	headRunning->tid = -1;
 	headRunning->next = NULL;
 	tailRunning = NULL;
@@ -206,7 +459,7 @@ void createRunning(){
 			tempTailRunning->next = NULL;
 			//if head is not already set, set it
 			if(headRunning->tid == -1){
-//				free(headRunning);
+//				mydeallocate(headRunning,__FILE__,__LINE__,LIBREQ);
 				headRunning = tempHeadRunning;
 			}
 			else{
@@ -239,7 +492,7 @@ void createRunning(){
 
 			//if head is not already set, set it 		
 			if(headRunning->tid == -1){
-//				free(headRunning);
+//				mydeallocate(headRunning,__FILE__,__LINE__,LIBREQ);
 				headRunning = tempHeadRunning;
 			}
 			else{
@@ -308,7 +561,7 @@ void runThreads(){
 		//move to next node.
 		nextRunning = (queueNode*)nextRunning->next;
 		if(freeRunning != NULL){
-			free(freeRunning);	//frees unless it's waiting
+			mydeallocate(freeRunning,__FILE__,__LINE__,LIBREQ);	//frees unless it's waiting
 			freeRunning = NULL;
 		}
 //		printf("restart loop\n"); //debugging statement.
@@ -354,7 +607,7 @@ void timer(int priority){
 //add to MPQ (new thread, or back in from waiting/running), must pass in level queues.
 void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
 //	printf("addMPQ()\n");
-	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
+	queueNode* newNode = (queueNode*)myallocate(sizeof(queueNode),__FILE__,__LINE__,LIBREQ);
 	
 	//prep new node 
 	newNode->tid = thread->tid;
@@ -396,7 +649,7 @@ void exit_thread(queueNode* node, void* value_ptr){
 			addMPQ(threads[currentNode->tid], mpqHeads[threads[currentNode->tid]->priority], mpqTails[threads[currentNode->tid]->priority]);		
 			tempNode = currentNode;
 			currentNode = currentNode->next;
-			free(tempNode);
+			mydeallocate(tempNode,__FILE__,__LINE__,LIBREQ);
 		}
 	}
 	//Pass ID into tailThread, set curr tail = to this number.	
@@ -406,22 +659,22 @@ void exit_thread(queueNode* node, void* value_ptr){
 		tailThread = headThread;
 	}
 	else if(headThread == tailThread){//only one in queue
-		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		nextId* tmpThread = (nextId*)myallocate(sizeof(nextId),__FILE__,__LINE__,LIBREQ);
 		tmpThread->readyIndex = node->tid;
 		tmpThread->next = NULL;
 		headThread->next = tmpThread;
 		tailThread = tmpThread;
 	}
 	else{//two or more in queue
-		nextId* tmpThread = (nextId*)malloc(sizeof(nextId));
+		nextId* tmpThread = (nextId*)myallocate(sizeof(nextId),__FILE__,__LINE__,LIBREQ);
 		tmpThread->readyIndex = node->tid;
 		tmpThread->next = NULL;
 		tailThread->next = tmpThread;
 		tailThread = tmpThread;
 	}
-	free(threads[node->tid]->context.uc_stack.ss_sp);
+	mydeallocate(threads[node->tid]->context.uc_stack.ss_sp,__FILE__,__LINE__,LIBREQ);
 	threads[node->tid]->context.uc_stack.ss_sp = NULL;
-	free(threads[node->tid]);
+	mydeallocate(threads[node->tid],__FILE__,__LINE__,LIBREQ);
 	threads[node->tid] = NULL;
 	return;
 }
@@ -434,12 +687,12 @@ void free_things(){
 	while(headThread!= NULL){
 		tempThread = headThread;
 		headThread = headThread->next;
-		free(tempThread);
+		mydeallocate(tempThread,__FILE__,__LINE__,LIBREQ);
 	}	
 
 	
 	
-	free(sched_uctx.uc_stack.ss_sp);
+	mydeallocate(sched_uctx.uc_stack.ss_sp,__FILE__,__LINE__,LIBREQ);
 	sched_uctx.uc_stack.ss_sp = NULL;
 	
 }
@@ -457,7 +710,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	
 	//if headThread is not initialized, initialize it.
 	if(!headThread){
-		headThread = (nextId*)malloc(sizeof(nextId));
+		headThread = (nextId*)myallocate(sizeof(nextId),__FILE__,__LINE__,LIBREQ);
 		headThread->next = NULL;
 		headThread->readyIndex = -1;
 	}
@@ -481,7 +734,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 			}
 			else{//move forward to next
 				headThread = (nextId*)headThread->next;
-				free(tempThread); //frees the thread that was previously head.
+				mydeallocate(tempThread,__FILE__,__LINE__,LIBREQ); //frees the thread that was previously head.
 			}
 		}
 		else{
@@ -489,7 +742,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		}
 	}
 	//create a new tcb
-	tcb* newNode = (tcb*)malloc(sizeof(tcb));
+	tcb* newNode = (tcb*)myallocate(sizeof(tcb),__FILE__,__LINE__,LIBREQ);
 	//assign thread ID
 	newNode->tid = ID;
 	//if the first thing in the thread array is null, then we have to capture main's context first and store it as a thread.
@@ -497,10 +750,10 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 		if(getcontext(&(main_uctx)) == -1){
 			return -2;//context issue
 		}
-		main_uctx.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
+		main_uctx.uc_stack.ss_sp = (char*)myallocate(STACK_SIZE,__FILE__,__LINE__,LIBREQ);
 		main_uctx.uc_stack.ss_size = STACK_SIZE;
 		main_uctx.uc_link = &sched_uctx;
-		tcb* newNode = (tcb*)malloc(sizeof(tcb));
+		tcb* newNode = (tcb*)myallocate(sizeof(tcb),__FILE__,__LINE__,LIBREQ);
 		newNode->tid = 0;
 		newNode->context = main_uctx;
 		newNode->threadState = ACTIVE;
@@ -517,7 +770,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	
 	//do context stuff
 	ucontext_t uc = newNode->context;
-	uc.uc_stack.ss_sp = (char*)malloc(STACK_SIZE);
+	uc.uc_stack.ss_sp = (char*)myallocate(STACK_SIZE,__FILE__,__LINE__,LIBREQ);
 	uc.uc_stack.ss_size = STACK_SIZE;
 	uc.uc_link = &sched_uctx;//should be manager thread (scheduler? maintenance?)
 
@@ -611,7 +864,7 @@ int my_pthread_join(my_pthread_t thread, void **value_ptr) {
 	}
 
 	//put thread onto waiting queue in tcb for thread passed in.
-	queueNode* newNode = (queueNode*)malloc(sizeof(queueNode));
+	queueNode* newNode = (queueNode*)myallocate(sizeof(queueNode),__FILE__,__LINE__,LIBREQ);
 	newNode->tid = currentRunning->tid;
 	newNode->next = NULL;
 
@@ -648,7 +901,7 @@ int my_pthread_mutex_init(my_pthread_mutex_t *mutex, const pthread_mutexattr_t *
 	//create new my_pthread_mutex_t struct.
 	mutex->lockState = FALSE;
 	mutex->owner = NULL;
-	mutex->waitQueue = (basicQueue*)malloc(sizeof(basicQueue));
+	mutex->waitQueue = (basicQueue*)myallocate(sizeof(basicQueue),__FILE__,__LINE__,LIBREQ);
 
 	//init the wait queue
 	mutex->waitQueue->head = NULL;
@@ -678,7 +931,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 		if((threads[currentRunning->tid]->priority) > (mutex->owner->priority)){
 
 			//put new thread at head of wait queue
-			waitQueueNode *newHead = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+			waitQueueNode *newHead = (waitQueueNode*)myallocate(sizeof(waitQueueNode),__FILE__,__LINE__,LIBREQ);
 			newHead->thread = threads[currentRunning->tid];
 
 			newHead->next = mutex->waitQueue->head;
@@ -704,7 +957,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 			if(mutex->waitQueue->queueSize == 0){
 			
 				//create node
-				waitQueueNode *firstNode = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+				waitQueueNode *firstNode = (waitQueueNode*)myallocate(sizeof(waitQueueNode),__FILE__,__LINE__,LIBREQ);
 				firstNode->thread = threads[currentRunning->tid];
 				firstNode->next = NULL;
 			
@@ -714,7 +967,7 @@ int my_pthread_mutex_lock(my_pthread_mutex_t *mutex) {
 
 			}else{
 
-				waitQueueNode *newTail = (waitQueueNode*)malloc(sizeof(waitQueueNode));
+				waitQueueNode *newTail = (waitQueueNode*)myallocate(sizeof(waitQueueNode),__FILE__,__LINE__,LIBREQ);
 				newTail->thread = threads[currentRunning->tid];
 				newTail->next = NULL;
 
@@ -758,7 +1011,7 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex) {
 
 		//remove first node in waitQueue
 		waitQueueNode *temp = mutex->waitQueue->head->next; //might have a problem here if its null but probably not		
-		free(mutex->waitQueue->head);
+		mydeallocate(mutex->waitQueue->head,__FILE__,__LINE__,LIBREQ);
 		mutex->waitQueue->head = temp;
 		
 		mutex->waitQueue->queueSize--;
@@ -789,6 +1042,6 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	if(mutex->lockState == 1)
 		return EBUSY;
 
-	free(mutex->waitQueue);
+	mydeallocate(mutex->waitQueue,__FILE__,__LINE__,LIBREQ);
 	return 0;
 }
