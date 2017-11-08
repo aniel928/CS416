@@ -52,7 +52,7 @@ showData(){
 		}
 	}
 	printf("Size of memory: %d | Number of pages: %d | Page size: %d\n", MEMORYSIZE, NUMOFPAGES, PAGESIZE);
-	printf("Bytes used: %d \t| Pages used: %d\t\n", pc * PAGESIZE, pc);
+	printf("Bytes used: %d \t| Pages used: %d (including unused)\n", pc * PAGESIZE, usedPages());
 	
 }
 
@@ -129,7 +129,7 @@ char* myallocate(int size, char* file, int line, int type){
 			//need to make sure that the available space can hold the requested size
 			if ((usePgs + pageCount) > NUMOFPAGES){
 				printf("Can't give this many bytes/pages for this malloc, returning\n");
-				return ;
+				return NULL;
 			}				
 			memNew = (memStruct*)(memory +(totalPages * PAGESIZE - 1)); //This line is the cause of about an hour worth of segfaulting
 			memFollow->next = memNew;
@@ -164,6 +164,10 @@ char* myallocate(int size, char* file, int line, int type){
 }
 	
 void mydeallocate(char* ptr, char* file, int line, int type){
+	if (ptr == NULL){
+		printf("Trying to free NULL\n");
+		return;
+	}
 	printf("Free stuff\n");
 	int a = 0;
 	bool found = FALSE;		//will flip if found in loop
@@ -205,7 +209,8 @@ int main(int argc, char** argv){
 		char	* tester12 = myallocate(1024*1024, __FILE__, __LINE__, 1);
 		mydeallocate(tester3,__FILE__,__LINE__, 1);
 		char	* tester13 = myallocate(1200*1024, __FILE__, __LINE__, 1);
-		char	* tester14 = myallocate(350*1024, __FILE__, __LINE__, 1);
+		char	* tester14 = myallocate(500*1024, __FILE__, __LINE__, 1);
+		mydeallocate(NULL,__FILE__,__LINE__, 1 );
 							 
 		printf("BACK\n");
 		i++;
