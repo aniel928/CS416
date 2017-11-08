@@ -12,11 +12,10 @@
 
 #define USE_MY_PTHREAD 1
 #define MAX_THREADS 128 //max threads
-#define STACK_SIZE 16384 //size of stack in bytes
+#define STACK_SIZE 4096//16384 //size of stack in bytes - make smaller for part2
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
 #define PRIORITY_LEVELS 4//how many priority levels
-
 
 /* include lib header files that you need here: */
 #include <unistd.h>
@@ -29,6 +28,8 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <unistd.h>
+
 
 
 #ifdef USE_MY_PTHREAD
@@ -107,7 +108,7 @@ typedef struct _basicQueue{
 
 /* mutex struct definition */
 typedef struct _my_pthread_mutex_t {
- 		/* add something here */\
+ 		/* add something here */
  		
 	tcb *owner; //thread owner of this mutex
 	int lockState; //1 is locked 0 is unlocked
@@ -151,3 +152,18 @@ int my_pthread_mutex_unlock(my_pthread_mutex_t *mutex);
 int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 
 #endif
+
+
+//malloc stuff
+#ifndef _MYALLOCATE_H
+#define _MYALLOCATE_H
+#define MEMORYSIZE 8388608
+#define THREADREQ 1
+#define LIBREQ 0
+#define malloc(x) myallocate(x,__FILE__,__LINE__, THREADREQ)
+#define free(x) mydeallocate(x,__FILE__,__LINE__, THREADREQ)
+#define PAGESIZE sysconf( _SC_PAGE_SIZE)
+#endif
+
+void * myallocate(int size, char * file, int line, int threadId);
+void mydeallocate(void* ptr, char* file, int line, int threadId);
