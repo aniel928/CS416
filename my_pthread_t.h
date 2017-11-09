@@ -165,5 +165,18 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 #define PAGESIZE sysconf( _SC_PAGE_SIZE)
 #endif
 
+//MALLOC DECLARATIONS:
+typedef struct _metaData{
+	int used; //0 if free, 1 if used
+	int bytes; //how many bytes were requested.
+	struct _metaData* ptr; //point to next - wanted to avoid, but having trouble traversing list without.
+}metaData;
+
+typedef struct _pageTable{
+	int pageNumber;
+	metaData* ptr;
+	metaData* next;
+} pageTable;
+
 void * myallocate(int size, char * file, int line, int threadId);
 void mydeallocate(void* ptr, char* file, int line, int threadId);
