@@ -8,6 +8,17 @@
 #include <math.h>
 #include "my_pthread_t.h"
 
+
+
+/*QUESTIONS:
+	-how small can we make our stacks to limit OS space?
+	-
+
+
+
+*/
+
+
 /**************** Global Variables ****************/
 
 int timerCounter = 0;	//Used to stop infinite while loop for timer
@@ -58,22 +69,9 @@ int levelCtrs[PRIORITY_LEVELS] = {0};
 queueNode* manualExit = NULL;
 my_pthread_mutex_t* mutexManualExit = NULL;
 
-
-//MALLOC DECLARATIONS:
-typedef struct _metaData{
-	int used; //0 if free, 1 if used
-	int bytes; //how many bytes were requested.
-	struct _metaData* ptr; //point to next - wanted to avoid, but having trouble traversing list without.
-}metaData;
-
-typedef struct _pageTable{
-	int pageNumber;
-	metaData* ptr;
-	metaData* next;
-} pageTable;
-
 //declare 8MB chunk of data for malloc
 static char memory[MEMORYSIZE];
+//ptrs for malloc stuff
 metaData* headUser = NULL;
 metaData* currMD = NULL;
 metaData* prevMD = NULL;
@@ -151,30 +149,30 @@ void* myallocate(int size, char* file, int line, int threadId){
 				currMD = headOS;
 				printf("headOS ptr: %p; currMD ptr: %p\n", headOS->ptr, currMD->ptr);
 				printf("almost in while\n");
+
 				//while ptr != NULL, move forward.
 				while(currMD->ptr){ 
-				
-//					printf("In while\n");
 					prevMD = currMD;
 					currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 					if(currMD->used == 0){
-						printf("need to add in logic to look for free space between.\n");
 						int bytesFree = currMD->bytes;
 						iterMD = currMD;
 						
+						//look for free bits in between as we're traversing to end.
 						while(iterMD->ptr && (iterMD->ptr)->used == 0){
 							iterMD = iterMD->ptr;
 							bytesFree += sizeof(metaData) + iterMD->bytes;
 						}
-						
-						printf("bytes free: %d\n", bytesFree);
-						
+						if(bytesFree > 0){
+							printf("bytes free: %d\n	", bytesFree);
+						}
+						//if there are enough bytes free to squeeze it in, but not enough for metadata, give them all
 						if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
 							currMD->used = 1;
 							printf("Asked for %d,  got %d\n",size,currMD->bytes);
 							return (void*)((long)currMD + sizeof(metaData));
 						}
-						//if it's bigger than the space and there's enough room for metadata
+						//if it's bigger than the space and there's enough room for metadata, put it in and put in metadata for rest
 						else if(bytesFree > size){
 							currMD->used = 1;
 							currMD->bytes = size;
@@ -188,21 +186,25 @@ void* myallocate(int size, char* file, int line, int threadId){
 						}
 						//else if it won't fit, keep looping through.
 					}
-//					printf("forward\n");
 				}
 				printf("Just out of while\n");
+				//do it all one more time forward, loop broke when PTR was null, so get to that free space
 				prevMD = currMD;
 				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 				printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, 1024*1024);
-				if((long)currMD - (long)headOS > (1024*1024)){
-					printf("No more space in OS space.  Make bigger.\n");
+
+				//Please don't let this happen, 1MB should be plenty
+				if(((long)currMD - (long)headOS + sizeof(metaData) + size) > (1024*1024)){
+					printf("Not enough space in OS section.  Make bigger.\n");
 					return NULL;
 				}
+				//if it didn't return ^^up there, then use it!
 				currMD->used = 1;
 				currMD->bytes = size;
 				currMD->ptr = NULL;
 				prevMD->ptr = currMD;
 			}
+			//return the pointer
 			return (void*)((long)currMD + sizeof(metaData));
 		}
 		//head is being used currently
@@ -211,12 +213,8 @@ void* myallocate(int size, char* file, int line, int threadId){
 			//set currentMD to head;
 			prevMD = headOS;
 			currMD = headOS;
-			printf("headOS ptr: %p; currMD ptr: %p\n", headOS->ptr, currMD->ptr);
-			printf("almost in while\n");
 			//while ptr != NULL, move forward.
 			while(currMD->ptr){ 
-			
-//				printf("In while\n");
 				prevMD = currMD;
 				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 				if(currMD->used == 0){
@@ -256,10 +254,13 @@ void* myallocate(int size, char* file, int line, int threadId){
 			prevMD = currMD;
 			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 			printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, 1024*1024);
-			if((long)currMD - (long)headOS > (1024*1024)){
-				printf("No more space in OS space.  Make bigger.\n");
+
+			//Please don't let this happen, 1MB should be plenty
+			if(((long)currMD - (long)headOS + sizeof(metaData) + size) > (1024*1024)){
+				printf("Not enough space in OS section.  Make bigger.\n");
 				return NULL;
 			}
+			//if it didn't return ^^up there, then use it!
 			currMD->used = 1;
 			currMD->bytes = size;
 			currMD->ptr = NULL;
