@@ -44,6 +44,7 @@
 #define pthread_mutex_destroy my_pthread_mutex_destroy
 #endif
 
+//MALLOC DECLARATIONS:
 
 //enum for states
 typedef enum _states{
@@ -52,7 +53,27 @@ typedef enum _states{
 
 typedef enum _bool{
 	FALSE, TRUE
-} bool;
+}bool;
+
+typedef struct _metaData{
+	int used; //0 if free, 1 if used
+	int bytes; //how many bytes were requested.
+	struct _metaData* ptr; //point to next - wanted to avoid, but having trouble traversing list without.
+}metaData;
+
+typedef struct _pageTableEntry{
+	int pageIndex;
+	int maxSize;
+	struct _pageTableEntry* next;
+} PTE;
+
+typedef struct _memStruct{
+	//int sizeLeft;	//initally set = to page size	
+	int currUsed;
+	int pageCount;
+	bool inUse;
+	struct _memStruct* next;
+}memStruct;
 
 //as we kill off threads/mutexes, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.
@@ -88,6 +109,8 @@ typedef struct threadControlBlock{
 	void* waitingThreads;
 	//for priority inversion
 	bool mutexWaiting;
+	//page table for each thread
+	PTE* pageTable;
 } tcb; 
 
 typedef struct _waitQueueNode{
@@ -157,26 +180,19 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 //malloc stuff
 #ifndef _MYALLOCATE_H
 #define _MYALLOCATE_H
-#define MEMORYSIZE 8388608
+#define MEMORYSIZE (8*1024*1024) //8MB
 #define THREADREQ 1
 #define LIBREQ 0
 #define malloc(x) myallocate(x,__FILE__,__LINE__, THREADREQ)
 #define free(x) mydeallocate(x,__FILE__,__LINE__, THREADREQ)
 #define PAGESIZE sysconf( _SC_PAGE_SIZE)
+#define OSSIZE (1024*1024) //1MB
+#define SHAREDSIZE (PAGESIZE * 4)
+#define USERSIZE (MEMORYSIZE - OSSIZE - SHAREDSIZE) //8MB - 1MB - 4 shared pages
+#define NUMOFPAGES (USERSIZE / PAGESIZE)
 #endif
 
-//MALLOC DECLARATIONS:
-typedef struct _metaData{
-	int used; //0 if free, 1 if used
-	int bytes; //how many bytes were requested.
-	struct _metaData* ptr; //point to next - wanted to avoid, but having trouble traversing list without.
-}metaData;
 
-typedef struct _pageTable{
-	int pageNumber;
-	metaData* ptr;
-	metaData* next;
-} pageTable;
 
 void * myallocate(int size, char * file, int line, int threadId);
 void mydeallocate(void* ptr, char* file, int line, int threadId);
