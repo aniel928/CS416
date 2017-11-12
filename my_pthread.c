@@ -74,8 +74,9 @@ memStruct * memFollow = NULL;
 memStruct * memNext = NULL;
 
 //save in case main method calls malloc before making new thread.
-PTE* firstPTE = NULL;  
-//TODO: add this into Mike's code later
+PTE* firstPTE = NULL;  //TODO: add this into Mike's code later
+my_pthread_mutex_t* mutexMalloc = NULL;//so that two threads don't grab same page
+bool mallocInitialized = FALSE;
 
 //boolean for malloc init
 /***************** Malloc Stuff *********************/
@@ -121,6 +122,15 @@ int usedPages(){
 	return count;
 }
 
+void mallocInit(){
+	my_pthread_mutex_init(mutexMalloc, NULL);
+	//aligning pages
+	if(!memory){
+		posix_memalign((void*)&memory,PAGESIZE, MEMORYSIZE);
+	}
+	mallocInitialized = TRUE;
+	return;
+}
 
 void spaceBetween(metaData* currMD, int size, int bytesFree){
 	currMD->used = 1;   
@@ -143,9 +153,8 @@ int combineFreeStuff(metaData* iterMD){
 }
 
 void* myallocate(int size, char* file, int line, int threadId){
-	//aligning pages
-	if(!memory){
-		posix_memalign((void*)&memory,PAGESIZE, MEMORYSIZE);
+	if(!mallocInitialized){
+		mallocInit();
 	}
 	//error catching in case trying to malloc 0 bytes.
 	if(size <= 0){
@@ -313,13 +322,18 @@ void* myallocate(int size, char* file, int line, int threadId){
 			//determining how many pages are needed to return
 			int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
 			printf("Need %d pages for this Malloc\n", pageCount);
-				
+			/*********************************/
+			my_pthread_mutex_lock(mutexMalloc);
+			/*********************************/
 			//Check if head has been built
 			if (memHead == NULL){	//memHead not built yet
 				printf("Head is NULL\n");
 				
 				if(size > USERSIZE - sizeof(memStruct)){
 					printf("Too big.\n");
+					/***********************************/
+					my_pthread_mutex_unlock(mutexMalloc);
+					/***********************************/
 					return NULL;
 				}
 				//add if statement ot make sure not greater than USERSIZE - sizeof(memStruct)
@@ -335,6 +349,9 @@ void* myallocate(int size, char* file, int line, int threadId){
 				int retAmt = PAGESIZE * pageCount - sizeof(memStruct);
 				printf("returning %d bytes\n", retAmt);			
 				void * retStr = (void*)(memHead + sizeof(memStruct)-1);
+				/***********************************/
+				my_pthread_mutex_unlock(mutexMalloc);
+				/***********************************/
 				return retStr;
 			}
 			else{//head has been previously set
@@ -364,6 +381,9 @@ void* myallocate(int size, char* file, int line, int threadId){
 					//need to make sure that the available space can hold the requested size
 					if ((usePgs + pageCount) > NUMOFPAGES){
 						printf("Can't give this many bytes/pages for this malloc, returning\n");
+						/***********************************/
+						my_pthread_mutex_unlock(mutexMalloc);
+						/***********************************/
 						return NULL;
 					}				
 					memNew = (memStruct*)(memory + OSSIZE +(totalPages * PAGESIZE - 1)); //This line is the cause of about an hour worth of segfaulting
@@ -393,7 +413,12 @@ void* myallocate(int size, char* file, int line, int threadId){
 						memNew->pageCount = pageCount;
 					}
 				}
+				
+
 				void* retStr = (void*)(memNew +sizeof(memStruct));
+				/***********************************/
+				my_pthread_mutex_unlock(mutexMalloc);
+				/***********************************/
 				return retStr;
 			}		
 	/****************************************************************************/
