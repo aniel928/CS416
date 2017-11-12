@@ -17,9 +17,9 @@
 // }
 
 void giveMeMem(){
-	printf("mallocing 500 bytes\n");
-	char* ptr = (char*)malloc(500);
-	free(ptr);
+	printf("mallocing 5000 bytes\n");
+	char* ptr = (char*)malloc(5000);
+//	free(ptr);
 	pthread_exit(NULL);
 }
 
@@ -42,5 +42,11 @@ int main(int argc, char** argv){
 	}
 	//pthread_create(&mythread, NULL, (void*)&giveMeMem, NULL);
 //	printf("Joining\n");
-	pthread_join(mythread[0], NULL);
+	i=0;
+	while(i< 100){
+		pthread_join(mythread[i], NULL);
+		i++;		
+	}
+	
+	showData();
 }
