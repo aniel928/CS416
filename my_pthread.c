@@ -85,7 +85,7 @@ bool mallocInitialized = FALSE;
 void showData(){
 	memStruct * memTest = memHead;
 	printf("----------PRINTING LINKED LIST DATA----------\n");
-	int i = 0;
+	int i = 1;
 	int pc = 0;
 	char* boolVal = "FALSE";
 	if (memTest == NULL){
@@ -100,7 +100,7 @@ void showData(){
 			else{
 				boolVal = "FALSE";
 			}
-			printf("Page number: %d, Page count: %d, inUse? %s, index: %d\n", i, memTest->pageCount, boolVal, pc*PAGESIZE);
+			printf("Request number: %d, Page count: %d, inUse? %s, index: %d\n", i, memTest->pageCount, boolVal, pc*PAGESIZE + OSSIZE);
 			pc += memTest->pageCount;
 			memTest = memTest->next;
 			i++;
@@ -108,7 +108,27 @@ void showData(){
 	}
 	printf("Size of memory: %d | Number of pages: %d | Page size: %d\n", MEMORYSIZE, NUMOFPAGES, PAGESIZE);
 	printf("Bytes used: %d \t| Pages used: %d (including unused)\n", pc * PAGESIZE, usedPages());
+	printf("\nComplete.\n");
+}
+
+void showPages(){
 	
+		int tid = currentRunning->tid;
+		printf("in show pages (memStruct size: %d)\n", sizeof(memStruct));
+		
+			printf("------Page Table Info Tor tid: %d------\n",tid);
+			PTE * threadPTE = threads[tid]->pageTable;	
+			printf("|Index: %d, maxSize: %d ",threadPTE->pageIndex,threadPTE->maxSize );
+			
+		
+			while (threadPTE->next != NULL){
+				threadPTE = threadPTE->next;
+				printf("|Index: %d, maxSize: %d ",threadPTE->pageIndex,threadPTE->maxSize );
+			
+			}
+			printf("\n");
+	//	showData();
+		
 }
 
 //Checks to see how many pages have been used, need to switch to page table
@@ -185,13 +205,13 @@ void* myallocate(int size, char* file, int line, int threadId){
 			int bytesFree = combineFreeStuff(iterMD);
 
 			if(bytesFree > 0){
-				printf("bytes free: %d\n", bytesFree);
+			//	printf("bytes free: %d\n", bytesFree);
 			}
 			
 			//if it's at least as big as space, but less than enough space to put metadata
 			if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
 				currMD->used = 1;
-				printf("Asked for %d, got %d\n",size,currMD->bytes);
+				//printf("Asked for %d, got %d\n",size,currMD->bytes);
 			}
 			//if it's bigger than the space and there's enough room for metadata
 			else if(bytesFree > size){
@@ -211,18 +231,18 @@ void* myallocate(int size, char* file, int line, int threadId){
  						iterMD = currMD;
 						int bytesFree = combineFreeStuff(iterMD);
  						if(bytesFree > 0){
-							printf("bytes free: %d\n", bytesFree);
+						//	printf("bytes free: %d\n", bytesFree);
 						}
 						//if there are enough bytes free to squeeze it in, but not enough for metadata, give them all
 						if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
 							currMD->used = 1;
-							printf("Asked for %d,  got %d\n",size,currMD->bytes);
+						//	printf("Asked for %d,  got %d\n",size,currMD->bytes);
 							return (void*)((long)currMD + sizeof(metaData));
 						}
 						//if it's bigger than the space and there's enough room for metadata, put it in and put in metadata for rest
 						else if(bytesFree > size){
 							spaceBetween(currMD, size, bytesFree);
-							printf("ok\n");
+							//printf("ok\n");
 							return (void*)((long)currMD + sizeof(metaData));
 						}
 						//else if it won't fit, keep looping through.
@@ -231,7 +251,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 				//do it all one more time forward, loop broke when PTR was null, so get to that free space
 				prevMD = currMD;
 				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
-				printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, OSSIZE);
+				//printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, OSSIZE);
 
 				//Please don't let this happen, 1MB should be plenty
 				if(((long)currMD - (long)headOS + sizeof(metaData) + size) > (OSSIZE)){
@@ -262,17 +282,17 @@ void* myallocate(int size, char* file, int line, int threadId){
 					int bytesFree = combineFreeStuff(iterMD);
 
 					if(bytesFree > 0){
-						printf("bytes free: %d\n", bytesFree);
+						//printf("bytes free: %d\n", bytesFree);
 					}				
 					if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
 						currMD->used = 1;
-						printf("Asked for %d, got %d\n",size,currMD->bytes);
+						//printf("Asked for %d, got %d\n",size,currMD->bytes);
 						return (void*)((long)currMD + sizeof(metaData));
 					}
 					//if it's bigger than the space and there's enough room for metadata
 					else if(bytesFree > size){
 						spaceBetween(currMD, size, bytesFree);
-						printf("ok\n");
+						//printf("ok\n");
 						return (void*)((long)currMD + sizeof(metaData));
 					}
 					//else if it won't fit, keep looping through.
@@ -280,7 +300,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			}
 			prevMD = currMD;
 			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
-			printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, OSSIZE);
+			//printf("forward one last time, %d/%d bytes used\n", ((long)currMD + sizeof(metaData) + size) - (long)headOS, OSSIZE);
 
 			//Please don't let this happen, 1MB should be plenty
 			if(((long)currMD - (long)headOS + sizeof(metaData) + size) > (OSSIZE)){
@@ -345,6 +365,27 @@ void* myallocate(int size, char* file, int line, int threadId){
 				memHead->inUse = TRUE;
 				memHead->next = NULL;
 				
+				//creating page table for head
+				PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+				threads[tid]->pageTable = threadPTE;
+				//printf("creating page table for tid: %d\n", tid);
+				//add page indexes to pageTable for first thread
+				int iter = 0;
+				while ( iter < pageCount-1){
+					threadPTE->pageIndex = (iter * PAGESIZE) + OSSIZE;
+					threadPTE->maxSize = 0;
+					iter++;
+					threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+					threadPTE = threadPTE->next;
+				}
+				threadPTE->pageIndex = (iter * PAGESIZE) + OSSIZE;
+				threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));//math is probably wrong
+				threadPTE->next = NULL;
+				showPages();
+				//showData();
+				//int forcesegfault = (threadPTE->next)->pageIndex;
+			
+				
 				//returning the front of the string
 				int retAmt = PAGESIZE * pageCount - sizeof(memStruct);
 				printf("returning %d bytes\n", retAmt);			
@@ -392,7 +433,24 @@ void* myallocate(int size, char* file, int line, int threadId){
 					memNew->pageCount = pageCount;
 					memNew->currUsed = sizeof(memStruct)+ size;
 					memNew->next = NULL;
-									printf("1\n");
+					
+					//adding new pages to page table
+					PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+					threads[tid]->pageTable = threadPTE;
+					int iter = 0;
+					while ( iter < pageCount-1){
+						threadPTE->pageIndex = (totalPages * PAGESIZE) + OSSIZE + iter * PAGESIZE;
+						threadPTE->maxSize = 0;
+						iter++;
+						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+						threadPTE = threadPTE->next;
+					}
+					threadPTE->pageIndex = (totalPages * PAGESIZE) + OSSIZE + iter * PAGESIZE;
+					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+					threadPTE->next = NULL;
+					showPages();			
+					
+					
 				}
 				else{//found page that was previously used BUT it was free'd
 
@@ -403,7 +461,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					if (memNew->pageCount > pageCount){
 						//if the freed section has more pages than the pages needed, proceed accordingly
 						//determine how many more pages there are
-						int index = currPages * PAGESIZE - 1 + pageCount * PAGESIZE;
+						int index = currPages * PAGESIZE + pageCount * PAGESIZE;//-1;
 						memNext = (memStruct*)(memHead + index);
 						memNext->inUse = FALSE;
 						memNext->pageCount = memNew->pageCount - pageCount;
@@ -412,6 +470,25 @@ void* myallocate(int size, char* file, int line, int threadId){
 						memNew->next = memNext;
 						memNew->pageCount = pageCount;
 					}
+					
+					
+										//adding new pages to page table
+					PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+					threads[tid]->pageTable = threadPTE;
+					int iter = 0;
+					while ( iter < pageCount-1){
+						threadPTE->pageIndex = (totalPages * PAGESIZE) + OSSIZE + iter * PAGESIZE;
+						threadPTE->maxSize = 0;
+						iter++;
+						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+						threadPTE = threadPTE->next;
+					}
+					threadPTE->pageIndex = (totalPages * PAGESIZE) + OSSIZE + iter * PAGESIZE;
+					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));//math is probably wrong
+					threadPTE->next = NULL;
+					showPages();				
+					
+					
 				}
 				
 
@@ -433,8 +510,6 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 		return;
 	}
 
-	
-
 	if(!threadId){
 		printf("Free coming from library.\n");
 		((metaData*)((long)ptr - sizeof(metaData)))->used = 0;
@@ -454,7 +529,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 
 		int a = 0;
 		bool found = FALSE;		//will flip if found in loop
-		int pageNum =  ((ptr +1  - (void*)memHead)/PAGESIZE + 1)-1;
+		int pageNum =  ((ptr +1  - (void*)memHead)/PAGESIZE );
 		int search = 0;
 		memStruct * memFree = memHead;
 		while (search <= pageNum && memFree != NULL){
@@ -470,6 +545,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			printf("could not find anything to free\n");
 		}
 		else{
+			
 			printf("Great success!\n");
 		}
 		
