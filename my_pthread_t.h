@@ -11,11 +11,12 @@
 #define _GNU_SOURCE
 
 #define USE_MY_PTHREAD 1
-#define MAX_THREADS 128 //max threads
-#define STACK_SIZE 4096//16384 //size of stack in bytes - make smaller for part2
+#define MAX_THREADS 32 //max threads
+#define STACK_SIZE 16384 //size of stack in bytes - make smaller for part2
 #define QUANTUM 25000 //predefined in project spec as 25ms - converted to microseconds
 #define CYCLES 5 //how many full maintenance cycles before moving up one level of queue
 #define PRIORITY_LEVELS 4//how many priority levels
+
 
 /* include lib header files that you need here: */
 #include <unistd.h>
@@ -29,8 +30,6 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <unistd.h>
-
-
 
 #ifdef USE_MY_PTHREAD
 #define pthread_t my_pthread_t
@@ -47,6 +46,7 @@
 //MALLOC DECLARATIONS:
 
 //enum for states
+
 typedef enum _states{
 	ACTIVE, WAITING, YIELDED, PREEMPTED, DONE
 } states;
@@ -64,6 +64,7 @@ typedef struct _metaData{
 typedef struct _pageTableEntry{
 	int pageIndex;
 	int maxSize;
+	bool swappedOut; //TODO: need to fill this in everywhere
 	struct _pageTableEntry* next;
 } PTE;
 
@@ -192,7 +193,18 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 #define NUMOFPAGES (USERSIZE / PAGESIZE)
 #endif
 
+//testMethods
+void showData();
+void showPages(int tid); 
+void dataEPT();
 
+//helper methods
+int usedPages();
+int inUsePgs();
+void mallocInit();
+void spaceBetween(metaData* curr, int size, int bytesFree);
+int combineFreeStuff(metaData* iter);
 
 void * myallocate(int size, char * file, int line, int threadId);
 void mydeallocate(void* ptr, char* file, int line, int threadId);
+void* shalloc(int size);
