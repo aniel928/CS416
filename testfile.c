@@ -1,4 +1,3 @@
-
 #include "my_pthread_t.h"
 #include <time.h>
 #include <stdio.h>
@@ -75,15 +74,19 @@ void giveMeMem(int* thread){
 	return;
 }
 */
-
 /* * * * * * * * * * Shalloc * * * * * * * * * */
+
+
+
+
 void giveMeMem(int* thread){
-	printf("Thread #: %d\n", *thread);
-	char* ptr[5];
-	printf("mallocing 5MB\n");
+	
+	//printf("Thread #: %d\n", *thread);
+	char* ptr[200];
+	//printf("mallocing 5MB\n");
 	int i = 0;
-	while(i < 5){
-		ptr[i] = (char*)malloc(5);
+	/*while(i < 200){
+		ptr[i] = (char*)malloc(5000);
 		if(ptr[i]){
 			printf("malloced %d pointer: %p\n",i, ptr[i]);
 //			free(ptr[i]);
@@ -94,18 +97,51 @@ void giveMeMem(int* thread){
 			printf("-------POINTER IS NULL-------\n");
 			return;
 		}
-	}
-	
+	}*/
+	char* sha = (char*)(shalloc(10));
+	printf("shalloced\n");
+	free(sha);
+	/*	
 	i=0;
-	while(i < 5){
+	while(i < 200){
 		free(ptr[i]);
 		printf("pointer %d freed\n", i);
 		i++;
-	}
+	}*/
+	
 
 	pthread_exit(NULL);
 	return;
 }
+
+void function(){
+	//could not get this to work at all, I suck at the pthread create stuff
+	char * str1 = (char*)shalloc(500);
+	char * str2 = (char*)shalloc(300);
+	char * str3 = (char*)shalloc(500);
+	free(str2);
+	char * str4 = (char*)shalloc(300);
+	free(str1);
+	char * str5 = (char*)shalloc(500);
+	free(str3);
+	free(str4);
+	char * str6 = (char*)shalloc(300);
+	char * str7 = (char*)shalloc(500);
+	char * str8 = (char*)shalloc(300);
+	char * str9 = (char*)shalloc(500);
+	char * str10 = (char*)shalloc(300);
+	free(str10);
+	free(str9);
+	free(str8);
+	free(str7);
+	free(str6);
+	
+	
+	
+}
+
+
+
 
 void shallocIt(){
 	char* myptr = (char*)shalloc(5);
@@ -130,28 +166,24 @@ void useIt(void** ptr){
 
 int main(int argc, char** argv){
 
-/* * * * * Group tests * * * * */
-// pthread_t mythread[5];
-// int i=0;
-// int j[5];
-// while(i< 5){
-// 	j[i] = i;
-// 	pthread_create(&mythread[i], NULL, (void*)&giveMeMem, &j[i]);
-// 	printf("thread: %d\n", i);
-// 	i++;	
-// 		
-// }
-// i=0;
-// while(i< 5){
-// 	pthread_join(mythread[i], NULL);
-// 	i++;		
-// }
+/* * * * * Group tests * * * * *
+	pthread_t mythread[30];
+	int i=0;
+	int j[30];
+	while(i< 30){
+		j[i] = i;
+		pthread_create(&mythread[i], NULL, (void*)&giveMeMem, &j[i]);
+		printf("thread: %d\n", i);
+		i++;	
+			
+	}
+	i=0;
+	while(i< 30){
+		pthread_join(mythread[i], NULL);
+		i++;		
+	}
 
-char* ptr = (char*)malloc(5);
-char* ptr1 = (char*)malloc(500);
-char* ptr2 = (char*)malloc(5000);
-
-/* * * * * Small one of tests * * * * */
+* * * * * Small one of tests * * * * */
 // 	pthread_t mythread1, mythread2, mythread3;
 // 	char* ptr1 = NULL;
 // 	pthread_create(&mythread1, NULL, (void*)&shallocIt, NULL);
@@ -163,22 +195,55 @@ char* ptr2 = (char*)malloc(5000);
 // 	pthread_create(&mythread2, NULL, (void*)&useIt, &ptr1);
 // 	pthread_create(&mythread3, NULL, (void*)&useIt, &ptr1);	
 // 	pthread_join(mythread2, NULL);
-// 	pthread_join(mythread3, NULL);			
+// 	pthread_join(mythread3, NULL);
 
-	printf("Test done\n");
+			
+pthread_t mythread1;
+printf("before");
+pthread_create(&mythread1, NULL, (void*)&function, NULL);
+char* new = (char*)shalloc(10);
+char* ptr1 = malloc(5000);
+char* ptr2 = malloc(6000);
+free(ptr1);
+char* ptr3 = malloc(5500);
+free(ptr2);
+char* ptr4 = malloc(8000);
+char* ptr5 = malloc(6000);
+free(ptr3);
+free(ptr4);
+free(ptr5);
+printf("about to free new\n");
+free(new);
+printf("after first set\n");
+char * ptrA = malloc(5000);
+free(ptrA);
+char * ptrB = malloc(10000);
+free(ptrB);
+char * str1 = (char*)shalloc(500);
+char * str2 = (char*)shalloc(300);
+char * str3 = (char*)shalloc(500);
+free(str2);
+char * str4 = (char*)shalloc(300);
+free(str1);
+char * mstr1 = (char*)malloc(4000);
+char * str5 = (char*)shalloc(500);
+free(str3);
+free(str4);
+char * str6 = (char*)shalloc(300);
+char * str7 = (char*)shalloc(500);
+char * str8 = (char*)shalloc(300);
+char * str9 = (char*)shalloc(500);
+char * str10 = (char*)shalloc(300);
+free(str10);
+free(str9);
+free(str7);
+free(str8);
+free(str6);
+free(mstr1);
+printf("after last set\n");
+printf("Test done\n");
 //	showData();
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
