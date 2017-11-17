@@ -241,16 +241,17 @@ void* myallocate(int size, char* file, int line, int threadId){
 	}
 	//error catching in case trying to malloc 0 bytes.
 	if(size <= 0){
-		printf("No bytes requested, file: %s, line: %d\n", file, line);
+//		printf("No bytes requested, file: %s, line: %d\n", file, line);
 		return NULL;
 	}
 	else{
-		printf("%d bytes requested\n", size);
+//		printf("%d bytes requested\n", size);
 	}
 
 	//library request - don't use paging.
 	if(!threadId){
-		printf("Coming from library\nUse OS section\n");
+	//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN FREE]) Add changes/fix from old file
+//		printf("Coming from library\nUse OS section\n");
 		//if no head is set yet
 		if(!headOS){
 			currMD = (metaData*)memory;
@@ -280,8 +281,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 				spaceBetween(currMD, size, bytesFree);
 			}
 			//won't fit
-			else{
-			
+			else{			
 				//set currentMD to head;
 				prevMD = headOS;
 				currMD = headOS;
@@ -339,7 +339,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 //					printf("found one that was freed\n");
 					iterMD = currMD;
 					int bytesFree = combineFreeStuff(iterMD);
-
 					if(bytesFree > 0){
 						//printf("bytes free: %d\n", bytesFree);
 					}				
@@ -556,12 +555,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 			int totalPages = usedPages();
 			int currPages = 0;//memHead->pageCount;
 			int k = 0;
-			if (memHead->inUse == TRUE){
-				printf("MEMHEAD TRUE\n");
-			}
-			else{
-				printf("MEMHEAD FALSE\n");
-			}
 			if (memNew->inUse == TRUE){
 				memNew = memNew->next;
 				currPages += memHead->pageCount;
@@ -615,6 +608,8 @@ void* myallocate(int size, char* file, int line, int threadId){
 					else{
 						printf("NOT on first for tid: %d\n", tid);
 						PTE * tempPTE = threads[tid]->pageTable;
+						//need to make sure tables are not added if they 
+						
 						while (tempPTE->next != NULL){
 							tempPTE = tempPTE->next;	
 						}
@@ -624,11 +619,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 				
 				int iter = 0;
 				while ( iter < pageCount-1){
+					printf("in while\n");
 					threadPTE->pageIndex = (currPages + iter);
 					printf("pageIndex: %d\n",threadPTE->pageIndex);
 					threadPTE->maxSize = 0;
 					iter++;
-				
 					threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 					if (threadPTE == NULL){
 						printf("ITS NULL!!!\n");
@@ -671,18 +666,24 @@ void* myallocate(int size, char* file, int line, int threadId){
 			
 				//adding new pages to page table
 				PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+				PTE * tempPTE;
+				PTE * afterPTE;
 				if (threadPTE == NULL){
 					printf("ITS NULL!!!\n");
 				}
-				if(tid ==0 && threads[0]){
+				bool found = FALSE;
+				bool after = FALSE;
+				if(tid ==0 && !threads[0]){
 					if (!firstPTE){
 						printf("on first for tid: %d\n", tid);
 						firstPTE = threadPTE;
+						tempPTE = firstPTE;
 					}
 					else{
 						printf("NOT on first for tid: %d\n", tid);
-						PTE * tempPTE = firstPTE;
+						tempPTE = firstPTE;
 						while (tempPTE->next != NULL){
+							
 							tempPTE = tempPTE->next;	
 						}
 						tempPTE->next = threadPTE;
@@ -692,41 +693,76 @@ void* myallocate(int size, char* file, int line, int threadId){
 					if (threads[tid]->pageTable == 	NULL){
 						printf("on first for tid: %d\n", tid);
 						threads[tid]->pageTable = threadPTE;
+						tempPTE = threadPTE;
 					}
 					else{
 						printf("NOT on first for tid: %d\n", tid);
-						PTE * tempPTE = threads[tid]->pageTable;
+						tempPTE = threads[tid]->pageTable;
 						while (tempPTE->next != NULL){
+							if (tempPTE->pageIndex == currPages){
+								found = TRUE;
+								break;
+							}
 							tempPTE = tempPTE->next;	
 						}
-						tempPTE->next = threadPTE;
 					}
 				}
-				int iter = 0;
-				while ( iter < pageCount-1){
+				if (found = FALSE){
+					tempPTE->next = threadPTE;
+					int iter = 0;
+					while ( iter < pageCount-1){
+						threadPTE->pageIndex = (currPages + iter);
+						printf("pageIndex: %d\n",threadPTE->pageIndex);
+						threadPTE->maxSize = 0;
+						iter++;
+						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+						if (threadPTE == NULL){
+							printf("ITS NULL!!!\n");
+						}
+						threadPTE = threadPTE->next;
+					}
 					threadPTE->pageIndex = (currPages + iter);
-					printf("pageIndex: %d\n",threadPTE->pageIndex);
-					threadPTE->maxSize = 0;
-					iter++;
-					threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
-					if (threadPTE == NULL){
-					printf("ITS NULL!!!\n");
-					}
-					printf("in while\n");
-					threadPTE = threadPTE->next;
-				}
-				threadPTE->pageIndex = (currPages + iter);
-				threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
-				threadPTE->next = NULL;
-
-		//**** WHY DO YOU NEED THIS HERE? ****//
-				if(currentRunning){
-					tid = currentRunning->tid;
+					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+					threadPTE->next = NULL;
 				}
 				else{
-					tid = 0;
-				}
-				
+					tempPTE->maxSize = 0;
+					int iter = 1;
+					int newPC = pageCount;
+					while (tempPTE != NULL ){
+						if  ((tempPTE)->pageIndex != currPages+iter){
+							break;
+						}
+						tempPTE->maxSize = 0;
+						newPC--;
+						iter++;
+						tempPTE = tempPTE->next;		
+						if (tempPTE == NULL){
+							printf("it is\n");
+						}
+					}
+					if (tempPTE != NULL){
+						afterPTE = tempPTE->next;
+						after = TRUE;
+					}
+					tempPTE->next = threadPTE;
+					while ( iter < newPC-1){
+						threadPTE->pageIndex = (currPages + iter);
+						threadPTE->maxSize = 0;
+						iter++;
+						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+						if (threadPTE == NULL){
+							printf("ITS NULL!!!\n");
+						}
+						threadPTE = threadPTE->next;
+					}
+					threadPTE->pageIndex = (currPages + iter);
+					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+					threadPTE->next = NULL;
+					if (after == TRUE){
+						threadPTE->next = afterPTE;
+					}
+				}			
 				long indexStart = ((long) memNew - ((long)memory + OSSIZE))/ PAGESIZE;
 				printf("indexstart: %d, mem + os: %d  indexstrt: %d\n", (long)memNew, (long)memory + OSSIZE, indexStart);
 				int i = indexStart;
@@ -740,7 +776,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 			return retStr;
 			}		
 	/****************************************************************************/
-//		}
 	}
 	return NULL;
 }
@@ -751,15 +786,11 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 	if(!ptr ){//|| ((metaData*)((long)ptr - sizeof(metaData)))->used == 0){
 		return;
 	}
-	if(!threadId){
+	if(!threadId){//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN TOP OF MALLOC]) Add changes/fix from old file
 //		printf("Free coming from library. given: %p freed:%p\n", ptr, (metaData*)(((long)ptr)-sizeof(metaData)));
 		((metaData*)((long)ptr - sizeof(metaData)))->used = 0;
 	}
 	else{
-
-		//TODO: add logic for shalloc
-		//TODO: change internal page max size
-
 		int tid = -1;
 		if(currentRunning){
 			tid = currentRunning->tid;
@@ -767,32 +798,49 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 		else{
 			tid = 0;
 		}
+		
+
 //		printf("Free coming from thread number %d\n",tid);
+//TODID: add logic for shalloc
+if ((long)ptr - USERSIZE > (long)memory + OSSIZE){
+	printf("free from shalloc\n");
+	((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
+	
+	return;
+}
+
+
 
 /**********************************************************************/
 	if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE){
-		/*	printf("-------------\n");
-			showPages(tid);
-			PTE * freePTE = threads[tid]->pageTable;
-			int move = 0;
-			while (move < ((long)ptr - sizeof(memStruct)) && freePTE != NULL){
-				printf("MOVING\n");
-				freePTE = freePTE->next;
-				move++;
-			}*/
-		
-			
-			
-			//still need to reset freed to -1 in ext page table
 			printf("Great success!\n");
-		 ((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
+			PTE * freePTE = threads[tid]->pageTable;
+			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
 		 //Resetting page table index to -1
 			long indexStart = ((long) ((memStruct*)((long)ptr - sizeof(memStruct))) - ((long)memory + OSSIZE))/ PAGESIZE;
 			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount;
 			printf("indexstart: %d, pagecount: %d\n", indexStart, pageCount);
 			int i = indexStart;
-			while (i < (long)(pageCount + indexStart)){
-//		printf("somethingsomethingsomething\n");
+			bool checked = FALSE;
+
+			//TODID: change internal page max size
+			while (i < (long)(pageCount + indexStart)){ //while loop to get to right page index
+				
+				printf("----indexstart: %d, pageIndex: %d----\n", indexStart, freePTE->pageIndex);
+				if (checked == FALSE){
+					while(indexStart != freePTE->pageIndex){
+						printf("moving");
+						freePTE = freePTE->next;
+					}
+					checked = TRUE;
+				}
+				printf("in: %d\n", indexStart);
+				printf("maxsize before: %d   page: %d\n", freePTE->maxSize, freePTE->pageIndex);
+				freePTE->maxSize = PAGESIZE;
+				printf("maxsize after: %d    page: %d\n", freePTE->maxSize, freePTE->pageIndex);
+				freePTE = freePTE->next;
+				printf("EPT i :%d\n", EPT[i]);
+				
 				EPT[i] = -1;
 				i++;					
 			}
