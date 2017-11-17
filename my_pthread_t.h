@@ -1,10 +1,3 @@
-// File:	my_pthread_t.h
-// Author:	Yujie REN
-// Date:	09/23/2017
-
-// name:
-// username of iLab:
-// iLab Server: 
 #ifndef MY_PTHREAD_T_H
 #define MY_PTHREAD_T_H
 
@@ -191,6 +184,7 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 #define SHAREDSIZE (PAGESIZE * 4)
 #define USERSIZE (MEMORYSIZE - OSSIZE - SHAREDSIZE) //8MB - 1MB - 4 shared pages
 #define NUMOFPAGES (USERSIZE / PAGESIZE)
+#define SWAPFILESIZE 16*1024*1024
 #endif
 
 //testMethods

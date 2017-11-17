@@ -1,3 +1,4 @@
+
 #include "my_pthread_t.h"
 #include <time.h>
 #include <stdio.h>
@@ -78,11 +79,11 @@ void giveMeMem(int* thread){
 /* * * * * * * * * * Shalloc * * * * * * * * * */
 void giveMeMem(int* thread){
 	printf("Thread #: %d\n", *thread);
-	char* ptr[200];
+	char* ptr[5];
 	printf("mallocing 5MB\n");
 	int i = 0;
-	while(i < 200){
-		ptr[i] = (char*)malloc(5000);
+	while(i < 5){
+		ptr[i] = (char*)malloc(5);
 		if(ptr[i]){
 			printf("malloced %d pointer: %p\n",i, ptr[i]);
 //			free(ptr[i]);
@@ -96,7 +97,7 @@ void giveMeMem(int* thread){
 	}
 	
 	i=0;
-	while(i < 200){
+	while(i < 5){
 		free(ptr[i]);
 		printf("pointer %d freed\n", i);
 		i++;
@@ -130,10 +131,10 @@ void useIt(void** ptr){
 int main(int argc, char** argv){
 
 /* * * * * Group tests * * * * */
-	pthread_t mythread[30];
+	pthread_t mythread[5];
 	int i=0;
-	int j[30];
-	while(i< 30){
+	int j[5];
+	while(i< 5){
 		j[i] = i;
 		pthread_create(&mythread[i], NULL, (void*)&giveMeMem, &j[i]);
 		printf("thread: %d\n", i);
@@ -141,7 +142,7 @@ int main(int argc, char** argv){
 			
 	}
 	i=0;
-	while(i< 30){
+	while(i< 5){
 		pthread_join(mythread[i], NULL);
 		i++;		
 	}
