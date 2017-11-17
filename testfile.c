@@ -131,21 +131,25 @@ void useIt(void** ptr){
 int main(int argc, char** argv){
 
 /* * * * * Group tests * * * * */
-	pthread_t mythread[5];
-	int i=0;
-	int j[5];
-	while(i< 5){
-		j[i] = i;
-		pthread_create(&mythread[i], NULL, (void*)&giveMeMem, &j[i]);
-		printf("thread: %d\n", i);
-		i++;	
-			
-	}
-	i=0;
-	while(i< 5){
-		pthread_join(mythread[i], NULL);
-		i++;		
-	}
+// pthread_t mythread[5];
+// int i=0;
+// int j[5];
+// while(i< 5){
+// 	j[i] = i;
+// 	pthread_create(&mythread[i], NULL, (void*)&giveMeMem, &j[i]);
+// 	printf("thread: %d\n", i);
+// 	i++;	
+// 		
+// }
+// i=0;
+// while(i< 5){
+// 	pthread_join(mythread[i], NULL);
+// 	i++;		
+// }
+
+char* ptr = (char*)malloc(5);
+char* ptr1 = (char*)malloc(500);
+char* ptr2 = (char*)malloc(5000);
 
 /* * * * * Small one of tests * * * * */
 // 	pthread_t mythread1, mythread2, mythread3;
