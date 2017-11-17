@@ -245,12 +245,12 @@ void* myallocate(int size, char* file, int line, int threadId){
 		return NULL;
 	}
 	else{
-//		printf("%d bytes requested\n", size);
+		printf("%d bytes requested\n", size);
 	}
 
 	//library request - don't use paging.
 	if(!threadId){
-//		printf("Coming from library\nUse OS section\n");
+		printf("Coming from library\nUse OS section\n");
 		//if no head is set yet
 		if(!headOS){
 			currMD = (metaData*)memory;
@@ -281,6 +281,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			}
 			//won't fit
 			else{
+			
 				//set currentMD to head;
 				prevMD = headOS;
 				currMD = headOS;
@@ -389,8 +390,61 @@ void* myallocate(int size, char* file, int line, int threadId){
 		my_pthread_mutex_lock(mutexMalloc);
 		
 		if(size <= (PAGESIZE - sizeof(metaData))){
+			printf("here1\n");
 			if(tid == 0 && !threads[0]){
-				printf("coming from main\n");
+				printf("here 2\n");
+				printf("coming from main\n");		
+				
+				int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
+				PTE * newPTE = firstPTE;
+				int i = 0;
+				int currPages = 0;
+				memNew = memHead;
+				if (memNew!= NULL){
+					if (memNew->inUse == TRUE){
+						memNew = memNew->next;
+						currPages += memHead->pageCount;
+						while (memNew != NULL){
+							if (memNew->inUse == FALSE && memNew->pageCount >= pageCount){ 
+								break;
+							}	
+							currPages += memNew->pageCount;
+							memFollow = memNew;
+							memNew = memNew->next;	
+							i++;
+						}
+					}
+				}
+				printf("Page Count: %d, Pages Currently Used: %d\n", pageCount, currPages);
+				
+				i = 1;
+				while (newPTE != NULL){
+					newPTE = newPTE->next;
+				}
+				newPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+				while (i < pageCount){
+					newPTE->pageIndex = currPages + i;
+					newPTE->swappedOut = FALSE;
+					newPTE->maxSize = 0;
+					newPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+					newPTE = newPTE->next;
+					newPTE->next = NULL;
+					i++;					
+				}
+				newPTE->pageIndex = currPages + i;
+				newPTE->maxSize =  PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+				newPTE->swappedOut = FALSE;
+				newPTE->next = NULL;
+							
+				
+				printf("Going to print the first PTE\n Page(Bytes Left): ");
+				newPTE = firstPTE;
+				while (newPTE){
+					printf("%d (%d) |", newPTE->pageIndex, newPTE->maxSize);
+					newPTE = newPTE->next;
+				}
+				printf("\n");
+			
 			}
 			else{
 				PTE* table = threads[tid]->pageTable;
