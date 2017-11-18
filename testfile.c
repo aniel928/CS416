@@ -168,7 +168,6 @@ void useIt(void** ptr){
 
 
 int main(int argc, char** argv){
-
 /* * * * * Group tests * * * * *
 	pthread_t mythread[30];
 	int i=0;
@@ -245,6 +244,10 @@ int main(int argc, char** argv){
 	free(str6);
 	free(mstr1);
 	printf("after last set\n");
+	
+	char* zero = 0x0;
+	int a = *(zero);
+
 	printf("Test done\n");
 	//	showData();
 }

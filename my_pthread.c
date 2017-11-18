@@ -198,8 +198,16 @@ int inUsePgs(){
 }
 
 
-void segment_fault_handler(int signum){
+void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 	printf("Segment Fault Handler\n");
+	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
+//		swap;
+		return;
+	}else{
+		printf("real segmentation fault\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 //If first malloc call, initialize/align memory and set up some important stuff
@@ -218,7 +226,16 @@ void mallocInit(){
 	write(fd, "", 1);
 	
 	//catching segfaults	
-	signal(SIGSEGV, segment_fault_handler);	
+	struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = segment_fault_handler;
+
+    if(sigaction(SIGSEGV, &sa, NULL) == -1){
+    	printf("Fatal error setting up signal handler\n");
+		exit(EXIT_FAILURE);    //explode!
+	}
+
 
 	//set variable to TRUE so we don't get back into this function again
 	mallocInitialized = TRUE;
