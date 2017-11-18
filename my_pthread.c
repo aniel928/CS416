@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include "my_pthread_t.h"
 
+
 /**************** Global Variables ****************/
 
 int timerCounter = 0;	//Used to stop infinite while loop for timer
@@ -196,6 +197,11 @@ int inUsePgs(){
 	return count;
 }
 
+
+void segment_fault_handler(int signum){
+	printf("Segment Fault Handler\n");
+}
+
 //If first malloc call, initialize/align memory and set up some important stuff
 void mallocInit(){
 	printf("Aligning...\n");
@@ -206,6 +212,15 @@ void mallocInit(){
 		posix_memalign((void*)&memory,PAGESIZE, MEMORYSIZE);
 		
 	}	
+	//creating swapfile
+	int fd = open("swapfile", O_CREAT | O_RDWR| O_TRUNC, 0666);
+	lseek(fd, 16*1024*1024, SEEK_CUR);
+	write(fd, "", 1);
+	
+	//catching segfaults	
+	signal(SIGSEGV, segment_fault_handler);	
+
+	//set variable to TRUE so we don't get back into this function again
 	mallocInitialized = TRUE;
 	return;
 }
@@ -588,11 +603,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				if(tid == 0 && !threads[0]){	
 					if (!firstPTE){
-						printf("on first for tid: %d\n", tid);
+//						printf("on first for tid: %d\n", tid);
 						firstPTE = threadPTE;
 					}
 					else{
-						printf("NOT on first for tid: %d\n", tid);
+//						printf("NOT on first for tid: %d\n", tid);
 						PTE * tempPTE = firstPTE;
 						while (tempPTE->next != NULL){
 							tempPTE = tempPTE->next;	
@@ -602,11 +617,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				else{	
 					if (threads[tid]->pageTable == 	NULL){
-						printf("on first for tid: %d\n", tid);
+//						printf("on first for tid: %d\n", tid);
 						threads[tid]->pageTable = threadPTE;
 					}
 					else{
-						printf("NOT on first for tid: %d\n", tid);
+//						printf("NOT on first for tid: %d\n", tid);
 						PTE * tempPTE = threads[tid]->pageTable;
 						//need to make sure tables are not added if they 
 						
@@ -619,9 +634,9 @@ void* myallocate(int size, char* file, int line, int threadId){
 				
 				int iter = 0;
 				while ( iter < pageCount-1){
-					printf("in while\n");
+//					printf("in while\n");
 					threadPTE->pageIndex = (currPages + iter);
-					printf("pageIndex: %d\n",threadPTE->pageIndex);
+//					printf("pageIndex: %d\n",threadPTE->pageIndex);
 					threadPTE->maxSize = 0;
 					iter++;
 					threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
@@ -675,12 +690,12 @@ void* myallocate(int size, char* file, int line, int threadId){
 				bool after = FALSE;
 				if(tid ==0 && !threads[0]){
 					if (!firstPTE){
-						printf("on first for tid: %d\n", tid);
+//						printf("on first for tid: %d\n", tid);
 						firstPTE = threadPTE;
 						tempPTE = firstPTE;
 					}
 					else{
-						printf("NOT on first for tid: %d\n", tid);
+//						printf("NOT on first for tid: %d\n", tid);
 						tempPTE = firstPTE;
 						while (tempPTE->next != NULL){
 							
@@ -691,12 +706,12 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				else{
 					if (threads[tid]->pageTable == 	NULL){
-						printf("on first for tid: %d\n", tid);
+//						printf("on first for tid: %d\n", tid);
 						threads[tid]->pageTable = threadPTE;
 						tempPTE = threadPTE;
 					}
 					else{
-						printf("NOT on first for tid: %d\n", tid);
+//						printf("NOT on first for tid: %d\n", tid);
 						tempPTE = threads[tid]->pageTable;
 						while (tempPTE->next != NULL){
 							if (tempPTE->pageIndex == currPages){
@@ -712,7 +727,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					int iter = 0;
 					while ( iter < pageCount-1){
 						threadPTE->pageIndex = (currPages + iter);
-						printf("pageIndex: %d\n",threadPTE->pageIndex);
+//						printf("pageIndex: %d\n",threadPTE->pageIndex);
 						threadPTE->maxSize = 0;
 						iter++;
 						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
@@ -764,7 +779,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					}
 				}			
 				long indexStart = ((long) memNew - ((long)memory + OSSIZE))/ PAGESIZE;
-				printf("indexstart: %d, mem + os: %d  indexstrt: %d\n", (long)memNew, (long)memory + OSSIZE, indexStart);
+//				printf("indexstart: %d, mem + os: %d  indexstrt: %d\n", (long)memNew, (long)memory + OSSIZE, indexStart);
 				int i = indexStart;
 				while (i < (long)(pageCount + indexStart)){
 					EPT[i] = tid;
@@ -789,6 +804,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 	if(!threadId){//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN TOP OF MALLOC]) Add changes/fix from old file
 //		printf("Free coming from library. given: %p freed:%p\n", ptr, (metaData*)(((long)ptr)-sizeof(metaData)));
 		((metaData*)((long)ptr - sizeof(metaData)))->used = 0;
+		printf("os freed\n");
 	}
 	else{
 		int tid = -1;
@@ -800,59 +816,55 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 		}
 		
 
-//		printf("Free coming from thread number %d\n",tid);
-//TODID: add logic for shalloc
-if ((long)ptr - USERSIZE > (long)memory + OSSIZE){
-	printf("free from shalloc\n");
-	((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
-	
-	return;
-}
+		//		printf("Free coming from thread number %d\n",tid);
+		//TODID: add logic for shalloc
+		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){
+		//	printf("free from shalloc\n");
+			((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
+			printf("shalloc freed\n");
+			return;
+		}
 
 
 
-/**********************************************************************/
-	if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE){
-			printf("Great success!\n");
+		if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE){
+//			printf("Great success!\n");
 			PTE * freePTE = threads[tid]->pageTable;
 			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
 		 //Resetting page table index to -1
 			long indexStart = ((long) ((memStruct*)((long)ptr - sizeof(memStruct))) - ((long)memory + OSSIZE))/ PAGESIZE;
 			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount;
-			printf("indexstart: %d, pagecount: %d\n", indexStart, pageCount);
+//			printf("indexstart: %d, pagecount: %d\n", indexStart, pageCount);
 			int i = indexStart;
 			bool checked = FALSE;
 
 			//TODID: change internal page max size
 			while (i < (long)(pageCount + indexStart)){ //while loop to get to right page index
 				
-				printf("----indexstart: %d, pageIndex: %d----\n", indexStart, freePTE->pageIndex);
+//				printf("----indexstart: %d, pageIndex: %d----\n", indexStart, freePTE->pageIndex);
 				if (checked == FALSE){
 					while(indexStart != freePTE->pageIndex){
-						printf("moving");
+//						printf("moving");
 						freePTE = freePTE->next;
 					}
 					checked = TRUE;
 				}
-				printf("in: %d\n", indexStart);
-				printf("maxsize before: %d   page: %d\n", freePTE->maxSize, freePTE->pageIndex);
+//				printf("in: %d\n", indexStart);
+//				printf("maxsize before: %d   page: %d\n", freePTE->maxSize, freePTE->pageIndex);
 				freePTE->maxSize = PAGESIZE;
-				printf("maxsize after: %d    page: %d\n", freePTE->maxSize, freePTE->pageIndex);
+//				printf("maxsize after: %d    page: %d\n", freePTE->maxSize, freePTE->pageIndex);
 				freePTE = freePTE->next;
-				printf("EPT i :%d\n", EPT[i]);
+//				printf("EPT i :%d\n", EPT[i]);
 				
 				EPT[i] = -1;
 				i++;					
 			}
-			printf("FREE CALLED\n");
+			printf("user section freed\n");
 //			dataEPT();
 		}
 		else{
 			printf("could not find anything to free\n");
-		}
-		
-		
-/************************************************************************/
+		}		
 	}
 //	printf("about to return\n");
 	return;
@@ -872,7 +884,7 @@ void* shalloc(int size){
 	}
 	//if head has been used and then freed.
 	else if (headSh->used == 0){
-		printf("head was freed\n");
+//		printf("head was freed\n");
 		shcurrMD = headSh;
 		shiterMD = shcurrMD;
 		int bytesFree = combineFreeStuff(shiterMD);
@@ -935,7 +947,7 @@ void* shalloc(int size){
 	}
 	//head is being used currently
 	else{
-		printf("else\n");
+//		printf("else\n");
 		//set currentMD to head;
 		shprevMD = headSh;
 		shcurrMD = headSh;
@@ -987,7 +999,7 @@ void* shalloc(int size){
 
 //initialize the scheduler
 int schedulerInit(){
-//	printf("schedulerInit()\n");
+	printf("schedulerInit()\n");
 	schedInit = TRUE;
 
 	//create context to call scheduler 
@@ -1369,7 +1381,7 @@ void free_things(){
 /* create a new thread */  /* DONE */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	/* Creates a pthread that executes function. Attributes are ignored, arg is not. */
-//	printf("my_pthread_create()\n");
+	printf("my_pthread_create()\n");
 	//initialize to some nonzero value
 	my_pthread_t ID = -1;
 	

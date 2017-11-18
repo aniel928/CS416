@@ -198,7 +198,7 @@ int inUsePgs();
 void mallocInit();
 void spaceBetween(metaData* curr, int size, int bytesFree);
 int combineFreeStuff(metaData* iter);
-
+static void handler(int sig, siginfo_t *si, void *unused);
 void * myallocate(int size, char * file, int line, int threadId);
 void mydeallocate(void* ptr, char* file, int line, int threadId);
 void* shalloc(int size);

@@ -116,6 +116,8 @@ void giveMeMem(int* thread){
 
 void function(){
 	//could not get this to work at all, I suck at the pthread create stuff
+	//^^You just forgot to "join" the thread
+	printf("in function\n");
 	char * str1 = (char*)shalloc(500);
 	char * str2 = (char*)shalloc(300);
 	char * str3 = (char*)shalloc(500);
@@ -135,7 +137,8 @@ void function(){
 	free(str8);
 	free(str7);
 	free(str6);
-	
+	printf("functin done\n");
+	pthread_exit(NULL);
 	
 	
 }
@@ -198,51 +201,52 @@ int main(int argc, char** argv){
 // 	pthread_join(mythread3, NULL);
 
 			
-pthread_t mythread1;
-printf("before");
-pthread_create(&mythread1, NULL, (void*)&function, NULL);
-char* new = (char*)shalloc(10);
-char* ptr1 = malloc(5000);
-char* ptr2 = malloc(6000);
-free(ptr1);
-char* ptr3 = malloc(5500);
-free(ptr2);
-char* ptr4 = malloc(8000);
-char* ptr5 = malloc(6000);
-free(ptr3);
-free(ptr4);
-free(ptr5);
-printf("about to free new\n");
-free(new);
-printf("after first set\n");
-char * ptrA = malloc(5000);
-free(ptrA);
-char * ptrB = malloc(10000);
-free(ptrB);
-char * str1 = (char*)shalloc(500);
-char * str2 = (char*)shalloc(300);
-char * str3 = (char*)shalloc(500);
-free(str2);
-char * str4 = (char*)shalloc(300);
-free(str1);
-char * mstr1 = (char*)malloc(4000);
-char * str5 = (char*)shalloc(500);
-free(str3);
-free(str4);
-char * str6 = (char*)shalloc(300);
-char * str7 = (char*)shalloc(500);
-char * str8 = (char*)shalloc(300);
-char * str9 = (char*)shalloc(500);
-char * str10 = (char*)shalloc(300);
-free(str10);
-free(str9);
-free(str7);
-free(str8);
-free(str6);
-free(mstr1);
-printf("after last set\n");
-printf("Test done\n");
-//	showData();
+	pthread_t mythread1;
+	printf("before\n");
+	pthread_create(&mythread1, NULL, (void*)&function, NULL);
+	pthread_join(mythread1, NULL);//FTFY
+	char* new = (char*)shalloc(10);
+	char* ptr1 = malloc(5000);
+	char* ptr2 = malloc(6000);
+	free(ptr1);
+	char* ptr3 = malloc(5500);
+	free(ptr2);
+	char* ptr4 = malloc(8000);
+	char* ptr5 = malloc(6000);
+	free(ptr3);
+	free(ptr4);
+	free(ptr5);
+	printf("about to free new\n");
+	free(new);
+	printf("after first set\n");
+	char * ptrA = malloc(5000);
+	free(ptrA);
+	char * ptrB = malloc(10000);
+	free(ptrB);
+	char * str1 = (char*)shalloc(500);
+	char * str2 = (char*)shalloc(300);
+	char * str3 = (char*)shalloc(500);
+	free(str2);
+	char * str4 = (char*)shalloc(300);
+	free(str1);
+	char * mstr1 = (char*)malloc(4000);
+	char * str5 = (char*)shalloc(500);
+	free(str3);
+	free(str4);
+	char * str6 = (char*)shalloc(300);
+	char * str7 = (char*)shalloc(500);
+	char * str8 = (char*)shalloc(300);
+	char * str9 = (char*)shalloc(500);
+	char * str10 = (char*)shalloc(300);
+	free(str10);
+	free(str9);
+	free(str7);
+	free(str8);
+	free(str6);
+	free(mstr1);
+	printf("after last set\n");
+	printf("Test done\n");
+	//	showData();
 }
 
 
