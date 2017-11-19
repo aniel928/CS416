@@ -205,7 +205,7 @@ int main(int argc, char** argv){
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
 	pthread_join(mythread1, NULL);//FTFY
 	printf("out of join\n");
-//	char* new = (char*)shalloc(10);
+	char* new = (char*)shalloc(10);
 	char* ptr1 = malloc(5000);
 	printf("Hurray!\n");
 	char* ptr2 = malloc(6000);
@@ -218,7 +218,7 @@ int main(int argc, char** argv){
 	free(ptr4);
 	free(ptr5);
 	printf("about to free new\n");
-//	free(new);
+	free(new);
 	printf("after first set\n");
 	char * ptrA = malloc(5000);
 	free(ptrA);
