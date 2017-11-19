@@ -57,7 +57,7 @@ typedef struct _metaData{
 typedef struct _pageTableEntry{
 	int pageIndex;
 	int maxSize;
-	bool swappedOut; //TODO: need to fill this in everywhere
+	int offset; //offset in swap file; -1 if not swapped out.
 	struct _pageTableEntry* next;
 } PTE;
 
@@ -68,6 +68,10 @@ typedef struct _memStruct{
 	bool inUse;
 	struct _memStruct* next;
 }memStruct;
+
+//typedef struct _swapData{
+//	int 
+//} swapData;
 
 //as we kill off threads/mutexes, push the newly available number (0-49) onto the bottom, 
 //pull one off the top when we need a new thread.

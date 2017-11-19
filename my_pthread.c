@@ -89,10 +89,14 @@ metaData* shiterMD = NULL;
 int EPT[(MEMORYSIZE - OSSIZE -(4*4096))/ 4096];//need to somehow malloc size
 bool eptSet = FALSE;
 
-//extern int EPE[NUMOFPAGES]= {-1};
+//boolean for swap file, used vs unused
+bool swapIndex[SWAPFILESIZE/4096] = {FALSE};
 
 //save in case main method calls malloc before making new thread.
 PTE* firstPTE = NULL; 
+
+//global file descriptor
+int fd = -1;
 
 my_pthread_mutex_t* mutexMalloc = NULL;//so that two threads don't grab same page
 bool mallocInitialized = FALSE;
@@ -198,13 +202,92 @@ int inUsePgs(){
 	return count;
 }
 
+//returns first free index in swap file
+int findSwapIndex(){
+	//go through entire array and find first available index
+	int i = 0;
+	while(i < sizeof(swapIndex)/sizeof(int)){
+		if(swapIndex[i] == FALSE){
+			//set to TRUE b/c we're about to use it
+			swapIndex[i] = TRUE;
+			break;
+		}
+		i++;
+	}
+	if(i==sizeof(swapIndex)/sizeof(int)){
+		//this means none of them were available
+		return -1;
+	}
+	return i;
+}
 
+//take number of consecutive pages needed, returns index from EPT that can be evicted
+int findEvictIndex(int numPages){
+	int i = 0;
+	int j = 0;
+	//go through entire array
+	while(i < sizeof(EPT)/sizeof(int)){
+		if(EPT[i] != currentRunning->tid){
+			j++;
+			//if we found them all consecutively, break
+			if(j == numPages){
+				break;
+			}
+		}
+		else{
+			//otherwise, once we find one that belongs to self, need to reset counter
+			j = 0;
+		}
+		i++;
+	}
+	//this happens if it gets to end of array without finding room
+	if(j==0){
+		return -1;
+	}
+	//i went too far ahead.  if i = 4 and numPages/j = 3, then indexes 2, 3, 4 are what can be used.
+	return (i - (j-1));
+}
+
+//takes index and number of pages and evicts them all - returns offset in file on success, -1 on failure
+int evictPage(int page){
+	int swapInd = findSwapIndex();
+	if(swapInd == -1){
+		printf("File is full.\n");
+		return -1;
+	}
+	char buffer[4096];
+	memcpy(buffer, (void*)((long)memory + OSSIZE + PAGESIZE*page), PAGESIZE);
+	int status = 0;
+	//move to that index in file
+	lseek(fd, (swapInd * PAGESIZE), SEEK_SET);
+	while(status != PAGESIZE){
+		status += write(fd, (void*)buffer + status, PAGESIZE - status);
+	}
+	return swapInd;
+}
+
+//takes page to be swapped and offset in file for the one we're looking for.
+int restorePage(int page, int offset){
+	evictPage(page);
+	lseek(fd, offset * PAGESIZE, SEEK_SET);
+	char buffer[4096];
+	int status = 0;
+	while(status != PAGESIZE){
+		status += read(fd, (void*)buffer + status, PAGESIZE - status); 
+	}
+	memcpy((void*)((long)memory + OSSIZE + PAGESIZE*page), buffer, PAGESIZE);
+	return 0;
+}
+
+//handle segmentation faults
 void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+	//if address is in our array, deal with swap file
 	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
 		printf("segfaulting inside\n");
 		exit(EXIT_FAILURE); // replace with swap
 		return;
+	//if address is not in our array, then it's a real segmentation fault
 	}else{
 		printf("real segmentation fault\n");
 		exit(EXIT_FAILURE);
@@ -220,9 +303,10 @@ void mallocInit(){
 	if(!memory){
 		posix_memalign((void*)&memory,PAGESIZE, MEMORYSIZE);
 		
-	}	
+	}
+	int i =0;
 	//creating swapfile
-	int fd = open("swapfile", O_CREAT | O_RDWR| O_TRUNC, 0666);
+	fd = open("swapfile", O_CREAT | O_RDWR| O_TRUNC, 0666);
 	lseek(fd, 16*1024*1024, SEEK_CUR);
 	write(fd, "", 1);
 	
@@ -562,6 +646,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			while ( iter < pageCount-1){//while loop for all but last entry
 				threadPTE->pageIndex = (iter);
 				threadPTE->maxSize = 0;
+				threadPTE->offset = -1;
 				iter++;
 				threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 				if (threadPTE == NULL){
@@ -573,6 +658,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			//last entry in pageTable
 			threadPTE->pageIndex = (iter);
 			threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));	//working
+			threadPTE->offset = -1;
 			threadPTE->next = NULL;
 									
 			//returning the front of the string
@@ -656,6 +742,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					threadPTE->pageIndex = (currPages + iter);
 //					printf("pageIndex: %d\n",threadPTE->pageIndex);
 					threadPTE->maxSize = 0;
+					threadPTE->offset = -1;
 					iter++;
 					threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 					if (threadPTE == NULL){
@@ -666,6 +753,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				threadPTE->pageIndex = (currPages + iter);
 				threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+				threadPTE->offset = -1;
 				threadPTE->next = NULL;
 				if(currentRunning){
 					tid = currentRunning->tid;
@@ -747,6 +835,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 						threadPTE->pageIndex = (currPages + iter);
 //						printf("pageIndex: %d\n",threadPTE->pageIndex);
 						threadPTE->maxSize = 0;
+						threadPTE->offset = -1;
 						iter++;
 						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 						if (threadPTE == NULL){
@@ -756,6 +845,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					}
 					threadPTE->pageIndex = (currPages + iter);
 					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+					threadPTE->offset = -1;
 					threadPTE->next = NULL;
 				}
 				else{
@@ -782,6 +872,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					while ( iter < newPC-1){
 						threadPTE->pageIndex = (currPages + iter);
 						threadPTE->maxSize = 0;
+						threadPTE->offset = -1;
 						iter++;
 						threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 						if (threadPTE == NULL){
@@ -791,6 +882,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					}
 					threadPTE->pageIndex = (currPages + iter);
 					threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));
+					threadPTE->offset = -1;
 					threadPTE->next = NULL;
 					if (after == TRUE){
 						threadPTE->next = afterPTE;
@@ -1520,7 +1612,7 @@ int my_pthread_yield() {
 		currentRunning = nextRunning;
 		//mprotect only pages that do not == -1 and do not == tid
 		int i = 0;
-		while(i < (MEMORYSIZE - OSSIZE -(4*4096))/ 4096){
+		while(i < sizeof(EPT)/sizeof(int)){
 			if(EPT[i] != -1 && EPT[i] != currentRunning->tid){
 				mprotect((void*)((long)memory + OSSIZE + PAGESIZE * i), PAGESIZE, PROT_NONE);
 			}
@@ -1760,3 +1852,4 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex) {
 	mydeallocate(mutex->waitQueue,__FILE__,__LINE__,LIBREQ);
 	return 0;
 }
+
