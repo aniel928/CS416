@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include "my_pthread_t.h"
 
 
@@ -199,10 +200,10 @@ int inUsePgs(){
 
 
 void segment_fault_handler(int signum, siginfo_t *si, void* unused){
-	printf("Segment Fault Handler\n");
 	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
 	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
-//		swap;
+		printf("segfaulting inside\n");
+		exit(EXIT_FAILURE); // replace with swap
 		return;
 	}else{
 		printf("real segmentation fault\n");
@@ -1265,7 +1266,8 @@ void runThreads(){
 void time_handle(int signum){
 //	printf("time_handler\n");
 	//change status to PREEMPTED
-	//TODO: unmemprotect everything
+	//unmprotect everything
+	mprotect((void*)((long)memory + OSSIZE), USERSIZE, PROT_READ | PROT_WRITE); //allow read and write to entire array
 	threads[currentRunning->tid]->threadState = PREEMPTED;
 	//change priority +1 on tcb node(unless bottom level or holding mutex)
 	if(threads[nextRunning->tid]->mutexWaiting != TRUE){
@@ -1516,16 +1518,26 @@ int my_pthread_yield() {
 	//if currentRunning is null, then this is being called by the scheduler in order to swap into next thread on running queue
 	if(currentRunning == NULL){
 		currentRunning = nextRunning;
-		//TODO: add memprotect here - memprotect everything then unmemprotect only pages from external page table
+		//mprotect only pages that do not == -1 and do not == tid
+		int i = 0;
+		while(i < (MEMORYSIZE - OSSIZE -(4*4096))/ 4096){
+			if(EPT[i] != -1 && EPT[i] != currentRunning->tid){
+				mprotect((void*)((long)memory + OSSIZE + PAGESIZE * i), PAGESIZE, PROT_NONE);
+			}
+			i++;
+		}
 		timer(threads[currentRunning->tid]->priority);
 		if((swapcontext(&(sched_uctx),&((threads[currentRunning->tid])->context))) != 0){
 			return -2;
 		}
-		//TODO: unprotect everything
+		printf("hi\n");
+		mprotect((void*)((long)memory + OSSIZE), USERSIZE, PROT_READ | PROT_WRITE); //allow read and write to entire array
 	}
 	//otherwise the currently running thread requested to yield, was preempted, or was put onto a waiting queue.
 	else{
 		//if not preempted or put onto a waiting queue, change status to YIELDED.
+		printf("hi again\n");
+		mprotect((void*)((long)memory + OSSIZE), USERSIZE, PROT_READ | PROT_WRITE); //allow read and write to entire array
 		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
 			threads[currentRunning->tid]->threadState = YIELDED;		
 		}

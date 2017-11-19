@@ -204,8 +204,10 @@ int main(int argc, char** argv){
 	printf("before\n");
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
 	pthread_join(mythread1, NULL);//FTFY
-	char* new = (char*)shalloc(10);
+	printf("out of join\n");
+//	char* new = (char*)shalloc(10);
 	char* ptr1 = malloc(5000);
+	printf("Hurray!\n");
 	char* ptr2 = malloc(6000);
 	free(ptr1);
 	char* ptr3 = malloc(5500);
@@ -216,12 +218,13 @@ int main(int argc, char** argv){
 	free(ptr4);
 	free(ptr5);
 	printf("about to free new\n");
-	free(new);
+//	free(new);
 	printf("after first set\n");
 	char * ptrA = malloc(5000);
 	free(ptrA);
 	char * ptrB = malloc(10000);
 	free(ptrB);
+	printf("before shallocs\n");
 	char * str1 = (char*)shalloc(500);
 	char * str2 = (char*)shalloc(300);
 	char * str3 = (char*)shalloc(500);
@@ -245,8 +248,8 @@ int main(int argc, char** argv){
 	free(mstr1);
 	printf("after last set\n");
 	
-	char* zero = 0x0;
-	int a = *(zero);
+// 	char* zero = 0x0;
+// 	int a = *(zero);
 
 	printf("Test done\n");
 	//	showData();
