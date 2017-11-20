@@ -118,7 +118,16 @@ void function(){
 	//could not get this to work at all, I suck at the pthread create stuff
 	//^^You just forgot to "join" the thread
 	printf("in function\n");
-	char * str1 = (char*)shalloc(500);
+
+	char* ptr1 = (char*)malloc(5*1024*1024);
+	if(ptr1){
+		printf("malloc successful? %p\n", ptr1);
+	}
+	else{
+		printf("NULL\n");
+	}
+
+/*	char * str1 = (char*)shalloc(500);
 	char * str2 = (char*)shalloc(300);
 	char * str3 = (char*)shalloc(500);
 	free(str2);
@@ -139,7 +148,7 @@ void function(){
 	free(str6);
 	printf("functin done\n");
 	pthread_exit(NULL);
-	
+*/	
 	
 }
 
@@ -186,21 +195,31 @@ int main(int argc, char** argv){
 	}
 
 * * * * * Small one of tests * * * * */
-// 	pthread_t mythread1, mythread2, mythread3;
-// 	char* ptr1 = NULL;
-// 	pthread_create(&mythread1, NULL, (void*)&shallocIt, NULL);
-// 	pthread_join(mythread1, &ptr1);
-// 
-// 	printf("testing name: %s\n", ptr1);
-// 	printf("testig pointer: %p\n", &ptr1);
-// 
-// 	pthread_create(&mythread2, NULL, (void*)&useIt, &ptr1);
-// 	pthread_create(&mythread3, NULL, (void*)&useIt, &ptr1);	
-// 	pthread_join(mythread2, NULL);
-// 	pthread_join(mythread3, NULL);
+ 	pthread_t mythread1, mythread2, mythread3;
+/*	char* ptr1 = NULL;
+	pthread_create(&mythread1, NULL, (void*)&shallocIt, NULL);
+	pthread_join(mythread1, &ptr1);
+
+	printf("testing name: %s\n", ptr1);
+	printf("testig pointer: %p\n", &ptr1);
+
+	pthread_create(&mythread2, NULL, (void*)&useIt, &ptr1);
+	pthread_create(&mythread3, NULL, (void*)&useIt, &ptr1);	
+	pthread_join(mythread2, NULL);
+	pthread_join(mythread3, NULL);
+*/
+	printf("before mallocs\n");
+	pthread_create(&mythread1, NULL, (void*)&function, NULL);
+	pthread_join(mythread1, NULL);
+//	char* ptr1 = (char*)malloc(5*1024*1024);
+	printf("between mallocs\n");
+//	char* ptr2 = malloc(5*1024*1024);
+	pthread_create(&mythread2, NULL, (void*)&function, NULL);
+	pthread_join(mythread2, NULL);
+	printf("after mallocs\n");
 
 			
-	pthread_t mythread1;
+/*	pthread_t mythread1;
 	printf("before\n");
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
 	pthread_join(mythread1, NULL);//FTFY
@@ -210,8 +229,11 @@ int main(int argc, char** argv){
 	printf("Hurray!\n");
 	char* ptr2 = malloc(6000);
 	free(ptr1);
+	printf("getting here\n");
 	char* ptr3 = malloc(5500);
+	printf("apparently it's an issue with free\n");
 	free(ptr2);
+	printf("or not\n");
 	char* ptr4 = malloc(8000);
 	char* ptr5 = malloc(6000);
 	free(ptr3);
@@ -247,7 +269,7 @@ int main(int argc, char** argv){
 	free(str6);
 	free(mstr1);
 	printf("after last set\n");
-	
+*/	
 // 	char* zero = 0x0;
 // 	int a = *(zero);
 

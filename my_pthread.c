@@ -180,14 +180,38 @@ void dataEPT(){
 
 
 //Checks to see how many pages have been used, need to switch to page table
+//TODO: I think you should switch to EPT, this is segfaulting (like we thought it would)
 int usedPages(){
+	printf("used pages in\n");
 	memStruct * memUP = memHead;
 	int count = 0;
 	while (memUP != NULL){
 		count += memUP->pageCount;
 		memUP = memUP->next;
 	}
+	printf("used pages out\n");
 	return count;
+}
+//take number of consecutive pages needed, returns start index from EPT to be used
+int findConsecutivePages(int numPages){
+	int i=0;
+	int j=0;
+	while(i < sizeof(EPT)/sizeof(int)){
+		if(EPT[i] == -1){
+			j++;
+			if(j == numPages){
+				break;
+			}
+		}
+		else{
+			j = 0;
+		}
+		i++;
+	}
+	if(j==0){
+		return -1;
+	}
+	return(i - (j - 1));
 }
 
 int inUsePgs(){
@@ -204,6 +228,7 @@ int inUsePgs(){
 
 //returns first free index in swap file
 int findSwapIndex(){
+	printf("in swap index\n");
 	//go through entire array and find first available index
 	int i = 0;
 	while(i < sizeof(swapIndex)/sizeof(int)){
@@ -218,15 +243,20 @@ int findSwapIndex(){
 		//this means none of them were available
 		return -1;
 	}
+	printf("return swap index\n");
 	return i;
 }
 
+//almost identical to findConsecutivePages() but with slightly different logic
 //take number of consecutive pages needed, returns index from EPT that can be evicted
 int findEvictIndex(int numPages){
+	printf("in evict index\n");
 	int i = 0;
 	int j = 0;
 	//go through entire array
+	printf("about to go into while\n");
 	while(i < sizeof(EPT)/sizeof(int)){
+		printf("while %d\n", i);   //need to add EPT to main method calling malloc.
 		if(EPT[i] != currentRunning->tid){
 			j++;
 			//if we found them all consecutively, break
@@ -240,21 +270,25 @@ int findEvictIndex(int numPages){
 		}
 		i++;
 	}
+	printf("out of while\n");
 	//this happens if it gets to end of array without finding room
 	if(j==0){
 		return -1;
 	}
 	//i went too far ahead.  if i = 4 and numPages/j = 3, then indexes 2, 3, 4 are what can be used.
+	printf("return evict index\n");
 	return (i - (j-1));
 }
 
 //takes index and number of pages and evicts them all - returns offset in file on success, -1 on failure
 int evictPage(int page){
+	printf("in evict page\n");
 	int swapInd = findSwapIndex();
 	if(swapInd == -1){
 		printf("File is full.\n");
 		return -1;
 	}
+	//write current page to memory
 	char buffer[4096];
 	memcpy(buffer, (void*)((long)memory + OSSIZE + PAGESIZE*page), PAGESIZE);
 	int status = 0;
@@ -263,33 +297,75 @@ int evictPage(int page){
 	while(status != PAGESIZE){
 		status += write(fd, (void*)buffer + status, PAGESIZE - status);
 	}
+	printf("return evict page\n");
 	return swapInd;
 }
 
-//takes page to be swapped and offset in file for the one we're looking for.
+//takes page to be swapped and offset in file for the one we're looking for.  Returns offset on success, -1 on failure
 int restorePage(int page, int offset){
-	evictPage(page);
+	printf("in restore page\n");
+	int status = evictPage(page);
+	if(status == -1){
+		return -1;
+	}
 	lseek(fd, offset * PAGESIZE, SEEK_SET);
 	char buffer[4096];
-	int status = 0;
+	status = 0;
 	while(status != PAGESIZE){
 		status += read(fd, (void*)buffer + status, PAGESIZE - status); 
 	}
 	memcpy((void*)((long)memory + OSSIZE + PAGESIZE*page), buffer, PAGESIZE);
-	return 0;
+	swapIndex[page] = FALSE;
+	printf("return restore page\n");
+	return status;
 }
 
 //handle segmentation faults
 void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
 	//if address is in our array, deal with swap file
+
 	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
 		printf("segfaulting inside\n");
-		exit(EXIT_FAILURE); // replace with swap
+		//allow read/write access to page (since we're about to switch it in anyway)
+		mprotect((void*)si->si_addr, PAGESIZE, PROT_READ | PROT_WRITE);
+		//calculate page
+		int page = ((long)si->si_addr - (long)memory + OSSIZE) / PAGESIZE;
+		int offset = -1;
+		//grab current owner so we can set their file offset later.
+		int owner = EPT[page];
+		//circle through pageTable and find current page for offest
+		PTE* pageTable = threads[currentRunning->tid]->pageTable;
+		while(pageTable){
+			if(pageTable->pageIndex == page){
+				break;
+			}
+			pageTable = pageTable->next;					
+		}
+		printf("out of while\n");
+		if(!offset){
+			offset = pageTable->offset;
+		}
+		//if we didn't find it, this is a real segfault
+		if(offset == -1){
+			printf("real internal segmentation fault\n");
+			exit(EXIT_FAILURE);
+		}
+		//otherwise restore the page (this function also calls evict for us on the current one.
+		int newOffset = restorePage(page, offset);
+		//if restoring fails, shouldn't segfault, but hopefully this never gets called?
+		if(newOffset == -1){
+			printf("print statement that I hope never happens... (in seg fault handler)\n");
+			exit(EXIT_FAILURE);
+		}
+		//now update EPT, currentThreads offset and old thread's offset.
+		EPT[page] = currentRunning->tid;
+		pageTable->offset = -1;
+		
 		return;
 	//if address is not in our array, then it's a real segmentation fault
 	}else{
-		printf("real segmentation fault\n");
+		printf("real external segmentation fault\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -320,7 +396,14 @@ void mallocInit(){
     	printf("Fatal error setting up signal handler\n");
 		exit(EXIT_FAILURE);    //explode!
 	}
-
+	if (eptSet != TRUE){
+		int i = 0;
+		while (i < sizeof(EPT)/sizeof(int)){
+			EPT[i] = -1;
+			i++;
+		}
+		eptSet = TRUE;				
+	}
 
 	//set variable to TRUE so we don't get back into this function again
 	mallocInitialized = TRUE;
@@ -352,7 +435,7 @@ int combineFreeStuff(metaData* iter){
 
 //replace malloc
 void* myallocate(int size, char* file, int line, int threadId){
-						
+			
 	if(!mallocInitialized){
 		mallocInit();
 	}
@@ -507,16 +590,15 @@ void* myallocate(int size, char* file, int line, int threadId){
 		
 		//if smaller than a page is requested
 		if(size <= (PAGESIZE - sizeof(metaData))){
-			
 			//check to see if pageTable exists for thread, if it doesn't, add it
+
 			PTE* table = NULL;
 			if(tid == 0 && !threads[0]){
 				table = firstPTE;	//called by  main method before pthread_create
 			}
 			else{
 				table = threads[tid]->pageTable;
-			}
-			
+			}		
 			//find an entry that has enough room for small malloc
 			while(table){
 				if(table->maxSize >= (size + sizeof(memStruct))){
@@ -573,45 +655,120 @@ void* myallocate(int size, char* file, int line, int threadId){
 				return (void*)((long)newMem + sizeof(memStruct));
 			}
 		}
-		if (eptSet != TRUE){
-			int i = 0;
-			while (i < sizeof(EPT)/sizeof(int)){
-					EPT[i] = -1;
-					i++;
-			}
-				eptSet = TRUE;				
-		}
-		int usePgs= usedPages();			
+
+//		int usePgs= usedPages();					
 		//determining how many pages are needed to return
+
 		int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
-		//Check if head has been built
-		if (memHead == NULL){	//memHead not built yet
-			if(size > USERSIZE - sizeof(memStruct) - (inUsePgs()) * PAGESIZE){
-				printf("Too big.\n");
-				my_pthread_mutex_unlock(mutexMalloc);
-				return NULL;
-			}
-			//create head
-			memHead = (memStruct*)((long)memory + OSSIZE);
-			memHead->pageCount = pageCount;
-			memHead->currUsed = size + sizeof(memStruct);
-			memHead->inUse = TRUE;
-			memHead->next = NULL;
-			//add pages to table
-			long indexStart = ((long) memHead - ((long)(memory + OSSIZE)))/ PAGESIZE;
-			if(currentRunning){
-				tid = currentRunning->tid;
+		int firstPage = findConsecutivePages(pageCount);
+		printf("first page: %d\n", firstPage);
+		if(NUMOFPAGES - firstPage < size/PAGESIZE){
+			printf("not enough space for this malloc\n");
+			printf("will add more logic here for evicting later\n");
+			my_pthread_mutex_unlock(mutexMalloc);
+			return NULL;
+		}
+		memNew = (memStruct*)((long)memory + OSSIZE + (firstPage * PAGESIZE));
+		memNew->pageCount = pageCount;
+		memNew->currUsed = size;
+		memNew->inUse = TRUE;
+		memNew->next = NULL; //i think only important for internal mallocs
+		if (memHead == NULL){
+			memHead = memNew;
+		}
+		int i = firstPage;
+		while (i < (long)(pageCount + firstPage)){
+			EPT[i] = tid;
+			i++;					
+		}
+		
+		PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+		if (threadPTE == NULL){
+			printf("NULL\n");
+			my_pthread_mutex_unlock(mutexMalloc);
+			return NULL;
+		}
+
+		//check if first index of pageTable has been created
+		if(tid == 0 && !threads[0]){
+			if(!firstPTE){
+				firstPTE = threadPTE;
 			}
 			else{
-				tid = 0;
+				PTE * tempPTE = firstPTE;
+				while (tempPTE->next != NULL){
+					tempPTE = tempPTE->next;	
+				}
+				tempPTE->next = threadPTE;
 			}
-			long i = indexStart;
-			while (i < (long)(pageCount + indexStart)){
-				EPT[i] = tid;
-				i++;					
+		}
+		else{
+			if (threads[tid]->pageTable == 	NULL){
+				threads[tid]->pageTable = threadPTE;
 			}
+			else{//has been previously created, get to end of current table
+				PTE * tempPTE = threads[tid]->pageTable;
+				while (tempPTE->next != NULL){
+					tempPTE = tempPTE->next;	
+				}
+				tempPTE->next = threadPTE;
+			}
+		}
+		//add page indexes to pageTable for first thread
+		int iter = firstPage;	//only zero because this is the first creation
+		while ( iter < (firstPage + pageCount)-1){//while loop for all but last entry
+			threadPTE->pageIndex = (iter);
+			threadPTE->maxSize = 0;
+			threadPTE->offset = -1;
+			iter++;
+			threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+			if (threadPTE == NULL){
+				printf("ITS NULL!!!\n");
+				my_pthread_mutex_unlock(mutexMalloc);
+				return;
+			}
+			threadPTE = threadPTE->next;
+		}
+		//last entry in pageTable
+		threadPTE->pageIndex = (iter);
+		threadPTE->maxSize = PAGESIZE - (size - (PAGESIZE * (pageCount - 1) - sizeof(memStruct)));	//working
+		threadPTE->offset = -1;
+		threadPTE->next = NULL;
+		//returning the front of the string
+//		int retAmt = PAGESIZE * pageCount - sizeof(memStruct);
+		void * retStr = (void*)((long)memNew + sizeof(memStruct));
+		my_pthread_mutex_unlock(mutexMalloc);
+		return retStr;
+
+		//Check if head has been built
+//		if (memHead == NULL){	//memHead not built yet
+//			printf("in if\n");
+//			if(size > USERSIZE - sizeof(memStruct) - (inUsePgs()) * PAGESIZE){
+//				printf("Too big.\n");
+//				my_pthread_mutex_unlock(mutexMalloc);
+//				return NULL;
+//			}
+			//create head
+//			memHead = (memStruct*)((long)memory + OSSIZE);
+//			memHead->pageCount = pageCount;
+//			memHead->currUsed = size + sizeof(memStruct);
+//			memHead->inUse = TRUE;
+//			memHead->next = NULL;
+			//add pages to table
+//			long indexStart = ((long) memHead - ((long)(memory + OSSIZE)))/ PAGESIZE;
+//			if(currentRunning){
+//				tid = currentRunning->tid;
+//			}
+//			else{
+//				tid = 0;
+//			}
+//			long i = indexStart;
+//			while (i < (long)(pageCount + indexStart)){
+//				EPT[i] = tid;
+//				i++;					
+//			}
 			//creating page table for head
-			PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
+/*			PTE * threadPTE = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
 			if (threadPTE == NULL){
 				printf("NULL\n");
 				return;
@@ -667,7 +824,9 @@ void* myallocate(int size, char* file, int line, int threadId){
 			my_pthread_mutex_unlock(mutexMalloc);
 			return retStr;
 		}
+
 		else{//head has been previously set
+			printf("in else\n"); 
 			memNew = memHead;
 			memFollow = memNew;
 			//find out how many pages have been used
@@ -691,10 +850,31 @@ void* myallocate(int size, char* file, int line, int threadId){
 				//need to make sure that the available space can hold the requested size
 				if ((usePgs + pageCount) > NUMOFPAGES){
 					printf("Can't give this many bytes/pages for this malloc, returning\n");
-					my_pthread_mutex_unlock(mutexMalloc);
-					return NULL;
+					int index = findEvictIndex(pageCount);
+					printf("%d\n", index);
+ 					if(index != -1){
+ 						int i = 0;
+ 						int j = index;
+ 						while(i < pageCount){
+ 							int status = evictPage(j);
+ 							if(status == -1){
+ 								return NULL;
+ 							}
+ 							else{
+ 								threads[EPT[index]]->pageTable->offset = status;
+								EPT[index] = -1; 								
+ 							}
+ 							j++;
+ 							i++;
+ 						}
+ 					}
+ 					memNew = (memStruct*)((long)memory + OSSIZE + (index * PAGESIZE));
 				}				
-				memNew = (memStruct*)((long)memory + OSSIZE +(totalPages * PAGESIZE )); //This line is the cause of about an hour worth of segfaulting
+				else{
+					memNew = (memStruct*)((long)memory + OSSIZE +(totalPages * PAGESIZE )); //This line is the cause of about an hour worth of segfaulting
+				
+				}
+				//memNew = (memStruct*)((long)memory + OSSIZE +(totalPages * PAGESIZE )); //This line is the cause of about an hour worth of segfaulting
 				memFollow->next = memNew;
 				memNew->inUse = TRUE;
 				memNew->pageCount = pageCount;
@@ -900,6 +1080,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			my_pthread_mutex_unlock(mutexMalloc);
 			return retStr;
 			}		
+*/
 	/****************************************************************************/
 	}
 	return NULL;
@@ -938,10 +1119,10 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 
 
 		if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE){
-//			printf("Great success!\n");
+	//		printf("Great success!\n");
 			PTE * freePTE = threads[tid]->pageTable;
 			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
-		 //Resetting page table index to -1
+		 	//Resetting page table index to -1
 			long indexStart = ((long) ((memStruct*)((long)ptr - sizeof(memStruct))) - ((long)memory + OSSIZE))/ PAGESIZE;
 			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount;
 //			printf("indexstart: %d, pagecount: %d\n", indexStart, pageCount);
@@ -953,10 +1134,12 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 				
 //				printf("----indexstart: %d, pageIndex: %d----\n", indexStart, freePTE->pageIndex);
 				if (checked == FALSE){
+					printf("before while\n");
 					while(indexStart != freePTE->pageIndex){
 //						printf("moving");
 						freePTE = freePTE->next;
 					}
+					printf("after while\n");
 					checked = TRUE;
 				}
 //				printf("in: %d\n", indexStart);
@@ -1422,6 +1605,7 @@ void addMPQ(tcb* thread, queueNode** head, queueNode** tail){
 
 //pthread_exit calls this as well as manual exit in runthreads
 void exit_thread(queueNode* node, void* value_ptr){
+//TODO: free pageTable, reset EPT[] and swapIndex[]
 //	printf("in exit method\n");
 	//before exiting, check to see if anyone else joined.
 	if(threads[node->tid]->waitingThreads != NULL){//there are waiting threads
