@@ -781,7 +781,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 		
 
 		//		printf("Free coming from thread number %d\n",tid);
-		//TODID: add logic for shalloc
+		//add logic for shalloc
 		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){
 		//	printf("free from shalloc\n");
 			((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
@@ -789,23 +789,19 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			return;
 		}
 
-
-
+		//userspace free
 		if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE){
-	//		printf("Great success!\n");
 			PTE * freePTE = threads[tid]->pageTable;
 			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
 		 	//Resetting page table index to -1
 			long indexStart = ((long) ((memStruct*)((long)ptr - sizeof(memStruct))) - ((long)memory + OSSIZE))/ PAGESIZE;
 			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount;
-//			printf("indexstart: %d, pagecount: %d\n", indexStart, pageCount);
 			int i = indexStart;
 			bool checked = FALSE;
 			//MIKE TODO: shouldn't be freeing last page or resetting EPT of last page if smaller mallocs happened inside of it.
 			//TODID: change internal page max size
 			while (i < (long)(pageCount + indexStart)){ //while loop to get to right page index
 				
-//				printf("----indexstart: %d, pageIndex: %d----\n", indexStart, freePTE->pageIndex);
 				if (checked == FALSE){
 					printf("before while\n");
 					while(indexStart != freePTE->pageIndex){
@@ -815,24 +811,18 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 					printf("after while\n");
 					checked = TRUE;
 				}
-//				printf("in: %d\n", indexStart);
-//				printf("maxsize before: %d   page: %d\n", freePTE->maxSize, freePTE->pageIndex);
 				freePTE->maxSize = PAGESIZE;
-//				printf("maxsize after: %d    page: %d\n", freePTE->maxSize, freePTE->pageIndex);
 				freePTE = freePTE->next;
-//				printf("EPT i :%d\n", EPT[i]);
 
 				EPT[i] = -2; //this way we keep it mprotected so that if returning thread wants it, it segfaults and brings it in.
 				i++;					
 			}
 			printf("user section freed\n");
-//			dataEPT();
 		}
 		else{
 			printf("could not find anything to free\n");
 		}		
 	}
-//	printf("about to return\n");
 	return;
 }
 /**************** Additional Methods ****************/
