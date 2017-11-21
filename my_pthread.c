@@ -166,7 +166,7 @@ void dataEPT(){
 	while (i<NUMOFPAGES){
 		int currTid = EPT[i][0];
 		if(EPT[i][0] >= 0 ){
-				printf("Page: %d, TID: %d\n", i, EPT[i]);
+				printf("Page: %d, TID: %d\n", i, EPT[i][0]);
 			//	printf("Inner page table for tid %d\n", EPT[i]);
 			//	showPages(EPT[i]);
 				j--;
@@ -197,9 +197,9 @@ int findConsecutivePages(int numPages){
 	int i=0;
 	int j=0;
 	//go through EPT
-	while(i < sizeof(EPT)/sizeof(int)){
+	while(i < NUMOFPAGES){
 		//if it's less than 0, we can take it
-		if(EPT[i] < 0){
+		if(EPT[i][0] < 0){
 			j++;
 			if(j == numPages){
 				break;
@@ -256,7 +256,7 @@ int findEvictIndex(int numPages){
 	int i = 0;
 	int j = 0;
 	//go through entire array
-	while(i < sizeof(EPT)/sizeof(int)){
+	while(i < NUMOFPAGES){
 		if(EPT[i][0] != currentRunning->tid){
 			j++;
 			//if we found them all consecutively, break
@@ -310,8 +310,7 @@ int restorePage(int page, int offset){
 	//then read into memory
 	lseek(fd, offset * PAGESIZE, SEEK_SET);
 	char buffer[4096];
-	status = 0;
-	status += read(fd, (void*)buffer + status, PAGESIZE - status); 
+	read(fd, (void*)buffer + status, PAGESIZE - status); 
 	memcpy((void*)((long)memory + OSSIZE + PAGESIZE*page), buffer, PAGESIZE);
 	swapIndex[page] = FALSE;
 	printf("return restore page\n");
@@ -356,7 +355,7 @@ void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 			exit(EXIT_FAILURE);
 		}
 		//now update EPT, currentThreads offset and old thread's offset.
-		EPT[page];//[0] = currentRunning->tid;
+		EPT[page][0] = currentRunning->tid;
 		//EPT[page][1]++; //incrementing count of threads using this page
 		pageTable->offset = -1;
 		if(threads[owner]){
@@ -402,17 +401,17 @@ void mallocInit(){
     if(sigaction(SIGSEGV, &sa, NULL) == -1){
     	printf("Fatal error setting up signal handler\n");
 		exit(EXIT_FAILURE);    //explode!
+	}
+	//initialization of EPT, setting all buckets to -1
+	if (eptSet != TRUE){
+		int i = 0;
+			while (i < NUMOFPAGES){//EPT is now a multi dimensional array so size is different
+	//		printf("in while\n");
+			EPT[i][0] = -1;
+			i++;
 		}
-		//initialization of EPT, setting all buckets to -1
-		if (eptSet != TRUE){
-			int i = 0;
-				while (i < NUMOFPAGES){//EPT is now a multi dimensional array so size is different
-		//		printf("in while\n");
-				EPT[i][0] = -1;
-				i++;
-			}
-			eptSet = TRUE;				
-		}
+		eptSet = TRUE;				
+	}
 	//set variable to TRUE so we don't get back into this function again
 	mallocInitialized = TRUE;
 	return;
@@ -443,7 +442,7 @@ int combineFreeStuff(metaData* iter){
 
 //replace malloc
 void* myallocate(int size, char* file, int line, int threadId){
-	printf("in myallocate\n");
+//	printf("in myallocate\n");
 	if(!mallocInitialized){
 		mallocInit();
 	}
@@ -455,11 +454,9 @@ void* myallocate(int size, char* file, int line, int threadId){
 
 	//library request - don't use paging.
 	if(!threadId){
-
 	//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN FREE]) Add changes/fix from old file
 		//if no head is set yet
 		if(!headOS){
-						printf("1a\n");
 			currMD = (metaData*)memory;
 			currMD->used = 1;
 			currMD->bytes = size;
@@ -468,7 +465,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 		}
 		//if head has been used and then freed.
 		else if (headOS->used == 0){
-						printf("1b\n");
 			currMD = headOS;
 			iterMD = currMD;
 
@@ -531,7 +527,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 		}
 		//head is being used currently
 		else{
-						printf("1c\n");
 			//set currentMD to head;
 			prevMD = headOS;
 			currMD = headOS;
@@ -556,7 +551,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 					//else if it won't fit, keep looping through.
 				}
 			}
-			printf("after\n");
 			prevMD = currMD;
 			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 
@@ -575,6 +569,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 	}
 	//thread request - use paging
 	else{
+
 		//get calling thread
 		int tid = -1;
 		if(!currentRunning){
@@ -658,6 +653,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 		//determining how many pages are needed to return
 		int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
 		int firstPage = findConsecutivePages(pageCount);
+		printf("FIRST PAGE: d\n", firstPage);
+		if(firstPage == -1){
+			printf("Today is not your day\n");
+			return NULL;
+		}
 		if(NUMOFPAGES - firstPage < size/PAGESIZE){			
 			int index = findEvictIndex(pageCount);
 			int status = -1;
@@ -682,6 +682,7 @@ void* myallocate(int size, char* file, int line, int threadId){
  						}
 						EPT[index][0] = -1;	
 						//TODO: Anne, I'm not sure if I should be setting EPT[index][1] to zero? decrementng it? etc
+						//Mike: no, leave it.  If it swaps out to memory, I don't want it's page to be freed.
  					}
  					j++;
  					i++;
@@ -693,7 +694,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 		else{
 			memNew = (memStruct*)((long)memory + OSSIZE +(firstPage * PAGESIZE )); //This line is the cause of about an hour worth of segfaulting		
 		}
-			
 		
 		memNew->pageCount = pageCount;
 		memNew->currUsed = size + sizeof(memStruct); //MIKE: why plus sizeof(memStruct)?  What are you doing with it?
@@ -807,7 +807,6 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			//if there are more mallocs being used on the last page, decrement the counter and return;
 			if (EPT[lastPage][0] > 1){
 				EPT[lastPage][1]--;
-				printf("here\n");
 				return;
 			}
 			PTE * freePTE = threads[tid]->pageTable;
@@ -841,7 +840,6 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 	}
 	return;
 }
-/**************** Additional Methods ****************/
 
 //shared malloc
 void* shalloc(int size){
@@ -969,6 +967,8 @@ void* shalloc(int size){
 	return (void*)((long)shcurrMD + sizeof(metaData));	
 }
 
+/**************** Additional Methods ****************/
+
 //initialize the scheduler
 int schedulerInit(){
 	printf("schedulerInit()\n");
@@ -988,7 +988,6 @@ int schedulerInit(){
 	//swap to scheduler
 	
 	swapcontext(&(threads[0]->context), &sched_uctx);
-		printf("here!!\n");
 	return 0;
 }
 
@@ -1356,23 +1355,18 @@ void free_things(){
 /* create a new thread */
 int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	/* Creates a pthread that executes function. Attributes are ignored, arg is not. */
-	printf("my_pthread_create()\n");
+//	printf("my_pthread_create()\n");
 	//initialize to some nonzero value
 	my_pthread_t ID = -1;
-		printf("0\n");
 	
 	//if headThread is not initialized, initialize it.
 	if(!headThread){
-			printf("a\n");
 		headThread = (nextId*)myallocate(sizeof(nextId),__FILE__,__LINE__,LIBREQ);
-		printf("b\n");	
 		headThread->next = NULL;
 		headThread->readyIndex = -1;
 	}
-	printf("1\n");
 	//fill up array before moving to linked list of readyIndexes
 	if (useThreadId == FALSE){
-			printf("2\n");
 		ID = threadCtr;
 		threadCtr++;
 		//thread is full, switch bool to TRUE.
@@ -1383,7 +1377,6 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 
 	//array is filled, move over to linked list of readyIndexes
 	else{
-		printf("3n");
 		if(headThread->readyIndex != -1){//there are indexes available
 			ID = headThread->readyIndex;
 			nextId* tempThread = headThread;
@@ -1399,14 +1392,13 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 			return -1; //couldn't create it, array is full.
 		}
 	}
-	printf("4-\n");
 	//create a new tcb
 	tcb* newNode = (tcb*)myallocate(sizeof(tcb),__FILE__,__LINE__,LIBREQ);
 	//assign thread ID
 	newNode->tid = ID;
 	//if the first thing in the thread array is null, then we have to capture main's context first and store it as a thread.
 	if(!threads[0]){
-		printf("5\n");
+
 		if(getcontext(&(main_uctx)) == -1){
 			return -2;//context issue
 		}
@@ -1433,7 +1425,6 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	if(getcontext(&(newNode->context)) == -1){
 		return -2;//context issue	
 	}
-	printf("6\n");
 	//do context stuff
 	ucontext_t uc = newNode->context;
 	uc.uc_stack.ss_sp = (char*)myallocate(STACK_SIZE,__FILE__,__LINE__,LIBREQ);
@@ -1442,7 +1433,7 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 
 	//arg is the (one) argument that gets passed into function ^^
 	makecontext(&uc, (void(*)(void))*function,1,arg);
-	printf("7\n");
+
 	newNode->context = uc; 
 
 	//assign other tcb stuff
@@ -1452,23 +1443,17 @@ int my_pthread_create(my_pthread_t * thread, pthread_attr_t * attr, void *(*func
 	newNode->waitingThreads = NULL;
 	newNode->pageTable = NULL;
 	threads[ID] = newNode;
-	printf("8\n");
 	//"thread" is a pointer to a "buffer", store ID in that "buffer"
 	*thread = ID;		
 	
 	//add new thread to mpq level 0
 	addMPQ(threads[ID], &level0Qhead, &level0Qtail);
-	printf("9\n");
 	//Initialize the scheduler if it's not already initialized
 	if(!schedInit){
-		printf("10\n");
 		if(schedulerInit() != 0){
-			printf("11\n");
 			return -3;
 		}
-		printf("12\n");
 	}
-	printf("finished\n");
 	return 0;
 }	
 
@@ -1488,12 +1473,15 @@ int my_pthread_yield() {
 		currentRunning = nextRunning;
 		//mprotect only pages that do not == -1 and do not == tid, let -2 be mprotected so it can segfault
 		int i = 0;
-		while(i < sizeof(EPT)/sizeof(int)){
+		while(i < NUMOFPAGES){
 			if(EPT[i][0] != -1 && EPT[i][0] != currentRunning->tid){
+//				printf("i: %d, fullsize: %d\n", i, (NUMOFPAGES));
 				mprotect((void*)((long)memory + OSSIZE + PAGESIZE * i), PAGESIZE, PROT_NONE);
+				printf("end\n");
 			}
 			i++;
 		}
+//		printf("after while\n");
 		timer(threads[currentRunning->tid]->priority);
 		if((swapcontext(&(sched_uctx),&((threads[currentRunning->tid])->context))) != 0){
 			return -2;
@@ -1504,7 +1492,7 @@ int my_pthread_yield() {
 	//otherwise the currently running thread requested to yield, was preempted, or was put onto a waiting queue.
 	else{
 		//if not preempted or put onto a waiting queue, change status to YIELDED.
-		printf("hi again\n");
+//		printf("hi again\n");
 		mprotect((void*)((long)memory + OSSIZE), USERSIZE, PROT_READ | PROT_WRITE); //allow read and write to entire array
 		if(threads[currentRunning->tid]->threadState != PREEMPTED && threads[currentRunning->tid]->threadState != WAITING){
 			threads[currentRunning->tid]->threadState = YIELDED;		

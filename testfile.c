@@ -152,6 +152,7 @@ void function(){
 	free(str6);
 	printf("functin done\n");
 	pthread_exit(NULL);	
+
 }
 
 void shallocIt(){
@@ -194,7 +195,7 @@ int main(int argc, char** argv){
 	}
 
 * * * * * Small one of tests * * * * */
-// 	pthread_t mythread1, mythread2, mythread3;
+// 	pthread_t mythread1, mythread2, mythread3, mythread4, mythread5, mythread6;
 /*	char* ptr1 = NULL;
 	pthread_create(&mythread1, NULL, (void*)&shallocIt, NULL);
 	pthread_join(mythread1, &ptr1);
@@ -206,15 +207,24 @@ int main(int argc, char** argv){
 	pthread_create(&mythread3, NULL, (void*)&useIt, &ptr1);	
 	pthread_join(mythread2, NULL);
 	pthread_join(mythread3, NULL);
-*/
-/*	printf("before mallocs\n");
+*//*
+	printf("before mallocs\n");
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
 //	char* ptr1 = (char*)malloc(5*1024*1024);
 	printf("between mallocs\n");
 //	char* ptr2 = malloc(5*1024*1024);
 	pthread_create(&mythread2, NULL, (void*)&function, NULL);
+	pthread_create(&mythread3, NULL, (void*)&function, NULL);
+	pthread_create(&mythread4, NULL, (void*)&function, NULL);
+	pthread_create(&mythread5, NULL, (void*)&function, NULL);
+	pthread_create(&mythread6, NULL, (void*)&function, NULL);
+	
 	pthread_join(mythread1, NULL);
 	pthread_join(mythread2, NULL);
+	pthread_join(mythread3, NULL);
+	pthread_join(mythread4, NULL);
+	pthread_join(mythread5, NULL);
+	pthread_join(mythread6, NULL);
 	printf("after mallocs\n");
 */
 			
