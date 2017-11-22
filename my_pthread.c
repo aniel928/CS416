@@ -104,7 +104,7 @@ bool mallocInitialized = FALSE;
 /***************** Malloc Stuff *********************/
 
 //This function is purely for testing, leaving in now but not necessary when we submit
-void showData(){
+/*void showData(){
 	memStruct * memTest = memHead;
 	printf("----------PRINTING LINKED LIST DATA----------\n");
 	int i = 1;
@@ -158,7 +158,7 @@ void showPages(int tid){
 	//	showData();
 		
 }
-
+*/
 void dataEPT(){
 	printf("Printing page table\n");
 	int i = 0;
@@ -180,7 +180,7 @@ void dataEPT(){
 
 //Checks to see how many pages have been used, need to switch to page table
 //MIKE: I think you should switch to EPT, this is segfaulting (like we thought it would)
-int usedPages(){
+/*int usedPages(){
 	printf("used pages in\n");
 	memStruct * memUP = memHead;
 	int count = 0;
@@ -191,7 +191,7 @@ int usedPages(){
 	printf("used pages out\n");
 	return count;
 }
-
+*/
 //take number of consecutive pages needed, returns start index from EPT to be used
 int findConsecutivePages(int numPages){
 	int i=0;
@@ -219,7 +219,7 @@ int findConsecutivePages(int numPages){
 }
 
 //MIKE: this is also obsolete now I believe
-int inUsePgs(){
+/*int inUsePgs(){
 	memStruct * memUP = memHead;
 	int count = 0;
 	while (memUP != NULL){
@@ -229,7 +229,7 @@ int inUsePgs(){
 		memUP = memUP->next;
 	}
 	return count;
-}
+}*/
 
 //returns first free index in swap file
 int findSwapIndex(){
@@ -619,6 +619,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 					
 					prevMem = newMem;
 					newMem = (memStruct*)((long)newMem + newMem->currUsed + sizeof(memStruct));
+					//index++;
 					if(table->maxSize == newMem->currUsed){
 						table->maxSize -= (size - sizeof(memStruct)); //if the current size equals what was in the file, reduce max size
 					}
@@ -645,17 +646,20 @@ void* myallocate(int size, char* file, int line, int threadId){
 					nextMem->currUsed = newSize;
 				}
 				my_pthread_mutex_unlock(mutexMalloc);
+				//EPT[index][0] = tid;
+				//EPT[index][1]++;
+				//ANNE: at any point are you doing anything with the page table for this? or should it be implemented? if so I think it might just be what I implemented on lines 622 and the two lines above this
 				return (void*)((long)newMem + sizeof(memStruct));
 			}
 			//if it didn't go into if (and therefore didn't return), it needs a page allocated, so continue on
 		}
 
 		//determining how many pages are needed to return
-		int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;
+		int pageCount = ((size + sizeof(memStruct))/PAGESIZE) + 1;//ANNE: I may change this later because this adds one if its like 1.4 or 0.5 cause it's an int, so it'd be 1 or 0 respectively, but what if it's exactly 1.0 or 2.0, I think there's code that makes this irrelevant either way but I just wanted to point it out 
 		int firstPage = findConsecutivePages(pageCount);
 		printf("FIRST PAGE: d\n", firstPage);
 		if(firstPage == -1){
-			printf("Today is not your day\n");
+			printf("Today is not your day, hang in there champ\n");
 			return NULL;
 		}
 		if(NUMOFPAGES - firstPage < size/PAGESIZE){			
@@ -696,7 +700,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 		}
 		
 		memNew->pageCount = pageCount;
-		memNew->currUsed = size + sizeof(memStruct); //MIKE: why plus sizeof(memStruct)?  What are you doing with it?
+		memNew->currUsed = size + sizeof(memStruct); //MIKE: why plus sizeof(memStruct)?  What are you doing with it? ANNE, It's just saying how many bytes that this specific malloc has used in the page, if you're not using it in other places I think it'd be best to just leave it, I see what you're saying but I believe I have some logic that uses it and it's working, let me know if you're using it and boy this is long, huh?
 		memNew->inUse = TRUE;
 		memNew->next = NULL; //i think only important for internal mallocs
 		if (memHead == NULL){
@@ -830,7 +834,9 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 				freePTE = freePTE->next;
 
 				EPT[i][0] = -2; //this way we keep it mprotected so that if returning thread wants it, it segfaults and brings it in.
-				i++;					
+				EPT[i][1] = 0;
+				i++;	
+				
 			}
 			printf("user section freed\n");
 		}
