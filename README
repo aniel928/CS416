@@ -10,18 +10,34 @@ Quick Important Notes:
 	THREADEQ is set to 1
 	LIBREQ is set to 0
 
-Analysis
-Things We Tested:
--Mallocing and freeing 5mb 1000 times in a loop
--Mallocing 2MB 10 times and accessing the data in the first call after the last.
--Mallocing 10MB and trying to free it 1000 times in a loop
--Freeing without mallocing  - ***I dont know that we need this, that's undefined behavior in the real malloc/free***
--One malloc call for 6mb followed by a free and then 1000 malloc calls for 6000 bytes ***Second half will likely fail b/c each call will have 24bytes of meta***
--Allocating 5MB in 6 different threads
--Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 5 bytes twice.  First one should consume the rest of first page, second one should go into new page.
--Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.  First one should consume the rest of first page, second one should go into new page.
--Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
+Changes/reminders from last project
+    Max Threads: 32 total, 31 can be created (first one reserved for main method)
+    Stack Size: 16KB 
+    
+    
+Analysis / Things We Tested:
+    From Main Method (no pthread_create):
+    -Mallocing and freeing 5mb 1000 times in a loop
+    -Mallocing 2MB 10 times and accessing the data in the first call after the last.
+***-Mallocing 10MB and trying to free it 1000 times in a loop ***This might not be worth testing.
+***-Freeing without mallocing  - ***I dont know that we need this, that's undefined behavior in the real malloc/free***
+    -One malloc call for 6mb followed by a free and then 1000 malloc calls for 6000 bytes ***Second half will likely fail b/c each call will have 24bytes of meta***
+    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 5 bytes twice.  First one should consume the rest of first page, second one should go into new page.
+    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.  First one should consume the rest of first page, second one should go into new page.
 
+    Multiple Threads:
+    -Allocating 5MB in 6 different threads
+    -Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
+    -31 separate thread creates, each calling malloc of 5MB (more than half of the user space) and freeing 200 times.
+    -31 threads, each calling malloc 200 times on 1 byte, do not free.
+    -31 threads, each calling malloc 200 times on 1 byte, do free.
+
+    Mallocing from both main method and multiple threads:
+    
+    
+    Shalloc:
+    
+    
 MetaData Structure:
     For OS region and shared region:  A struct containing an int to check if used, an int to record size, and a pointer to the next metadata
     For user region: A struct containing a boolean to check if used, an int to record size, an int to record number of pages, and a pointer to the next metadata
