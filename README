@@ -1,8 +1,6 @@
 Anne Whitman : alh220
 Michael Mazzola : mjm706
 
-(I originally wrote this in word but you cant upload a .doc to bitbucket so if the format is weird that's why)
-
 Quick Important Notes:
 	Memory Size: 8 Megabytes
 	Operating System Region Size: 1 Megabyte
@@ -12,23 +10,29 @@ Quick Important Notes:
 	THREADEQ is set to 1
 	LIBREQ is set to 0
 
-	
-
 Analysis
-Tests:
+Things We Tested:
 -Mallocing and freeing 5mb 1000 times in a loop
 -Mallocing 2MB 10 times and accessing the data in the first call after the last.
 -Mallocing 10MB and trying to free it 1000 times in a loop
--Freeing without mallocing
--One malloc call for 6mb followed by a free and then 1000 malloc calls for 6000 bytes
+-Freeing without mallocing  - ***I dont know that we need this, that's undefined behavior in the real malloc/free***
+-One malloc call for 6mb followed by a free and then 1000 malloc calls for 6000 bytes ***Second half will likely fail b/c each call will have 24bytes of meta***
 -Allocating 5MB in 6 different threads
-???
+-Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 5 bytes twice.  First one should consume the rest of first page, second one should go into new page.
+-Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.  First one should consume the rest of first page, second one should go into new page.
+-Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
 
+MetaData Structure:
+    For OS region and shared region:  A struct containing an int to check if used, an int to record size, and a pointer to the next metadata
+    For user region: A struct containing a boolean to check if used, an int to record size, an int to record number of pages, and a pointer to the next metadata
 
-Methods Definitions, Descriptions, and Return Values
+Page Tables: 
+    Internal: each thread has a page table associated with their TCB which holds the page index, the maxsize currently free in that page, an offset in the swap file that defaults to -1 when not being used, and a pointer to the next
+    External: a 2-dimensional global array, each row holds data about a specific page, the first column holds which page owns it (defaults to -1, when freed set to -2 to guarantee segfault handler), second column holds how many malloc calls are currently using it (so it won't be deleted prematurely).
 
+Methods Definitions, Descriptions, and Return Values:
 int findConsecutivePages(int numPages);
-    This method is used to traverse the page table and search for a number of consecutive pages that are available to the current thread. 
+    This method is used to traverse the page table and search for a number of consecutive pages that are available so they can be allocated to the current thread. 
     If a group of pages is found successfully, it will return the index of the pages. If the search is unsuccessful it will return -1.
 
 int findSwapIndex();
@@ -45,18 +49,20 @@ int evictPage(int page);
     It first searches the swap file for an available index using the findSwapIndex function, and, if an available index is located, copies the pages data to the swap file. 
     If an index was successfully located by the findSwapIndex function this method will return the found index, otherwise it will return -1.
 
-** I think this may be worded wrong, I'm not sure if this funtion should always work? yk? cause if it needs to restore a page then the buffer comes into play etc..int restorePage(int page, int offset);
+** I think this may be worded wrong, I'm not sure if this funtion should always work? yk? cause if it needs to restore a page then the buffer comes into play etc..
+*** I have no idea what you mean, but I did change what you had for the return value, so maybe that clears it up for you?
+int restorePage(int page, int offset);
     This method is given a page and an offset. It first takes the given page and attempts to evict it using the evictPage function. 
     If the swap file is full and the page could not be evicted, the method will return -1. 
-    If a page is found, the method then copies the data from the swap file into the previously evicted page in the page table and returns the index of the restored page. 
+    If a page is found, the method then copies the data from the swap file into the previously evicted page in the page table and returns the offset of the evicted page so we can store it in their page table
 
 void segment_fault_handler(int signum, siginfo_t *si, void* unused);
     This method is automatically called when a segmentation fault occurs. 
     It determines if it was called due to a legitimate segmentation fault or if there needs to be a page swap. 
-    If the segmentation fault was legitimate the program will exit, otherwise, 
-    it will use the 'restorePages' method to retrieve the appropriate page from the swap file and continue compiling. 
+    If the segmentation fault was legitimate the program will print "real [external/internal] segmentation fault" and exit, otherwise, 
+    it will use the 'restorePages' method to retrieve the appropriate page from the swap file and continue execution. 
 
-**void mallocInit();
+void mallocInit();
     This method is called the first time that malloc is called. 
     It first uses posix_memalign to align the memory array, then builds the swap file of size 16MB and sets all the bytes to zero. 
     Afterwards, it builds the struct for the segmentation fault handler. Lastly, it sets all the indices in the page table to -1. 
@@ -70,20 +76,21 @@ int combineFreeStuff(metaData* iter);
     It first stores the given metadata bytes in a variable labeled ‘bytesFree’ and will continuously add the bytes of the following metadata’s 
     until it reaches one that is currently being used or is NULL. Once the search is complete, the method returns ‘bytesFree’.
 	
-**void* myallocate(int size, char* file, int line, int threadId);
+void* myallocate(int size, char* file, int line, int threadId);
     This method is used for memory allocation and replaces the malloc call. 
     A memory region is sectioned into three partitions, the operating system region, the user space region, and the shared memory region. 
     This method has access to both the operating system and user space section. It is given a requested size, a file and line for reference 
     of where the call originated, and a value of 0 or 1 to determine if the call is pertaining to an operating system or a user process. 
-    If the value of the threadid is 0, the method will handle the call in the operating system region and will return a pointer to chunk of bytes 
+    If the value of the threadId is 0, the method will handle the call in the operating system region and will return a pointer to chunk of bytes 
     the size that was requested. The metadata for this chunk will be stored directly before the address that is being returned. 
-    If the value of the threaded is 1, the method will handle the request by distributing bytes from the user space. 
+    If the value of the threadId is 1, the method will handle the request by distributing bytes from the user space. 
     This region implements paging. When a request is made, the number of pages necessary is determined from the size given and an available location is searched for. 
     If the space is found it will return a pointer to this location with the metadata stored before it. If a page is not found, a page will be selected for eviction and its 
     data stored in a swap file. A page table is used to keep track of all the pages and their current status as well as assisting in other functions such as determining which 
-    pages are eligible to be evicted. If the both the memory region and swap file are filled and there is no more allocation room, the method will return -1.
+    pages are eligible to be evicted. If both the memory region and swap file are filled and there is no more allocation room, the method will return a NULL pointer.
 
-** void mydeallocate(void* ptr, char* file, int line, int threadid);
+**It shouldn't "fail".  We shouldn't even be printing anything.  We should just gracefully exit at the end if there is no metadata associated
+void mydeallocate(void* ptr, char* file, int line, int threadid);
     This method is used to deallocate memory in the memory region. It first checks if the value given is NULL, and if so it will return. 
     It then checks the address of the given pointer to see which region in memory is being referenced. 
     If the pointer belonged to the operating system region it sets its in use value to zero and allows for future malloc calls to this region to utilize this space. 
@@ -94,8 +101,8 @@ int combineFreeStuff(metaData* iter);
     It will then set the metadata that is associated with the pointer to no longer in use which will allow for future malloc calls to this region to have access to these bytes.
     If the address is pointing somewhere in the memory region but there is no metadata associated with it, the free call will fail, as it is an invalid address. 
 
-** I’m for sure missing some stuff in this --void* shalloc(int size);
+void* shalloc(int size);
     This method is used to distribute memory in the shared memory region. 
-    This region does not use paging and can be accessed from both the user and operating system. 
+    This region does not use paging and can be accessed by any thread.
     It will return a pointer to the beginning of a chunk of data which size is equal to the size requested. 
-    The metadata for this is stored directly in front of the address of the pointer. If there isn’t enough space to satisfy the request the function will return NULL.
+    The metadata for this is stored directly in front of the address of the pointer. If there isn’t enough space to satisfy the request the function will return a NULL pointer.
