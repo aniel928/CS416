@@ -118,19 +118,33 @@ void function(){
 	//could not get this to work at all, I suck at the pthread create stuff
 	//^^You just forgot to "join" the thread
 	printf("in function\n");
-/*
+
 	char* ptr1 = (char*)malloc(5*1024*1024);
 	if(ptr1){
 		printf("malloc successful? %p\n", ptr1);
 	}
 	else{
-		printf("NULL\n");
+		printf("MALLOC UNSUCCESSFUL - pointer NULL\n");
+		pthread_exit(NULL);
+		return;
 	}
 	pthread_yield();
 	
 	printf("i'm back\n");
 	ptr1[5010] = 'a';
-*/
+	
+	pthread_yield();
+	
+	printf("back again\n");
+	ptr1[5010] = 'n';
+	printf("between\n");
+	ptr1[3456789] = 'n';
+
+	printf("function done\n");
+	pthread_exit(NULL);	
+
+}
+/*
 	char * str1 = (char*)shalloc(500);
 	char * str2 = (char*)shalloc(300);
 	char * str3 = (char*)shalloc(500);
@@ -153,7 +167,7 @@ void function(){
 	printf("functin done\n");
 	pthread_exit(NULL);	
 
-}
+}*/
 
 void shallocIt(){
 	char* myptr = (char*)shalloc(5);
@@ -195,7 +209,7 @@ int main(int argc, char** argv){
 	}
 
 * * * * * Small one of tests * * * * */
-// 	pthread_t mythread1, mythread2, mythread3, mythread4, mythread5, mythread6;
+ 	pthread_t mythread1, mythread2, mythread3, mythread4, mythread5, mythread6;
 /*	char* ptr1 = NULL;
 	pthread_create(&mythread1, NULL, (void*)&shallocIt, NULL);
 	pthread_join(mythread1, &ptr1);
@@ -207,11 +221,10 @@ int main(int argc, char** argv){
 	pthread_create(&mythread3, NULL, (void*)&useIt, &ptr1);	
 	pthread_join(mythread2, NULL);
 	pthread_join(mythread3, NULL);
-*//*
-	printf("before mallocs\n");
+*/
+
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
 //	char* ptr1 = (char*)malloc(5*1024*1024);
-	printf("between mallocs\n");
 //	char* ptr2 = malloc(5*1024*1024);
 	pthread_create(&mythread2, NULL, (void*)&function, NULL);
 	pthread_create(&mythread3, NULL, (void*)&function, NULL);
@@ -226,8 +239,8 @@ int main(int argc, char** argv){
 	pthread_join(mythread5, NULL);
 	pthread_join(mythread6, NULL);
 	printf("after mallocs\n");
-*/
-			
+
+/*			
 	pthread_t mythread1;
 	printf("before\n");
 	pthread_create(&mythread1, NULL, (void*)&function, NULL);
@@ -278,7 +291,7 @@ int main(int argc, char** argv){
 	free(str6);
 	free(mstr1);
 	printf("after last set\n");
-	
+*/	
 // 	char* zero = 0x0;
 // 	int a = *(zero);
 
