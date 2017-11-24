@@ -270,7 +270,6 @@ int evictPageIntoBuffer(int page, int offset){
 //handle segmentation faults
 void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
-	printf("first address: %p\nlast address:  %p\n", memory, (void*)((long)memory + (8*1024*1024)));
 	//if address is in our array, deal with swap file
 
 	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
@@ -403,6 +402,9 @@ void spaceBetween(metaData* curr, int size, int bytesFree){
 int combineFreeStuff(metaData* iter){
 	int bytesFree = iter->bytes;
 	while(iter->ptr && (iter->ptr)->used == 0){
+		if((long)iter->ptr < (long)memory){
+			return 0;
+		}
 		//if the next one, or two, or several are free, combine them.
 		iter = iter->ptr;
 		bytesFree += sizeof(metaData) + iter->bytes;
@@ -424,6 +426,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 
 	//library request - don't use paging.
 	if(!threadId){
+	OSbytes += size + sizeof(metaData);
 //	printf("bytes requested in OS: %d/%d\n", OSbytes, OSSIZE);
 	//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN FREE]) Add changes/fix from old file
 		//if no head is set yet
@@ -502,30 +505,26 @@ void* myallocate(int size, char* file, int line, int threadId){
 			prevMD = headOS;
 			currMD = headOS;
 			//while ptr != NULL, move forward.
-			printf("before while\n");
 			while(currMD->ptr){ 
 				prevMD = currMD;
-				currMD = currMD->ptr;//(metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
-				printf("before if\n");
+				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 				if(currMD->used == 0){
 					iterMD = currMD;
 					int bytesFree = combineFreeStuff(iterMD);
+					if(bytesFree > 0){
+					}				
 					if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
-						printf("if\n");
 						currMD->used = 1;
 						return (void*)((long)currMD + sizeof(metaData));
 					}
 					//if it's bigger than the space and there's enough room for metadata
 					else if(bytesFree > size){
-					printf("else if\n");
 						spaceBetween(currMD, size, bytesFree);
 						return (void*)((long)currMD + sizeof(metaData));
 					}
-					printf("else\n");
 					//else if it won't fit, keep looping through.
 				}
 			}
-			printf("out of while\n");
 			prevMD = currMD;
 			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 
@@ -559,7 +558,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 		//if smaller than a page is requested
 		if(size <= (PAGESIZE - sizeof(metaData))){
 			//check to see if pageTable exists for thread, if it doesn't, add it
-
+			printf("not working?\n");
 			PTE* table = NULL;
 			if(tid == 0 && !threads[0]){
 				table = firstPTE;	//called by  main method before pthread_create
@@ -625,6 +624,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 				EPT[index][1]++;
 				//ANNE: at any point are you doing anything with the page table for this? or should it be implemented? if so I think it might just be what I implemented on lines 622 and the two lines above this
 				//MIKE: very confused what you're asking here. The whole point of this is that i'm using up space at the end of a page table? So yes, it needs the incrementor, but no doesn't need the other line, and line 622 is something else.
+				return (void*)((long)newMem + sizeof(memStruct));
 			}
 		}
 		//determining how many pages are needed to return
@@ -702,6 +702,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 			my_pthread_mutex_unlock(mutexMalloc);
 			return NULL;
 		}
+
 		//check if first index of pageTable has been created
 		if(tid == 0 && !threads[0]){
 			if(!firstPTE){
@@ -714,7 +715,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				tempPTE->next = threadPTE;
 			}
-
 		}
 		else{
 			if (threads[tid]->pageTable == 	NULL){
@@ -735,10 +735,8 @@ void* myallocate(int size, char* file, int line, int threadId){
 			threadPTE->maxSize = 0;
 			threadPTE->offset = -1;
 			iter++;
-			printf("before\n");
 			threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
-			printf("after\n");
-			if(!threadPTE->next){
+			if (threadPTE == NULL){
 				my_pthread_mutex_unlock(mutexMalloc);
 				return NULL;
 			}
@@ -805,7 +803,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			PTE * previous = NULL; //to set pointer if necessary
 			PTE * temp = NULL; //to free it
 			if(currentRunning){
-				threads[tid]->pageTable;
+				freePTE = threads[tid]->pageTable;
 			}
 			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
 		 	//Resetting page table index to -1
@@ -1305,8 +1303,6 @@ void exit_thread(queueNode* node, void* value_ptr){
 		queueNode* tempNode = NULL;
 		//go through each node and give back the value_ptr
 		while(currentNode){
-//			char* ptr = (char*)threads[currentNode->tid]->retval;
-//			ptr = (char*)value_ptr;
 			if(value_ptr != NULL && (threads[currentNode->tid]->retval) != NULL){
 				*(threads[currentNode->tid]->retval) = (char*)value_ptr;//is this right?? test it.
 			}	
