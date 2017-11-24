@@ -17,13 +17,20 @@ Changes/reminders from last project
     
 Analysis / Things We Tested:
     From Main Method (no pthread_create):
-    -Mallocing and freeing 5mb 1000 times in a loop
+    -Mallocing and freeing 5mb 10, 30, 50 times in a loop
+        -Outcome: once we start approaching 50 times in a loop, we start getting a stack overflow issue in the OS region.
     -Mallocing 2MB 10 times and accessing the data in the first call after the last.
+        -Outcome: first 3 malloc calls are successful, last 7 are not (which is correct, a thread cannot take up more than the entire userspace according to spec). No issue using first malloced space.        
 ***-Mallocing 10MB and trying to free it 1000 times in a loop ***This might not be worth testing.
 ***-Freeing without mallocing  - ***I dont know that we need this, that's undefined behavior in the real malloc/free***
     -One malloc call for 6mb followed by a free and then 1000 malloc calls for 6000 bytes ***Second half will likely fail b/c each call will have 24bytes of meta***
-    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 5 bytes twice.  First one should consume the rest of first page, second one should go into new page.
-    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.  First one should consume the rest of first page, second one should go into new page.
+        -Outcome: successfully works for first 894 calls, but then memory fills up and the rest are appropriately returned null pointers.
+    -One malloc call for 6000 bytes followed by a free and then 6 malloc calls for 1000 bytes
+        -Outcome: successfully frees and then fits the next 4 calls for 1000 bytes into the first page, then moves on to next page for next two calls.
+    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 5 bytes twice.
+        -Outcome: First 5 byte call properly consumed the rest of first page, second one properly went into new page.
+    -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.
+        -Outcome: First 1 byte call properly consumed the rest of first page, second one properly went into new page.*/
 
     Multiple Threads:
     -Allocating 5MB in 6 different threads
