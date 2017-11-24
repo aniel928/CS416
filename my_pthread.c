@@ -822,11 +822,11 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 					}
 					checked = TRUE;
 				}
-//				freePTE->pageIndex = -1;
-//				freePTE->maxSize = PAGESIZE;
-//				freePTE->offset = -1;
+				freePTE->pageIndex = -1;
+				freePTE->maxSize = PAGESIZE;
+				freePTE->offset = -1;
 				temp = freePTE;
-//				freePTE = freePTE->next;
+				freePTE = freePTE->next;
 				temp->next = NULL;
 				mydeallocate(temp, __FILE__, __LINE__, LIBREQ);  //TODO: this is going back to userspace?? Should be OS space??
 				if (EPT[i][1] > 1){//MIKE: You had if(EPT[lastPage][0] > 1), but I assume you meant this, change it back and let me know if you didn't.

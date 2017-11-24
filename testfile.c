@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*/Mallocing and freeing 5mb 10, 30, 50 times in a loop 
+//Mallocing and freeing 5mb 10, 30, 50 times in a loop 
 int main(int argc, char** argv){
 	char* ptr = NULL;
 	int i = 0;
