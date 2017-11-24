@@ -32,6 +32,10 @@ Analysis / Things We Tested:
     -Allocate (pagesize - sizeof(memStruct) - (5 + sizeof(memStruct)), then allocate 1 byte twice.
         -Outcome: First 1 byte call properly consumed the rest of first page, second one properly went into new page.*/
 
+    Single Thread (one call to pthread_create):
+    -Run all of the tests from above (main method).
+        Outcome: exact same results.
+
     Multiple Threads:
     -Allocating 5MB in 6 different threads
     -Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
