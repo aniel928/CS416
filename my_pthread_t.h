@@ -192,18 +192,17 @@ int my_pthread_mutex_destroy(my_pthread_mutex_t *mutex);
 #define SWAPFILESIZE 16*1024*1024
 #endif
 
-//testMethods
-void showData();
-void showPages(int tid); 
-void dataEPT();
-
 //helper methods
-int usedPages();
-int inUsePgs();
+int findConsecutivePages(int numPages);
+int findSwapIndex();
+int findEvictIndex(int numPages);
+int evictPage(int page);
+int restorePage(int page, int offset);
+int evictPageIntoBuffer(int page, int offset);
+void segment_fault_handler(int signum, siginfo_t *si, void* unused);
 void mallocInit();
 void spaceBetween(metaData* curr, int size, int bytesFree);
 int combineFreeStuff(metaData* iter);
-static void handler(int sig, siginfo_t *si, void *unused);
 void * myallocate(int size, char * file, int line, int threadId);
 void mydeallocate(void* ptr, char* file, int line, int threadId);
 void* shalloc(int size);

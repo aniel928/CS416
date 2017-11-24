@@ -127,12 +127,16 @@ void dataEPT(){
 
 //take number of consecutive pages needed, returns start index from EPT to be used
 int findConsecutivePages(int numPages){
+//	printf("find consecutive pages\n");
 	int i=0;
 	int j=0;
 	//go through EPT
 	while(i < NUMOFPAGES){
 		//if it's less than 0, we can take it (-1 means never been used, -2 means used previously, so potentially something in swap file
 		if(EPT[i][0] < 0){
+			if(EPT[i][0] == -2){
+				mprotect((void*)((long)memory + OSSIZE + PAGESIZE*j), PAGESIZE, PROT_READ | PROT_WRITE);
+			}
 			j++;
 			if(j == numPages){
 				break;
@@ -153,6 +157,7 @@ int findConsecutivePages(int numPages){
 
 //returns first free index in swap file
 int findSwapIndex(){
+//	printf("find swap index\n");
 	//go through entire array and find first available index
 	int i = 0;
 	while(i < sizeof(swapIndex)/sizeof(int)){
@@ -173,6 +178,7 @@ int findSwapIndex(){
 //almost identical to findConsecutivePages() but with slightly different logic
 //take number of consecutive pages needed, returns index from EPT that can be evicted
 int findEvictIndex(int numPages){
+//	printf("find evict index\n");
 	int i = 0;
 	int j = 0;
 	int tid = 0;
@@ -227,6 +233,7 @@ int evictPage(int page){
 
 //takes page to be swapped and offset in file for the one we're looking for.  Returns offset on success, -1 on failure
 int restorePage(int page, int offset){
+//	printf("restore page\n");
 	//first evict
 	int status = evictPage(page);
 	if(status == -1){
@@ -238,13 +245,14 @@ int restorePage(int page, int offset){
 	read(fd, (void*)buffer + status, PAGESIZE - status); 
 	memcpy((void*)((long)memory + OSSIZE + PAGESIZE*page), buffer, PAGESIZE);
 	swapIndex[page] = FALSE;
-	printf("return restore page\n");
+//	printf("return restore page\n");
 	return status;
 }
 
 //for when file is full but need to bring something else back in.
 //something is definitely broken here
 int evictPageIntoBuffer(int page, int offset){
+//	printf("evict page into buffer\n");
 	mprotect((void*)((long)memory + OSSIZE + PAGESIZE*page), PAGESIZE, PROT_READ | PROT_WRITE); 
 	//buffers to save from file temporarily
 	char buffer[4096]; //store from file
@@ -302,14 +310,9 @@ void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 		}
 		//otherwise restore the page (this function also calls evict for us on the current one.
 		int newOffset = restorePage(page, offset);
-		//if restoring fails, shouldn't segfault, but hopefully this never gets called? TODO: figure out what to actually do here
+		//if restorePage fails
 		if(newOffset == -1){
 			//this means file is full
-//TODO!!
-			//THIS IS THE PROBLEM
-			//I THINK I'M SETTING THE OLD OFFSET TO -1 TOO SOON
-//			exit(EXIT_FAILURE);			
-//			printf("offset: %d\n", offset);
 			newOffset = evictPageIntoBuffer(page, offset);
 			printf("newOffset: %d\n", newOffset);
 		}
@@ -388,6 +391,7 @@ void mallocInit(){
 
 //take previously freed space, give back what they're asking for and put metadata in for the rest
 void spaceBetween(metaData* curr, int size, int bytesFree){
+//	printf("space between\n");
 	curr->used = 1;   
 	curr->bytes = size;
 	curr->ptr = (metaData*)((long)curr + sizeof(metaData) + curr->bytes);
@@ -400,6 +404,7 @@ void spaceBetween(metaData* curr, int size, int bytesFree){
 
 //if previously freed, see if there's more stuff contiguously  
 int combineFreeStuff(metaData* iter){
+//	printf("combine free stuff\n");
 	int bytesFree = iter->bytes;
 	while(iter->ptr && (iter->ptr)->used == 0){
 		if((long)iter->ptr < (long)memory){
@@ -665,7 +670,9 @@ void* myallocate(int size, char* file, int line, int threadId){
  						return NULL;
  					}
  					else{
- 						PTE* pageTable = threads[EPT[j][0]]->pageTable;
+// 						printf("%d\n", tid);
+//						printf("%d\n", EPT[j][0]);				
+  						PTE* pageTable = threads[EPT[j][0]]->pageTable;
  						while(pageTable){
  							if(pageTable->pageIndex == j){
  								pageTable->offset = status; //stores offset in pageTable
@@ -679,9 +686,10 @@ void* myallocate(int size, char* file, int line, int threadId){
  					i++;
  				}
  			}
+ 			
 		}	
 
-//		printf("firstpage again: %d\n", firstPage);			
+//		printf("firstpage again: %d\n", firstPage);
 		memNew = (memStruct*)((long)memory + OSSIZE +(firstPage * PAGESIZE )); //This line is the cause of about an hour worth of segfaulting		
 		memNew->pageCount = pageCount;
 		memNew->currUsed = size + sizeof(memStruct); //MIKE: why plus sizeof(memStruct)?  What are you doing with it? ANNE, It's just saying how many bytes that this specific malloc has used in the page, if you're not using it in other places I think it'd be best to just leave it, I see what you're saying but I believe I have some logic that uses it and it's working, let me know if you're using it and boy this is long, huh?
@@ -757,9 +765,8 @@ void* myallocate(int size, char* file, int line, int threadId){
 
 //replace free
 void mydeallocate(void* ptr, char* file, int line, int threadId){
-
 //	printf("Free stuff: %p\n",ptr);
-	if(!ptr ){//|| ((metaData*)((long)ptr - sizeof(metaData)))->used == 0){
+	if(!ptr){//|| ((metaData*)((long)ptr - sizeof(metaData)))->used == 0){
 		return;
 	}
 	if(!threadId){//	 TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN TOP OF MALLOC]) Add changes/fix from old file
@@ -779,7 +786,8 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 
 		//		printf("Free coming from thread number %d\n",tid);
 		//logic for shalloc
-		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){ //MIKE: are you sure this works?  Can you walk me through what this does?
+		if(((long)ptr >= (long)memory + OSSIZE + USERSIZE) && ((long)ptr < (long)memory + OSSIZE + USERSIZE + SHAREDSIZE)){
+//		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){ //MIKE: are you sure this works?  Can you walk me through what this does?
 		//	printf("free from shalloc\n");
 			((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
 //			printf("shalloc freed\n");
@@ -792,12 +800,6 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			int indexStart = (((long)ptr - sizeof(memStruct)) - ((long)memory + OSSIZE))/ PAGESIZE;//first page
 			int lastPage = indexStart + pageCount;
 
-			//if there are more mallocs being used on the last page, decrement the counter and return;
-// 			if (EPT[lastPage][1] > 1){//MIKE: You had if(EPT[lastPage][0] > 1), but I assume you meant this, change it back and let me know if you didn't.
-// 				EPT[lastPage][1]--;
-// 				//MIKE: shouldn't return until it changes inUse to FALSE...
-// 				return;
-// 			}
 			//first set to firstPTE, then reset to proper table if thread running
 			PTE * freePTE = firstPTE;
 			PTE * previous = NULL; //to set pointer if necessary
@@ -812,11 +814,9 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			bool checked = FALSE;
 			//MIKE TODO: shouldn't be freeing last page or resetting EPT of last page if smaller mallocs happened inside of it.
 			//TODID: change internal page max size
-			while (i < (long)(pageCount + indexStart) && freePTE){ //while loop to get to right page index
+			while (freePTE && i < (long)(pageCount + indexStart)){ //while loop to get to right page index
 				if (checked == FALSE){
-					printf("in if\n");
-					while(indexStart != freePTE->pageIndex){
-//						printf("moving");
+					while(freePTE && indexStart != freePTE->pageIndex){
 						previous = freePTE;
 						freePTE = freePTE->next;
 					}
@@ -843,10 +843,10 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			if(previous){
 				previous->next = freePTE;
 			}
-			printf("user section freed\n");
+//			printf("user section freed\n");
 		}
 		else{
-			printf("could not find anything to free\n");
+//			printf("could not find anything to free\n");
 		}		
 	}
 	return;
@@ -854,6 +854,7 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 
 //shared malloc
 void* shalloc(int size){
+//	printf("shalloc\n");
 	//if no head is set yet
 	if(!headSh){
 //		printf("head stuff\n");
@@ -1229,7 +1230,7 @@ void runThreads(){
 
 /*signal handler for timer*/
 void time_handle(int signum){
-//	printf("time_handler\n");
+	printf("time_handler\n");
 	//change status to PREEMPTED
 	//unmprotect everything
 	mprotect((void*)((long)memory + OSSIZE), USERSIZE, PROT_READ | PROT_WRITE); //allow read and write to entire array
@@ -1310,6 +1311,20 @@ void exit_thread(queueNode* node, void* value_ptr){
 			tempNode = currentNode;
 			currentNode = currentNode->next;
 			mydeallocate(tempNode,__FILE__,__LINE__,LIBREQ);
+		}
+	}
+	if(threads[node->tid]->pageTable){
+		PTE* table = threads[node->tid]->pageTable;
+		PTE* free = NULL;
+		while(table){
+			int page = table->pageIndex;
+			int offset = table->offset;
+			EPT[page][0] = -2;
+			EPT[page][1] = 0;
+			swapIndex[offset] = -1;
+			free = table;
+			table = table->next;
+			mydeallocate(free, __FILE__, __LINE__, LIBREQ);
 		}
 	}
 	//Pass ID into tailThread, set curr tail = to this number.	
@@ -1514,7 +1529,7 @@ int my_pthread_yield() {
 void my_pthread_exit(void *value_ptr) {
 	/* Explicit call to the my_pthread_t library to end the pthread that called it. If the value_ptr isn't 
 	NULL, any return value from the thread will be saved. */
-//	printf("In my_pthread_exit()\n");
+	printf("In my_pthread_exit()\n");
 	
 	//in case someone calls this before calling create.
 	if(currentRunning == NULL){

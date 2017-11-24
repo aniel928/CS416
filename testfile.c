@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//Mallocing and freeing 5mb 10, 30, 50 times in a loop 
+
+
+//Main Method Only
+/*/Mallocing and freeing 5mb 10, 30, 50 times in a loop 
 int main(int argc, char** argv){
 	char* ptr = NULL;
 	int i = 0;
@@ -11,6 +14,7 @@ int main(int argc, char** argv){
 //	while(i < 10){
 	while(i < 30){
 //	while(i < 50){
+		printf("%d\n", i);
 		ptr = (char*)malloc(5*1024*1024);
 		if(ptr){
 			printf("malloc successful: %p\n", ptr);
@@ -122,3 +126,130 @@ int main(int argc, char** argv){
 	ptr2 = (char*)malloc(1);
 }
 //Outcome: First 1 byte call properly consumed the rest of first page, second one properly went into new page.*/
+
+//Single Thread
+/*/Same test as above, but creating one thread.
+void function(){
+	//paste each function from main in here.
+}
+
+int main(){
+	pthread_t pthread = NULL;
+	pthread_create(&pthread, NULL, (void*)&function, NULL);
+	pthread_join(pthread, NULL);
+	printf("finite\n");
+}
+// Outcome: idential*/
+
+//Multiple Threads
+/*/Allocating 5MB in 6 different threads
+void function(){
+	char* ptr = NULL;
+	ptr = (char*)malloc(5*1024*1024);;
+	if(ptr){
+		printf("malloc successful: %p\n", ptr);
+	}
+	else{
+		printf("malloc unsuccessful\n");
+	}
+//	printf("before yield\n");
+	pthread_yield();
+//	printf("before exit\n");
+	pthread_exit(NULL);
+//	printf("done with function\n");
+}
+
+int main(){
+	pthread_t mythread1, mythread2, mythread3, mythread4, mythread5, mythread6 = NULL;
+	pthread_create(&mythread1, NULL, (void*)&function, NULL);
+	pthread_join(mythread1, NULL);
+	pthread_create(&mythread2, NULL, (void*)&function, NULL);
+	pthread_join(mythread2, NULL);
+	pthread_create(&mythread3, NULL, (void*)&function, NULL);
+	pthread_join(mythread3, NULL);
+	pthread_create(&mythread4, NULL, (void*)&function, NULL);
+	pthread_join(mythread4, NULL);
+	pthread_create(&mythread5, NULL, (void*)&function, NULL);
+	pthread_join(mythread5, NULL);
+	pthread_create(&mythread6, NULL, (void*)&function, NULL);
+	pthread_join(mythread6, NULL);	
+	printf("goodbye sucker\n");
+}
+//Outcome: As long as you join each thread immediately after creation, runs perfectly. (Runs into some hiccups when threads are not joined immediately after create.*/
+
+/*/Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
+void function1(){
+	char* ptr = NULL;
+	ptr = (char*)malloc(5*1024*1024);
+	my_pthread_yield();	
+	free(ptr);
+}
+void function2(){
+	char* ptr = NULL;
+	ptr = (char*)malloc(5*1024*1024);
+	my_pthread_yield();
+	ptr[0] = 'A';
+}
+int main(int argc, char** argv){
+	pthread_t mypthread1, mypthread2;
+	pthread_create(&mypthread1, NULL, (void*)&function1, NULL);
+	pthread_create(&mypthread2, NULL, (void*)&function2, NULL);
+	pthread_join(mypthread1, NULL);
+	pthread_join(mypthread2, NULL);
+	printf("done\n");
+}
+//Outcome: works, properly segfaults and accesses correct page*/
+
+//31 separate thread creates, each calling malloc of 5MB (more than half of the user space) and freeing 200 times.
+void function(){
+	printf("entering function\n");
+	char* ptr = NULL;
+	int i = 0;
+	while(i < 200){
+		ptr = (char*)malloc(5*1024*1024);
+		if(ptr){
+			printf("success! %p\n", ptr);
+			free(ptr);
+		}
+		else{
+			printf(":-(\n");
+		}
+		i++;
+	}
+	printf("exiting function\n");
+}
+
+int main(){
+	pthread_t mythread[31];
+	int i = 0;
+	while(i < 31){
+		pthread_create(&mythread[i], NULL, (void*)&function, NULL);
+		i++;
+	}
+	i = 0;
+	while(i < 31){
+		pthread_join(mythread[i], NULL);
+		i++;
+	}
+	printf("success?\n");
+}
+
+//31 threads, each calling malloc 200 times on 1 byte, do not free.
+
+
+//31 threads, each calling malloc 200 times on 1 byte, do free.
+
+
+/*/Shalloc
+void function2(void* arg){
+	char* name = (char*)arg;
+	printf("%s\n", name);
+	
+}
+
+int main(){
+	pthread_t pthread = NULL;
+	char* str = "nope";
+	pthread_create(&pthread, NULL, (void*)&function2, (void*)str);
+	pthread_join(pthread, NULL);
+}//*/
