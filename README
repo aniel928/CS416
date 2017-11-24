@@ -38,6 +38,7 @@ Analysis / Things We Tested:
 
     Multiple Threads:
     -Allocating 5MB in 6 different threads
+        -Outcome: As long as you join each thread immediately after creation, runs perfectly. (Runs into some hiccups when threads are not joined immediately after create.
     -Thread 1 malloc 5MB, thread 2 malloc 5MB, thread 1 frees, make sure thread 2 enters seg fault handler.
     -31 separate thread creates, each calling malloc of 5MB (more than half of the user space) and freeing 200 times.
     -31 threads, each calling malloc 200 times on 1 byte, do not free.
