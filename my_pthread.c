@@ -88,6 +88,7 @@ metaData* shiterMD = NULL;
 //external page table and initialization
 int EPT[(MEMORYSIZE - OSSIZE -(4*4096))/ 4096][2];//need to somehow malloc size
 bool eptSet = FALSE;
+int OSbytes = 0;
 
 //boolean for swap file, used vs unused
 bool swapIndex[SWAPFILESIZE/4096] = {FALSE};
@@ -174,13 +175,20 @@ int findSwapIndex(){
 int findEvictIndex(int numPages){
 	int i = 0;
 	int j = 0;
+	int tid = 0;
+	if(currentRunning){
+		tid = currentRunning->tid;
+	}
+//	printf("tid %d, numPages %d\n", tid, numPages);
 	//go through entire array
 	while(i < NUMOFPAGES){
-		if(EPT[i][0] != currentRunning->tid){
+//		printf("EPT[%d][0] = %d\n", i, EPT[i][0]);
+		if(EPT[i][0] != tid){
 			j++;
+//			printf("inside: %d\n", j);
 			//if we found them all consecutively, break
 			if(j == numPages){
-				break;
+				return (i - (j-1)); //returns first page
 			}
 		}
 		else{
@@ -190,11 +198,8 @@ int findEvictIndex(int numPages){
 		i++;
 	}
 	//this happens if it gets to end of array without finding room
-	if(j==0 || j < numPages){
-		return -1;
-	}
-	//i went too far ahead.  if i = 4 and numPages/j = 3, then indexes 2, 3, 4 are what can be used.
-	return (i - (j-1));
+	return -1;
+	
 }
 
 //takes index and number of pages and evicts them all - returns offset in file on success, -1 on failure
@@ -263,65 +268,9 @@ int evictPageIntoBuffer(int page, int offset){
 }
 
 //handle segmentation faults
-/*void segment_fault_handler(int signum, siginfo_t *si, void* unused){
-	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
-	//if address is in our array, deal with swap file
-
-	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
-//		printf("segfaulting inside\n");
-		//calculate page
-		long page = ((long)si->si_addr - (long)memory - OSSIZE)/PAGESIZE;
-		//allow read/write access to page (since we're about to switch it in anyway)				
-		mprotect((void*)((long)memory + OSSIZE + (page * PAGESIZE)), PAGESIZE, PROT_READ | PROT_WRITE);
-		int offset = -1;
-		//grab current owner so we can set their file offset later.
-		int owner = EPT[page][0];
-		//circle through pageTable and find current page for offest
-		PTE* pageTable = threads[currentRunning->tid]->pageTable;
-		while(pageTable){
-			if(pageTable->pageIndex == page){
-				break;
-			}
-			pageTable = pageTable->next;					
-		}
-		if(pageTable){
-			offset = pageTable->offset;
-		}
-		//if we didn't find it, this is a real segfault because they don't own that page
-		if(offset == -1){
-			printf("real internal segmentation fault\n");
-			exit(EXIT_FAILURE);
-		}
-		//otherwise restore the page (this function also calls evict for us on the current one.
-		int newOffset = restorePage(page, offset);
-		//if restoring fails, shouldn't segfault, but hopefully this never gets called? TODO: figure out what to actually do here
-		if(newOffset == -1){
-			printf("print statement that I hope never happens... (in seg fault handler)\n");
-			exit(EXIT_FAILURE);
-		}
-		//now update EPT, currentThreads offset and old thread's offset.
-		EPT[page][0] = currentRunning->tid;
-		//EPT[page][1]++; //incrementing count of threads using this page
-		pageTable->offset = -1;
-		if(threads[owner]){
-			pageTable = threads[owner]->pageTable; ///TODO:  THIS IS THE SEGFAULTING LINE
-			while(pageTable){
-				if(pageTable->pageIndex == page){
-					pageTable->offset = newOffset;
-					break;
-				}
-				pageTable = pageTable->next;
-			}
-		}
-		return;
-	//if address is not in our array, then it's a real segmentation fault
-	}else{
-		printf("real external segmentation fault\n");
-		exit(EXIT_FAILURE);
-	}
-}*/
 void segment_fault_handler(int signum, siginfo_t *si, void* unused){
-//	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+	printf("Got SIGSEGV at address: 0x%lx\n",(long) si->si_addr);
+	printf("first address: %p\nlast address:  %p\n", memory, (void*)((long)memory + (8*1024*1024)));
 	//if address is in our array, deal with swap file
 
 	if ((long)si->si_addr >= (long)memory + OSSIZE && (long)si->si_addr < (long)memory + OSSIZE + USERSIZE){
@@ -334,7 +283,10 @@ void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 		//grab current owner so we can set their file offset later.
 		int owner = EPT[page][0];
 		//circle through pageTable and find current page for offest
-		PTE* pageTable = threads[currentRunning->tid]->pageTable;
+		PTE* pageTable = firstPTE;
+		if(currentRunning){
+			pageTable = threads[currentRunning->tid]->pageTable;
+		}
 		while(pageTable){
 			if(pageTable->pageIndex == page){
 				break;
@@ -363,7 +315,12 @@ void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 			printf("newOffset: %d\n", newOffset);
 		}
 		//now update EPT, currentThreads offset and old thread's offset.
-		EPT[page][0] = currentRunning->tid;
+		if(currentRunning){
+			EPT[page][0] = currentRunning->tid;
+		}
+		else{
+			EPT[page][0] = 0;
+		}
 		//EPT[page][1]++; //incrementing count of threads using this page
 		pageTable->offset = -1;
 		if(threads[owner]){
@@ -378,11 +335,16 @@ void segment_fault_handler(int signum, siginfo_t *si, void* unused){
 		}
 		return;
 	//if address is not in our array, then it's a real segmentation fault
-	}else{
+	}
+	else if((long)si->si_addr >= (long)memory && (long)si->si_addr < (long)memory + OSSIZE){
+		printf("segfault in OS space\n");
+	}
+	else{
 		printf("real external segmentation fault\n");
 		exit(EXIT_FAILURE);
 	}
 }
+
 //If first malloc call, initialize/align memory and set up some important stuff
 void mallocInit(){
 //	printf("Aligning...\n");
@@ -462,6 +424,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 
 	//library request - don't use paging.
 	if(!threadId){
+//	printf("bytes requested in OS: %d/%d\n", OSbytes, OSSIZE);
 	//	TODO: (PUTTING THIS TODO IN TWO PLACES[OTHER IN FREE]) Add changes/fix from old file
 		//if no head is set yet
 		if(!headOS){
@@ -539,26 +502,30 @@ void* myallocate(int size, char* file, int line, int threadId){
 			prevMD = headOS;
 			currMD = headOS;
 			//while ptr != NULL, move forward.
+			printf("before while\n");
 			while(currMD->ptr){ 
 				prevMD = currMD;
-				currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+				currMD = currMD->ptr;//(metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
+				printf("before if\n");
 				if(currMD->used == 0){
 					iterMD = currMD;
 					int bytesFree = combineFreeStuff(iterMD);
-					if(bytesFree > 0){
-					}				
 					if(bytesFree >= size && bytesFree < size + sizeof(metaData)){
+						printf("if\n");
 						currMD->used = 1;
 						return (void*)((long)currMD + sizeof(metaData));
 					}
 					//if it's bigger than the space and there's enough room for metadata
 					else if(bytesFree > size){
+					printf("else if\n");
 						spaceBetween(currMD, size, bytesFree);
 						return (void*)((long)currMD + sizeof(metaData));
 					}
+					printf("else\n");
 					//else if it won't fit, keep looping through.
 				}
 			}
+			printf("out of while\n");
 			prevMD = currMD;
 			currMD = (metaData*)((long)currMD + sizeof(metaData) + currMD->bytes);
 
@@ -655,13 +622,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				my_pthread_mutex_unlock(mutexMalloc);
 				//EPT[index][0] = tid;
-				//EPT[index][1]++;
+				EPT[index][1]++;
 				//ANNE: at any point are you doing anything with the page table for this? or should it be implemented? if so I think it might just be what I implemented on lines 622 and the two lines above this
-				return (void*)((long)newMem + sizeof(memStruct));
+				//MIKE: very confused what you're asking here. The whole point of this is that i'm using up space at the end of a page table? So yes, it needs the incrementor, but no doesn't need the other line, and line 622 is something else.
 			}
-			//if it didn't go into if (and therefore didn't return), it needs a page allocated, so continue on
 		}
-
 		//determining how many pages are needed to return
 
 		/***MIKE: I think this would work for the note you made below.
@@ -678,9 +643,11 @@ void* myallocate(int size, char* file, int line, int threadId){
 //			return NULL;
 //		}
 		if(firstPage == -1){
+			printf("firstpage: %d\n", firstPage);
+
 			//this means that the first page found is to far along in the 
 			firstPage = findEvictIndex(pageCount);
-//			printf("firstpage: %d\n", firstPage);
+			printf("firstpage: %d\n", firstPage);
 
 			int status = -1;
  			if(firstPage == -1){
@@ -735,7 +702,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 			my_pthread_mutex_unlock(mutexMalloc);
 			return NULL;
 		}
-
 		//check if first index of pageTable has been created
 		if(tid == 0 && !threads[0]){
 			if(!firstPTE){
@@ -748,6 +714,7 @@ void* myallocate(int size, char* file, int line, int threadId){
 				}
 				tempPTE->next = threadPTE;
 			}
+
 		}
 		else{
 			if (threads[tid]->pageTable == 	NULL){
@@ -768,8 +735,10 @@ void* myallocate(int size, char* file, int line, int threadId){
 			threadPTE->maxSize = 0;
 			threadPTE->offset = -1;
 			iter++;
+			printf("before\n");
 			threadPTE->next = (PTE*)myallocate(sizeof(PTE), __FILE__, __LINE__, LIBREQ);
-			if (threadPTE == NULL){
+			printf("after\n");
+			if(!threadPTE->next){
 				my_pthread_mutex_unlock(mutexMalloc);
 				return NULL;
 			}
@@ -790,7 +759,6 @@ void* myallocate(int size, char* file, int line, int threadId){
 
 //replace free
 void mydeallocate(void* ptr, char* file, int line, int threadId){
-//TODO: change free to -2 so seg fault happens for threads that may have been swapped out.
 
 //	printf("Free stuff: %p\n",ptr);
 	if(!ptr ){//|| ((metaData*)((long)ptr - sizeof(metaData)))->used == 0){
@@ -812,8 +780,8 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 		
 
 		//		printf("Free coming from thread number %d\n",tid);
-		//add logic for shalloc
-		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){
+		//logic for shalloc
+		if ((long)ptr - USERSIZE > (long)memory + OSSIZE){ //MIKE: are you sure this works?  Can you walk me through what this does?
 		//	printf("free from shalloc\n");
 			((metaData*)((long)ptr - sizeof(metaData)))->used = 0;	
 //			printf("shalloc freed\n");
@@ -822,15 +790,23 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 
 		//userspace free
 		if (((memStruct*)((long)ptr - sizeof(memStruct)))->inUse == TRUE ){
-			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount;
-			int indexStart = ((long) ((memStruct*)((long)ptr - sizeof(memStruct))) - ((long)memory + OSSIZE))/ PAGESIZE;
+			int pageCount = ((memStruct*)((long)ptr - sizeof(memStruct)))->pageCount; //number of pages
+			int indexStart = (((long)ptr - sizeof(memStruct)) - ((long)memory + OSSIZE))/ PAGESIZE;//first page
 			int lastPage = indexStart + pageCount;
+
 			//if there are more mallocs being used on the last page, decrement the counter and return;
-			if (EPT[lastPage][0] > 1){
-				EPT[lastPage][1]--;
-				return;
+// 			if (EPT[lastPage][1] > 1){//MIKE: You had if(EPT[lastPage][0] > 1), but I assume you meant this, change it back and let me know if you didn't.
+// 				EPT[lastPage][1]--;
+// 				//MIKE: shouldn't return until it changes inUse to FALSE...
+// 				return;
+// 			}
+			//first set to firstPTE, then reset to proper table if thread running
+			PTE * freePTE = firstPTE;
+			PTE * previous = NULL; //to set pointer if necessary
+			PTE * temp = NULL; //to free it
+			if(currentRunning){
+				threads[tid]->pageTable;
 			}
-			PTE * freePTE = threads[tid]->pageTable;
 			((memStruct*)((long)ptr - sizeof(memStruct)))->inUse = FALSE;		
 		 	//Resetting page table index to -1
 			
@@ -838,27 +814,41 @@ void mydeallocate(void* ptr, char* file, int line, int threadId){
 			bool checked = FALSE;
 			//MIKE TODO: shouldn't be freeing last page or resetting EPT of last page if smaller mallocs happened inside of it.
 			//TODID: change internal page max size
-			while (i < (long)(pageCount + indexStart)){ //while loop to get to right page index
-				
+			while (i < (long)(pageCount + indexStart) && freePTE){ //while loop to get to right page index
 				if (checked == FALSE){
+					printf("in if\n");
 					while(indexStart != freePTE->pageIndex){
 //						printf("moving");
+						previous = freePTE;
 						freePTE = freePTE->next;
 					}
 					checked = TRUE;
 				}
+				freePTE->pageIndex = -1;
 				freePTE->maxSize = PAGESIZE;
+				freePTE->offset = -1;
+				temp = freePTE;
 				freePTE = freePTE->next;
-
-				EPT[i][0] = -2; //this way we keep it mprotected so that if returning thread wants it, it segfaults and brings it in.
-				EPT[i][1] = 0;
+				temp->next = NULL;
+				mydeallocate(temp, __FILE__, __LINE__, LIBREQ);  //TODO: this is going back to userspace?? Should be OS space??
+				if (EPT[i][1] > 1){//MIKE: You had if(EPT[lastPage][0] > 1), but I assume you meant this, change it back and let me know if you didn't.
+					EPT[i][1]--;
+					//TODO: reduce maxsize
+				}
+				else{
+					EPT[i][0] = -2; //this way we keep it mprotected so that if returning thread wants it, it segfaults and brings it in.
+					EPT[i][1] = 0;
+				}
 				i++;	
 				
 			}
-//			printf("user section freed\n");
+			if(previous){
+				previous->next = freePTE;
+			}
+			printf("user section freed\n");
 		}
 		else{
-//			printf("could not find anything to free\n");
+			printf("could not find anything to free\n");
 		}		
 	}
 	return;
