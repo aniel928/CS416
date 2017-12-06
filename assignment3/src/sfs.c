@@ -22,12 +22,45 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <time.h> //for timestamps
 
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
 #endif
 
 #include "log.h"
+
+/******************************************************************/
+//Didn't know if I should put this in a .h file, we can move if needed
+//#define DATASIZE
+//#define INODESIZE
+typedef enum _bool{
+	FALSE, TRUE
+}bool;
+
+//This is probably going to need more data
+typedef struct _inode{
+	
+	//MIKE: what are these for?
+	/*struct _inode* next;
+	char* data; 
+	bool inUse; */
+	
+	char* PATH; //file path
+	int fakeForNow; //holding a spot
+ 	time_t timestamp; //need to figure out if we need more than one?
+ 	bool indirectionOnly; // so we know if this holds addresses to other inodes.
+ 	struct _inode* ptr[60]; //pointers to other inodes
+	
+}inode;
+
+
+//global value for initializing metadata 
+//MIKE: I assume this is yours?  If not i'll move back down
+
+bool initCheck = FALSE; 
+
+/******************************************************************/
 
 
 ///////////////////////////////////////////////////////////
@@ -46,81 +79,55 @@
  * Introduced in version 2.3
  * Changed in version 2.6
  */
-//global value for initializing metadata 
 
-
-/******************************************************************/
-//Didn't know if I should put this in a .h file, we can move if needed
-//#define DATASIZE
-//#define INODESIZE
-typedef enum _bool{
-	FALSE, TRUE
-}bool;
-
-//This is probably going to need more data
-typedef struct _inode{
-	struct _inode* next;
-	char* data;
-	bool inUse;
-	
-}inode;
-
-/******************************************************************/
-
-bool initCheck = FALSE; 
-
- 
 void *sfs_init(struct fuse_conn_info *conn)
 {
     fprintf(stderr, "in bb-init\n");
     log_msg("\nsfs_init()\n");
-		if (initCheck == FALSE){
-			fprintf(stderr, "not initialized\n");
+
+	struct sfs_state* state = SFS_DATA; //this stuff defined in param.h
+	disk_open(SFS_DATA->diskfile);
+	
+/*	if (initCheck == FALSE){
+		fprintf(stderr, "not initialized\n");
+		
+		//open test file and set to 16 MB (not sure if size should be 16 or 32 mb)
+		//I think we need to use the functions in block.c (disk_open)
+		int fd = open("/tmp/testfsfile", O_CREAT | O_RDWR| O_TRUNC, 0666);//not sure if this is the way to select testfsfile
+		lseek(fd, 16*1024*1024, SEEK_CUR); 
+		lseek(fd, 0, SEEK_SET);
+*/		
+		fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
+/*		
+		//create all inodes
+		inode* headNode;
+		inode* tempNode;
+		tempNode = headNode;
+		
+		
+		int i = 0;
+		//Just building 5 inodes for now, need to find out how many nodes we need and build all them, also need to add direct/indirect pointers
+		while (i < 5){
 			
-			//open test file and set to 16 MB (not sure if size should be 16 or 32 mb)
-			int fd = open("/tmp/testfsfile", O_CREAT | O_RDWR| O_TRUNC, 0666);//not sure if this is the way to select testfsfile
-			lseek(fd, 16*1024*1024, SEEK_CUR); 
-			lseek(fd, 0, SEEK_SET);
+			//I don't think I should be mallocing this and instead setting it to the data in the test file but I can't think of how to do that right now
+			tempNode = (inode*)malloc(sizeof(inode));
+			tempNode->next = NULL;
+			tempNode->inUse = FALSE;
+			//tempNode->data = dataRegion?????????
+			tempNode = tempNode->next;
+			i++;
+		
 			
-			fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
-			
-			
-			//create all inodes
-			
-			
-			inode* headNode;
-			inode* tempNode;
-			tempNode = headNode;
-			
-			
-			int i = 0;
-			//Just building 5 inodes for now, need to find out how many nodes we need and build all them, also need to add direct/indirect pointers
-			while (i < 5){
-				
-				//I don't think I should be mallocing this and instead setting it to the data in the test file but I can't think of how to do that right now
-				tempNode = (inode*)malloc(sizeof(inode));
-				tempNode->next = NULL;
-				tempNode->inUse = FALSE;
-				//tempNode->data = dataRegion?????????
-				tempNode = tempNode->next;
-				i++;
-			
-				
-			}
-			
-			
-				
-			
-			
-			
-			initCheck = 1;
 		}
-				
+	
+		initCheck = 1;
+	}
+*/				
 		
 		
-		log_conn(conn);
+	log_conn(conn);
     log_fuse_context(fuse_get_context());
-		fprintf(stderr, "working here (in sfs_init)\n");
+	fprintf(stderr, "working here (in sfs_init)\n");
 
     return SFS_DATA;
 }
