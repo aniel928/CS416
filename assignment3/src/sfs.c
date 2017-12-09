@@ -34,9 +34,11 @@
 /******************************************************************/
 //Didn't know if I should put this in a .h file, we can move if needed
 //#definitions
-#define INODEBLOCKS 372
-#define DATABLOCKS 32396
-#define BLOCKSPERINODE 87
+#define INODEBLOCKS 189
+#define DATABLOCKS 32479
+#define BLOCKSPERINODE 112
+
+//enums and structs
 typedef enum _bool{
 	FALSE, TRUE
 }bool;
@@ -59,10 +61,15 @@ typedef struct _inode{
  	time_t accesstime;//last accessed
 	int userId; //for permissions
 	int groupId; //for permissions
-	char path[100]; //file path
+	char* path; //file path
 }inode;
 
+//global vars
+int inodes[INODEBLOCKS];
+int datablocks[DATABLOCKS];
+inode* root = NULL;
 
+//more methods
 int findInode(const char* path){
 	int block = 0;
 	char buffer[BLOCK_SIZE];
@@ -111,39 +118,34 @@ void *sfs_init(struct fuse_conn_info *conn){
 	disk_open(SFS_DATA->diskfile);
 	fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
 		
+	//intializing arrays 
 	int i = 0;
-	
 	while(i < INODEBLOCKS){
-		//read each block into a buffer
-		block_read(i, (void*)buffer);
-
-		//cast buffer as inode and fill in data
-		((inode*)buffer)->size = 0;
-		((inode*)buffer)->numBlocks = 0;
-		((inode*)buffer)->links = 1; 
-		((inode*)buffer)->indirectionBlock = FALSE;
-		((inode*)buffer)->type = FILE_NODE;
-		((inode*)buffer)->filemode = 0744; //default to rwxr--r--
-		((inode*)buffer)->createtime = time(NULL); 
-		((inode*)buffer)->modifytime = time(NULL);
-		((inode*)buffer)->accesstime = time(NULL);
-		memcpy(((inode*)buffer)->path,SFS_DATA->diskfile,100); 
-		((inode*)buffer)->userId = getuid();
-		((inode*)buffer)->groupId = getgid();
-		
-		//initialize internal array to -1 (fake block numbers)		
-		int* array = ((inode*)buffer)->blockNum;
-		int j = 0;
-		while(j < BLOCKSPERINODE){
-			array[j] = -1;
-			j++;
-		}
-		
-		//write it back to file
-		block_write(i, (void*)buffer);
+		inodes[i] = 0;
 		i++;
 	}
-		
+	i=0;
+	while(i < DATABLOCKS){
+		datablocks[i] = 0;
+		i++;
+	}	
+	memset((void*)buffer, 0, BLOCK_SIZE);
+	root = (inode*)buffer;
+	root->path = "/";
+	root->size = 0;
+	root->numBlocks = 0;
+	root->links = 1;
+	root->indirectionBlock = FALSE;
+	root->type = FILE_NODE;
+	root->filemode = 0777;
+	root->createtime = time(NULL);
+	root->accesstime = root->createtime;
+	root->modifytime = root->createtime;
+	root->userId = getuid();
+	root->groupId = getgid();
+
+	block_write(0, (void*)root);
+	inodes[0] = 1;
 	log_conn(conn);
     log_fuse_context(fuse_get_context());
 	
@@ -173,26 +175,32 @@ int sfs_getattr(const char *path, struct stat *statbuf){
     int retstat = 0;
     
     log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
-	
 	int block = findInode(path);
-	
-	char buffer[BLOCK_SIZE];
-	if(block == -1){
-		return -1;
+	if (block == -1){
+//	if(strcmp(path, "/")==0 && inodes[0] == 0){
+		log_msg("if stmt of getattr\n");
+		fprintf(stderr,"File not found\n");
+		log_msg("File not found\n");
+		return -1; //TODO: make sure this is right
 	}
-	block_read(block, (void*)buffer);
-	
-	//fill in stat (man stat)
-	statbuf->st_mode = ((inode*)buffer)->filemode;
-	statbuf->st_nlink = ((inode*)buffer)->links;
-	statbuf->st_uid = ((inode*)buffer)->userId;
-	statbuf->st_gid = ((inode*)buffer)->groupId;
-	statbuf->st_size = ((inode*)buffer)->size;
-	statbuf->st_atime = ((inode*)buffer)->accesstime;
-	statbuf->st_mtime = ((inode*)buffer)->modifytime;
-	statbuf->st_ctime = ((inode*)buffer)->createtime;
-	statbuf->st_blocks = ((inode*)buffer)->numBlocks;
-    
+	else{
+		fprintf(stderr,"in else\n");
+		char buffer[BLOCK_SIZE];
+		block_read(block, (void*)buffer);
+
+		//fill in stat
+		statbuf->st_mode = ((inode*)buffer)->filemode;
+		statbuf->st_nlink = ((inode*)buffer)->links;
+		statbuf->st_uid = ((inode*)buffer)->userId;
+		statbuf->st_gid = ((inode*)buffer)->groupId;
+		statbuf->st_size = ((inode*)buffer)->size;
+		statbuf->st_atime = ((inode*)buffer)->accesstime;
+		statbuf->st_mtime = ((inode*)buffer)->modifytime;
+		statbuf->st_ctime = ((inode*)buffer)->createtime;
+		statbuf->st_blocks = ((inode*)buffer)->numBlocks;
+		log_msg("else stmt of getattr\n");
+	}    
+	log_msg("leaving getattr\n");
     return retstat;
 }
 
@@ -375,6 +383,9 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
  * Introduced in version 2.3
  */
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
+    log_msg("\nsfs_readdir(path=\"%s\", fi=0x%08x)\n",
+	  path, fi);
+   
     fprintf(stderr,"readdir");
     int retstat = 0;
     
