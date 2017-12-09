@@ -9,13 +9,27 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 019524c0
+    fuse = 0249e4c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 01952010
-    logfile = 01952030
+    private_data = 0249e010
+    logfile = 0249e030
     diskfile = testfsfile
     umask = 00000
 
-sfs_getattr(path="/", statbuf=0x5ab1ec10)
+sfs_getattr(path="/", statbuf=0xf2826c10)
+
+sfs_getattr(path="/", statbuf=0xf2826c10)
+
+sfs_getattr(path="/", statbuf=0xf3027c10)
+
+sfs_getattr(path="/", statbuf=0xf3027c10)
+
+sfs_getattr(path="/", statbuf=0xf2826c10)
+
+sfs_getattr(path="/", statbuf=0xf2826c10)
+
+sfs_getattr(path="/", statbuf=0xf3027c10)
+
+sfs_destroy(userdata=0x0249e010)

@@ -177,6 +177,9 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 	int block = findInode(path);
 	
 	char buffer[BLOCK_SIZE];
+	if(block == -1){
+		return -1;
+	}
 	block_read(block, (void*)buffer);
 	
 	//fill in stat (man stat)
