@@ -53,7 +53,7 @@ void log_msg(const char *format, ...)
 void log_fuse_context(struct fuse_context *context)
 {
     log_msg("    context:\n");
-    
+    fprintf(stderr, "context\n");
     /** Pointer to the fuse object */
     //	struct fuse *fuse;
     log_struct(context, fuse, %08x, );
@@ -79,15 +79,15 @@ void log_fuse_context(struct fuse_context *context)
     /** Umask of the calling process (introduced in version 2.8) */
     //	mode_t umask;
     log_struct(context, umask, %05o, );
+    fprintf(stderr,"done 2\n");
 }
 
 // struct fuse_conn_info contains information about the socket
 // connection being used.  I don't actually use any of this
 // information in sfs
-void log_conn(struct fuse_conn_info *conn)
-{
+void log_conn(struct fuse_conn_info *conn){
     log_msg("    conn:\n");
-    
+    fprintf(stderr,"log\n");
     /** Major version of the protocol (read-only) */
     // unsigned proto_major;
     log_struct(conn, proto_major, %d, );
@@ -115,7 +115,7 @@ void log_conn(struct fuse_conn_info *conn)
     /** Capability flags, that the filesystem wants to enable */
     // unsigned want;
     log_struct(conn, want, %08x, );
-    
+    fprintf(stderr,"done\n");
     /** For future use. */
     // unsigned reserved[23];
 }
@@ -124,8 +124,7 @@ void log_conn(struct fuse_conn_info *conn)
 // This dumps all the information in a struct fuse_file_info.  The struct
 // definition, and comments, come from /usr/include/fuse/fuse_common.h
 // Duplicated here for convenience.
-void log_fi (struct fuse_file_info *fi)
-{
+void log_fi (struct fuse_file_info *fi){
     log_msg("    fi:\n");
     
     /** Open flags.  Available in open() and release() */
@@ -166,8 +165,7 @@ void log_fi (struct fuse_file_info *fi)
 
 // This dumps the info from a struct stat.  The struct is defined in
 // <bits/stat.h>; this is indirectly included from <fcntl.h>
-void log_stat(struct stat *si)
-{
+void log_stat(struct stat *si){
     log_msg("    si:\n");
     
     //  dev_t     st_dev;     /* ID of device containing file */
@@ -211,8 +209,7 @@ void log_stat(struct stat *si)
 	
 }
 
-void log_statvfs(struct statvfs *sv)
-{
+void log_statvfs(struct statvfs *sv){
     log_msg("    sv:\n");
     
     //  unsigned long  f_bsize;    /* file system block size */
@@ -250,8 +247,7 @@ void log_statvfs(struct statvfs *sv)
 	
 }
 
-void log_utime(struct utimbuf *buf)
-{
+void log_utime(struct utimbuf *buf){
     log_msg("    buf:\n");
     
     //    time_t actime;
