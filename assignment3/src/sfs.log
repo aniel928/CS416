@@ -9,15 +9,14 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 025b04c0
+    fuse = 011bf4c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 025b0010
-    logfile = 025b0030
-    diskfile = testfsfile
+    private_data = 011bf010
+    logfile = 011bf030
+    diskfile = /tmp/alh220testfsfile
     umask = 00000
+leaving init function
 
-sfs_getattr(path="/", statbuf=0x7e27ec10)
-else stmt of getattr
-leaving getattr
+sfs_destroy(userdata=0x011bf010)

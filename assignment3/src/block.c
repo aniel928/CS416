@@ -23,7 +23,7 @@ void disk_open(const char* diskfile_path)
     }
     
     diskfile = open(diskfile_path, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
-    lseek(diskfile, 16*1024*1024, SEEK_SET;
+    lseek(diskfile, 16*1024*1024, SEEK_CUR);
     write(diskfile, "", 1);
     
     if (diskfile < 0) {

@@ -136,7 +136,7 @@ void *sfs_init(struct fuse_conn_info *conn){
 	root->numBlocks = 0;
 	root->links = 1;
 	root->indirectionBlock = FALSE;
-	root->type = FILE_NODE;
+	root->type = DIR_NODE;
 	root->filemode = 0777;
 	root->createtime = time(NULL);
 	root->accesstime = root->createtime;
@@ -148,8 +148,8 @@ void *sfs_init(struct fuse_conn_info *conn){
 	inodes[0] = 1;
 	log_conn(conn);
     log_fuse_context(fuse_get_context());
-	
-    return SFS_DATA;
+	log_msg("leaving init function\n");
+    return state;
 }
 
 /**
@@ -189,6 +189,9 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		block_read(block, (void*)buffer);
 
 		//fill in stat
+		statbuf->st_dev = 0;
+		statbuf->st_ino = 0;
+		statbuf->st_rdev = 0;
 		statbuf->st_mode = ((inode*)buffer)->filemode;
 		statbuf->st_nlink = ((inode*)buffer)->links;
 		statbuf->st_uid = ((inode*)buffer)->userId;
@@ -354,8 +357,7 @@ int sfs_rmdir(const char *path){
 int sfs_opendir(const char *path, struct fuse_file_info *fi){
     int retstat = 0;
     fprintf(stderr, "opendir\n");
-    log_msg("\nsfs_opendir(path=\"%s\", fi=0x%08x)\n",
-	  path, fi);
+    log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
     
     
     return retstat;
@@ -383,12 +385,33 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
  * Introduced in version 2.3
  */
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
-    log_msg("\nsfs_readdir(path=\"%s\", fi=0x%08x)\n",
-	  path, fi);
-   
-    fprintf(stderr,"readdir");
-    int retstat = 0;
-    
+    log_msg("\nsfs_readdir: %s\n", path);
+	int retstat = 0;
+	
+	//
+	filler(buf, ".", NULL, 0);
+	filler(buf, "..", NULL, 0); 
+
+	log_msg("in readdir\n");	
+	
+	char buffer [BLOCK_SIZE];
+	int block = findInode(path);
+	if(block == -1){
+		fprintf(stderr,"Couldn't find file\n");
+		log_msg("Couldn't find file\n");
+		return -1; //TODO: is this right?
+	}
+	else{
+		block_read(block, buffer);
+		if(((inode*)buffer)->type == DIR_NODE){
+			//read each inode in block and get name
+			//filler(buf, "name", &stat, 0);
+		}
+		else{
+			fprintf(stderr, "Not a directory\n");
+			log_msg("Not a directory\n");
+		}
+	}
     
     return retstat;
 }
