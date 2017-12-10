@@ -70,13 +70,21 @@ int datablocks[DATABLOCKS];
 inode* root = NULL;
 
 //more methods
+
+//open every inode and check path.
+//TODO: should change this to only check those that are '1' in inodes[] array
 int findInode(const char* path){
+	fprintf(stderr,"findInode\n");
+	log_msg("findInode\n");
 	int block = 0;
 	char buffer[BLOCK_SIZE];
 	while(block < INODEBLOCKS){
-		block_read(block, (void*)buffer);
-		if(strcmp(((inode*)buffer)->path, path) == 0){
-			break;
+		log_msg("block #: %d\n", block);
+		if(inodes[block] == 1){
+			block_read(block, (void*)buffer);
+			if(strcmp(((inode*)buffer)->path, path) == 0){
+				break;
+			}
 		}
 		block++;
 	}
@@ -86,6 +94,26 @@ int findInode(const char* path){
 	}
 	
 	return block;
+}
+
+int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 for write.  Functions will pass this in.
+	char buffer[BLOCK_SIZE];
+	block_read(block, buffer);
+	mode_t mode = ((inode*)buffer)->filemode;
+	
+	//if user id matches, then check first 3 bits only
+	if(getuid() == ((inode*)buffer)->userId){
+		//check permissions
+	}
+	//otherwise if group, check middle 3
+	else if(getgid() == ((inode*)buffer)->groupId){
+		//check permissions
+	}
+	//otherwise check last 3 (other)
+	else{
+		//check permissions
+	}
+	return 0;
 }
 
 /******************************************************************/
@@ -134,10 +162,10 @@ void *sfs_init(struct fuse_conn_info *conn){
 	root->path = "/";
 	root->size = 0;
 	root->numBlocks = 0;
-	root->links = 1;
+	root->links = 2;
 	root->indirectionBlock = FALSE;
 	root->type = DIR_NODE;
-	root->filemode = 0777;
+	root->filemode = S_IFDIR | 0755;
 	root->createtime = time(NULL);
 	root->accesstime = root->createtime;
 	root->modifytime = root->createtime;
@@ -177,7 +205,6 @@ int sfs_getattr(const char *path, struct stat *statbuf){
     log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
 	int block = findInode(path);
 	if (block == -1){
-//	if(strcmp(path, "/")==0 && inodes[0] == 0){
 		log_msg("if stmt of getattr\n");
 		fprintf(stderr,"File not found\n");
 		log_msg("File not found\n");
@@ -192,8 +219,8 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		statbuf->st_dev = 0;
 		statbuf->st_ino = 0;
 		statbuf->st_rdev = 0;
-		statbuf->st_mode = S_IFDIR | 0755;
-		statbuf->st_nlink = 2;
+		statbuf->st_mode = ((inode*)buffer)->filemode;
+		statbuf->st_nlink = ((inode*)buffer)->links;
 		statbuf->st_uid = ((inode*)buffer)->userId;
 		statbuf->st_gid = ((inode*)buffer)->groupId;
 		statbuf->st_size = ((inode*)buffer)->size;
@@ -226,6 +253,21 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	    path, mode, fi);
     
     
+    //check array of inodes for first one that is 0.  Save block number.
+    	//write a separate function to do this.
+
+    //create new char buffer: (char buffer[BLOCKSIZE];)
+    
+    //create new inode and cast buffer into it.
+    
+    //fill inode with information passed in and other info (same as init, but for file).
+    	//path and mode are given in function call.
+    		//along with mode given, use S_ISREG | mode
+
+    //disk_write the buffer to the block number saved above.
+    
+    //change inode block number to 1 (to signify "used")
+    
     return retstat;
 }
 
@@ -235,6 +277,16 @@ int sfs_unlink(const char *path){
     int retstat = 0;
     log_msg("sfs_unlink(path=\"%s\")\n", path);
 
+	int block = findInode(path);
+	
+	//check to see if any other blocks are linked (indirection)
+	
+	//clear out all datablocks in inode
+		//for each datablock just remove from internal array (in inode) and external array
+    
+    //when datablocks are cleared, set path == NULL;
+    
+    //set inodes[] array block index back to 0.
     
     return retstat;
 }
@@ -254,8 +306,23 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
     int retstat = 0;
     log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
 	    path, fi);
+	
+	//see if it exists.
+	int block = findInode(path);
 
-    
+	if(block == -1){
+		fprintf(stderr,"File does not exist\n");
+		log_msg("File does not exist\n");
+		retstat = -1; //TODO: check return values
+	}
+	else{
+		
+		int permission = checkPermissions(block, 0); //need to finish this function before it will work.
+		
+		if(permission == -1){
+			retstat = -2; //TODO; check return values
+		}
+    }
     return retstat;
 }
 
@@ -279,6 +346,7 @@ int sfs_release(const char *path, struct fuse_file_info *fi){
     log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n",
 	  path, fi);
     
+    //not really sure we have to add anything here since our open doesn't do much either.
 
     return retstat;
 }
@@ -300,7 +368,27 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
     log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
 	    path, buf, size, offset, fi);
 
-   
+	int block = findInode(path);
+	
+	if(block == -1){
+		fprintf(stderr, "File does not exist\n");
+		log_msg("File does not exist\n");
+		retstat = -1; //TODO: check return values
+	}
+	
+	else{
+		int permission = checkPermissions(block, 1); //need to finish this function before it will work
+	
+		if(permission == -1){
+			retstat = -2; //TODO: check return values
+		}
+		else{
+			char buffer[BLOCK_SIZE];
+			block_read(block, buffer);
+			
+			//inode stored in buffer, go through array of data blocks and start reading each datablock.
+		}
+	}
     return retstat;
 }
 
@@ -318,7 +406,36 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
     log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
 	    path, buf, size, offset, fi);
     
-    
+	int block = findInode(path);
+	
+	if(block == -1){
+		fprintf(stderr, "File does not exist\n");
+		log_msg("File does not exist\n");
+		retstat = -1; //TODO: check return values
+	}
+	
+	else{
+		int permission = checkPermissions(block, 2); //need to finish this function before it will work.
+
+		if(permission == -1){
+			retstat = -2; //TODO: check return values
+		}
+		else{
+			char buffer[BLOCK_SIZE];
+			block_read(block, buffer);
+			
+			//go through data block array and find first one that is 0
+			
+			//block_write to that block
+			
+			//store that block in the array in the inode
+		
+			//write the inode back in to the file
+			
+			//change data block array to 1
+
+		}
+	}
     return retstat;
 }
 
@@ -404,7 +521,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	else{
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
-			//read each inode in block and get name
+			//read each inode in block and get name and stat info
 			//filler(buf, "name", &stat, 0);
 		}
 		else{
