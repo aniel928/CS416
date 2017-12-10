@@ -192,8 +192,8 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		statbuf->st_dev = 0;
 		statbuf->st_ino = 0;
 		statbuf->st_rdev = 0;
-		statbuf->st_mode = ((inode*)buffer)->filemode;
-		statbuf->st_nlink = ((inode*)buffer)->links;
+		statbuf->st_mode = S_IFDIR | 0755;
+		statbuf->st_nlink = 2;
 		statbuf->st_uid = ((inode*)buffer)->userId;
 		statbuf->st_gid = ((inode*)buffer)->groupId;
 		statbuf->st_size = ((inode*)buffer)->size;
