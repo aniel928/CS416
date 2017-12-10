@@ -65,8 +65,8 @@ typedef struct _inode{
 }inode;
 
 //global vars
-int inodes[INODEBLOCKS];
-int datablocks[DATABLOCKS];
+int inodes[INODEBLOCKS]; // 1 or 0 
+int datablocks[DATABLOCKS]; //instead of 1 or 0, do how many bytes are written to it and initialize all to -1
 inode* root = NULL;
 
 //more methods
@@ -154,7 +154,7 @@ void *sfs_init(struct fuse_conn_info *conn){
 	}
 	i=0;
 	while(i < DATABLOCKS){
-		datablocks[i] = 0;
+		datablocks[i] = -1;
 		i++;
 	}	
 	memset((void*)buffer, 0, BLOCK_SIZE);
@@ -386,7 +386,9 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);
 			
-			//inode stored in buffer, go through array of data blocks and start reading each datablock.
+			//inode stored in buffer
+				//calculate block for offset 
+				//starting at offset, for each data block, start reading each datablock for until size reached.
 		}
 	}
     return retstat;
@@ -424,15 +426,20 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);
 			
-			//go through data block array and find first one that is 0
+			//if there are existing blocks (internal array), check datablock array for how many bytes are currently written
+				//if anything is less than 512, keep writing in that block
+				//otherwise, go through data block array and find first one that is -1
+			
+			//if no existing blocks, go through data block array and firrst find one that is -1
 			
 			//block_write to that block
+				//if writing to existing block, read the block into a buffer and then write to an offset.
 			
 			//store that block in the array in the inode
-		
+					
 			//write the inode back in to the file
 			
-			//change data block array to 1
+			//change data block array to total bytes written
 
 		}
 	}
