@@ -282,10 +282,6 @@ int sfs_getattr(const char *path, struct stat *statbuf){
   return retstat;
 }
 
-int sfs_setattr(const char *path, struct stat *statbuf){
-
-}
-
 /**
  * Create and open a file
  *
@@ -421,8 +417,8 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
  */
 int sfs_release(const char *path, struct fuse_file_info *fi){
 	fprintf(stderr,"release");
-  int retstat = 0;
-  log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n", path, fi);
+	int retstat = 0;
+	log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n", path, fi);
     
 	//not really sure we have to add anything here since our open doesn't do much either.
 
