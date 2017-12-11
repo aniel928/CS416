@@ -34,7 +34,7 @@
 /******************************************************************/
 //Didn't know if I should put this in a .h file, we can move if needed
 //#definitions
-#define INODEBLOCKS 189
+#define INODEBLOCKS 289
 #define DATABLOCKS 32479
 #define BLOCKSPERINODE 112
 
@@ -61,13 +61,11 @@ typedef struct _inode{
  	time_t accesstime;//last accessed
 	int userId; //for permissions
 	int groupId; //for permissions
-	char* path; //file path
+	const char* path; //file path
 }inode;
 
 //global vars
-int inodes[INODEBLOCKS]; // 1 or 0 
-int datablocks[DATABLOCKS]; //instead of 1 or 0, do how many bytes are written to it and initialize all to -1
-inode* root = NULL;
+int blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0
 
 //more methods
 
@@ -78,41 +76,65 @@ int findFirstFreeInode(){
 	int block = 0;
 	while (block < INODEBLOCKS){
 		log_msg("block #: %d\n", block);
-		if (inodes[block] == 0){
+		if (blocks[block] == 0){
 			break;
 		}
 		block++;
 	}
 	if(block == INODEBLOCKS){
-		return -1; //TODO: make sure this is what returns on error. 
+		return -1;
+	}
+	return block;	
+}
+
+//Finds the first regular datablock set to 0
+int findFirstFreeData(){
+	fprintf(stderr,"findFirstFreeData\n");
+	log_msg("findFirstFreeData\n");
+	int block = INODEBLOCKS;
+	while (block < INODEBLOCKS + DATABLOCKS){
+		log_msg("block #: %d\n", block);
+		if (blocks[block] == 0){
+			break;
+		}
+		block++;
+	}
+	if(block == INODEBLOCKS + DATABLOCKS){
+		return -1;
 	}
 	return block;	
 }
 
 
-
-//open every inode and check path.
-//TODO: should change this to only check those that are '1' in inodes[] array
+//open every inode and check path for match.
 int findInode(const char* path){
 	fprintf(stderr,"findInode\n");
 	log_msg("findInode\n");
 	int block = 0;
 	char buffer[BLOCK_SIZE];
-	fprintf(stderr, "bs: %d, ib: %d\n", BLOCK_SIZE, INODEBLOCKS);
 	while(block < INODEBLOCKS){
 		log_msg("block #: %d\n", block);
-		if(inodes[block] == 1){
+		log_msg("blocks[block] = %d\n", blocks[block]);
+		if(blocks[block] == 1){
+			log_msg("in the 1st if statement\n");
 			block_read(block, (void*)buffer);
+			log_msg("input path: %s\n", path);
+			
+			log_msg("inode path: %s\n", ((inode*)buffer)->path);
 			if(strcmp(((inode*)buffer)->path, path) == 0){
+				log_msg("in the 2nd if statement\n");
 				//the file was found/already exists
 				break;
 			}
+			log_msg("out of 2nd\n");
 		}
+		log_msg("out of 1st\n");
 		block++;
 	}
 	
+	
 	if(block == INODEBLOCKS){
-		return -1; //TODO: make sure this is what returns on error. 
+		return -1; 
 	}
 	
 	return block;
@@ -159,26 +181,27 @@ int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 fo
  */
 
 void *sfs_init(struct fuse_conn_info *conn){
-  fprintf(stderr, "in bb-init\n");
-  log_msg("\nsfs_init()\n");
-	char buffer[BLOCK_SIZE];
-	struct sfs_state* state = SFS_DATA; //this stuff defined in param.h
+	fprintf(stderr, "in bb-init\n");
+	log_msg("\nsfs_init()\n");
 	disk_open(SFS_DATA->diskfile);
+	
+	//debugging statement so we can keep track of size while changing inodes.
 	fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
 		
 	//intializing arrays 
 	int i = 0;
-	while(i < INODEBLOCKS){
-		inodes[i] = 0;
+	while(i < INODEBLOCKS + DATABLOCKS){
+		blocks[i] = 0;
 		i++;
 	}
-	i=0;
-	while(i < DATABLOCKS){
-		datablocks[i] = -1;
-		i++;
-	}	
+	
+	/* CREATE ROOT DIRECTORY */
+	//declare buffer and zero out
+	char buffer[BLOCK_SIZE];
 	memset((void*)buffer, 0, BLOCK_SIZE);
-	root = (inode*)buffer;
+
+	//cast buffer as inode and fill in inode with root information
+	inode* root = (inode*)buffer;
 	root->path = "/";
 	root->size = 0;
 	root->numBlocks = 0;
@@ -191,14 +214,15 @@ void *sfs_init(struct fuse_conn_info *conn){
 	root->modifytime = root->createtime;
 	root->userId = getuid();
 	root->groupId = getgid();
-	//ANNE: ^not setting the block num in this but it should automatically be set to 0 and it's the root so that's why right??
 
+	//now that inode is set, write it into the first inode (block 0 in our file) and update array
 	block_write(0, (void*)root);
-	inodes[0] = 1;
+	blocks[0] = 1;
+
 	log_conn(conn);
-  log_fuse_context(fuse_get_context());
+	log_fuse_context(fuse_get_context());
 	log_msg("leaving init function\n");
-  return state;
+	return SFS_DATA;
 }
 
 /**
@@ -211,6 +235,9 @@ void *sfs_init(struct fuse_conn_info *conn){
 void sfs_destroy(void *userdata){
   fprintf(stderr,"destroy");
   log_msg("\nsfs_destroy(userdata=0x%08x)\n", userdata);
+  //close file
+  disk_close(SFS_DATA->diskfile);
+  //if we end up having to malloc something in init, free it here.
 }
 
 /** Get file attributes.
@@ -221,16 +248,14 @@ void sfs_destroy(void *userdata){
  */
 int sfs_getattr(const char *path, struct stat *statbuf){
 	fprintf(stderr, "in get attr\n");
-  int retstat = 0;
-  log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
+	int retstat = 0;
+	log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
 	int block = findInode(path);
-//ANNE: do we need a way to check which command was called? and if so I feel like there's an easy way
 	if (block == -1){
 		log_msg("if stmt of getattr\n");
 		fprintf(stderr,"File not found\n");
 		log_msg("File not found\n");
-		//sfs_create(? ?);
-		return -1; //TODO: make sure this is right
+		return -ENOENT; //TODO: make sure this is right
 	}
 	else{
 		fprintf(stderr,"in else\n");
@@ -250,10 +275,15 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		statbuf->st_mtime = ((inode*)buffer)->modifytime;
 		statbuf->st_ctime = ((inode*)buffer)->createtime;
 		statbuf->st_blocks = ((inode*)buffer)->numBlocks;
+		fprintf(stderr,"getattr path is: %s\n", ((inode*)buffer)->path);
 		log_msg("else stmt of getattr\n");
 	}    
 	log_msg("leaving getattr\n");
   return retstat;
+}
+
+int sfs_setattr(const char *path, struct stat *statbuf){
+
 }
 
 /**
@@ -287,24 +317,30 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 		log_msg("no free inodes found\n");
 		return -1;
 	}
-	time_t now = time(0);
-	inode* useNode = (inode*)buffer;
+	
+	//inode* useNode = (inode*)buffer;
 	//ANNE: Definitely check over these declarations cause I'm only like 14% sure bout this
-	useNode->size = 0;
-	useNode->numBlocks = 1;
-	useNode->blockNum[foundInd];
-	useNode->links = 1;//it says this should always be 1? in the struct 
-	useNode->indirectionBlock = FALSE;
-	useNode->type = FILE_NODE;//also not sure about this
-	useNode->filemode = mode; 		//S_ISREG 
-	useNode->createtime = now;		
-	useNode->modifytime = now;
-	useNode->accesstime = now;
-	useNode->userId = getuid(); 
-	useNode->groupId = getgid(); 
-	useNode->path = NULL;//path not working? const char cast issue, I used '&' and '*', it's probably something dumb
-	fprintf(stderr,"%s\n", path);
-	inodes[foundInd] =1;
+	((inode*)buffer)->size = 0;
+	((inode*)buffer)->numBlocks = 0;
+	((inode*)buffer)->links = 0;
+	((inode*)buffer)->indirectionBlock = FALSE;
+	((inode*)buffer)->type = FILE_NODE;//also not sure about this
+	((inode*)buffer)->filemode = S_IFREG | mode; 		//S_ISREG 
+	((inode*)buffer)->createtime = time(NULL);		
+	((inode*)buffer)->modifytime = ((inode*)buffer)->createtime;
+	((inode*)buffer)->accesstime = ((inode*)buffer)->createtime;
+	((inode*)buffer)->userId = getuid(); 
+	((inode*)buffer)->groupId = getgid(); 
+	((inode*)buffer)->path = path;
+
+	block_write(foundInd, (void*)buffer);
+
+	fprintf(stderr,"%s %d\n", path, foundInd);
+	blocks[foundInd] = 1;
+	
+	char* buffer2[BLOCK_SIZE];
+	block_read(foundInd, buffer2);
+	fprintf(stderr,"path is: %s\n", ((inode*)buffer2)->path);
 	   
   //fill inode with information passed in and other info (same as init, but for file).
   	//path and mode are given in function call.
@@ -540,7 +576,7 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
   log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
-	
+
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0); 
 
@@ -554,8 +590,35 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 		return -1; //TODO: is this right?
 	}
 	else{
+		fprintf(stderr,"block: %d\n", block);
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
+			char buffer2[BLOCK_SIZE];
+			int i = 1;
+			while(i < INODEBLOCKS){
+				if(blocks[i] == 1){
+					fprintf(stderr, "%d\n", i);
+					block_read(i,buffer2);
+					fprintf(stderr, "now path is: %s\n", ((inode*)buffer2)->path);
+/*					//fill in stat
+					statbuf->st_dev = 0;
+					statbuf->st_ino = 0;
+					statbuf->st_rdev = 0;
+					statbuf->st_mode = ((inode*)buffer)->filemode;
+					statbuf->st_nlink = ((inode*)buffer)->links;
+					statbuf->st_uid = ((inode*)buffer)->userId;
+					statbuf->st_gid = ((inode*)buffer)->groupId;
+					statbuf->st_size = ((inode*)buffer)->size;
+					statbuf->st_atime = ((inode*)buffer)->accesstime;
+					statbuf->st_mtime = ((inode*)buffer)->modifytime;
+					statbuf->st_ctime = ((inode*)buffer)->createtime;
+					statbuf->st_blocks = ((inode*)buffer)->numBlocks;
+*/					
+//					filler(buf, newpath, NULL, 0);
+//					log_msg("filled path: %s\n", newpath);
+				}
+				i++;
+			}
 			//read each inode in block and get name and stat info
 			//filler(buf, "name", &stat, 0);
 		}
