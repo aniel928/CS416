@@ -71,6 +71,26 @@ inode* root = NULL;
 
 //more methods
 
+//Finds the first inode set to 0
+int findFirstFreeInode(){
+	fprintf(stderr,"findFirstFreeInode\n");
+	log_msg("findFirstFreeInode\n");
+	int block = 0;
+	while (block < INODEBLOCKS){
+		log_msg("block #: %d\n", block);
+		if (inodes[block] == 0){
+			break;
+		}
+		block++;
+	}
+	if(block == INODEBLOCKS){
+		return -1; //TODO: make sure this is what returns on error. 
+	}
+	return block;	
+}
+
+
+
 //open every inode and check path.
 //TODO: should change this to only check those that are '1' in inodes[] array
 int findInode(const char* path){
@@ -78,11 +98,13 @@ int findInode(const char* path){
 	log_msg("findInode\n");
 	int block = 0;
 	char buffer[BLOCK_SIZE];
+	fprintf(stderr, "bs: %d, ib: %d\n", BLOCK_SIZE, INODEBLOCKS);
 	while(block < INODEBLOCKS){
 		log_msg("block #: %d\n", block);
 		if(inodes[block] == 1){
 			block_read(block, (void*)buffer);
 			if(strcmp(((inode*)buffer)->path, path) == 0){
+				//the file was found/already exists
 				break;
 			}
 		}
@@ -90,7 +112,7 @@ int findInode(const char* path){
 	}
 	
 	if(block == INODEBLOCKS){
-		return -1; //TODO: make sure this is what returns on error.
+		return -1; //TODO: make sure this is what returns on error. 
 	}
 	
 	return block;
@@ -137,11 +159,9 @@ int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 fo
  */
 
 void *sfs_init(struct fuse_conn_info *conn){
-    fprintf(stderr, "in bb-init\n");
-    log_msg("\nsfs_init()\n");
-
+  fprintf(stderr, "in bb-init\n");
+  log_msg("\nsfs_init()\n");
 	char buffer[BLOCK_SIZE];
-
 	struct sfs_state* state = SFS_DATA; //this stuff defined in param.h
 	disk_open(SFS_DATA->diskfile);
 	fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
@@ -171,13 +191,14 @@ void *sfs_init(struct fuse_conn_info *conn){
 	root->modifytime = root->createtime;
 	root->userId = getuid();
 	root->groupId = getgid();
+	//ANNE: ^not setting the block num in this but it should automatically be set to 0 and it's the root so that's why right??
 
 	block_write(0, (void*)root);
 	inodes[0] = 1;
 	log_conn(conn);
-    log_fuse_context(fuse_get_context());
+  log_fuse_context(fuse_get_context());
 	log_msg("leaving init function\n");
-    return state;
+  return state;
 }
 
 /**
@@ -188,8 +209,8 @@ void *sfs_init(struct fuse_conn_info *conn){
  * Introduced in version 2.3
  */
 void sfs_destroy(void *userdata){
-    fprintf(stderr,"destroy");
-    log_msg("\nsfs_destroy(userdata=0x%08x)\n", userdata);
+  fprintf(stderr,"destroy");
+  log_msg("\nsfs_destroy(userdata=0x%08x)\n", userdata);
 }
 
 /** Get file attributes.
@@ -200,14 +221,15 @@ void sfs_destroy(void *userdata){
  */
 int sfs_getattr(const char *path, struct stat *statbuf){
 	fprintf(stderr, "in get attr\n");
-    int retstat = 0;
-    
-    log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
+  int retstat = 0;
+  log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
 	int block = findInode(path);
+//ANNE: do we need a way to check which command was called? and if so I feel like there's an easy way
 	if (block == -1){
 		log_msg("if stmt of getattr\n");
 		fprintf(stderr,"File not found\n");
 		log_msg("File not found\n");
+		//sfs_create(? ?);
 		return -1; //TODO: make sure this is right
 	}
 	else{
@@ -231,7 +253,7 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		log_msg("else stmt of getattr\n");
 	}    
 	log_msg("leaving getattr\n");
-    return retstat;
+  return retstat;
 }
 
 /**
@@ -247,48 +269,71 @@ int sfs_getattr(const char *path, struct stat *statbuf){
  * Introduced in version 2.5
  */
 int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
-    int retstat = 0;
-    fprintf(stderr,"create");
-    log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n",
-	    path, mode, fi);
-    
-    
-    //check array of inodes for first one that is 0.  Save block number.
-    	//write a separate function to do this.
+  int retstat = 0;
+  fprintf(stderr,"create");
+  log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
+   
+  //check array of inodes for first one that is 0.  Save block number.
+ 	//write a separate function to do this.
+	//ANNE: I made a function called findFirstFreeInode, if you wanna check the logic, all it does it return the first iNode index with 0;
 
-    //create new char buffer: (char buffer[BLOCKSIZE];)
+  //create new char buffer: (
+	char buffer[BLOCK_SIZE];
     
-    //create new inode and cast buffer into it.
-    
-    //fill inode with information passed in and other info (same as init, but for file).
-    	//path and mode are given in function call.
-    		//along with mode given, use S_ISREG | mode
+  //create new inode and cast buffer into it.
+	int foundInd = findFirstFreeInode();
+	if (foundInd == -1){
+		fprintf(stderr, "No free nodes found\n");
+		log_msg("no free inodes found\n");
+		return -1;
+	}
+	time_t now = time(0);
+	inode* useNode = (inode*)buffer;
+	//ANNE: Definitely check over these declarations cause I'm only like 14% sure bout this
+	useNode->size = 0;
+	useNode->numBlocks = 1;
+	useNode->blockNum[foundInd];
+	useNode->links = 1;//it says this should always be 1? in the struct 
+	useNode->indirectionBlock = FALSE;
+	useNode->type = FILE_NODE;//also not sure about this
+	useNode->filemode = mode; 		//S_ISREG 
+	useNode->createtime = now;		
+	useNode->modifytime = now;
+	useNode->accesstime = now;
+	useNode->userId = getuid(); 
+	useNode->groupId = getgid(); 
+	useNode->path = NULL;//path not working? const char cast issue, I used '&' and '*', it's probably something dumb
+	fprintf(stderr,"%s\n", path);
+	inodes[foundInd] =1;
+	   
+  //fill inode with information passed in and other info (same as init, but for file).
+  	//path and mode are given in function call.
+  		//along with mode given, use S_ISREG | mode
 
-    //disk_write the buffer to the block number saved above.
+  //disk_write the buffer to the block number saved above.
     
-    //change inode block number to 1 (to signify "used")
+  //change inode block number to 1 (to signify "used")
     
-    return retstat;
+  return retstat;
 }
 
 /** Remove a file */
 int sfs_unlink(const char *path){
-   fprintf(stderr,"unlink");
-    int retstat = 0;
-    log_msg("sfs_unlink(path=\"%s\")\n", path);
-
-	int block = findInode(path);
+  fprintf(stderr,"unlink");
+  int retstat = 0;
+  log_msg("sfs_unlink(path=\"%s\")\n", path);
+  int block = findInode(path);
 	
 	//check to see if any other blocks are linked (indirection)
 	
 	//clear out all datablocks in inode
 		//for each datablock just remove from internal array (in inode) and external array
     
-    //when datablocks are cleared, set path == NULL;
+  //when datablocks are cleared, set path == NULL;
+   
+  //set inodes[] array block index back to 0.
     
-    //set inodes[] array block index back to 0.
-    
-    return retstat;
+  return retstat;
 }
 
 /** File open operation
@@ -302,10 +347,10 @@ int sfs_unlink(const char *path){
  * Changed in version 2.2
  */
 int sfs_open(const char *path, struct fuse_file_info *fi){
-	fprintf(stderr,"open");
-    int retstat = 0;
-    log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
-	    path, fi);
+  fprintf(stderr,"open");
+  int retstat = 0;
+  log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
+  path, fi);
 	
 	//see if it exists.
 	int block = findInode(path);
@@ -316,14 +361,12 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
 		retstat = -1; //TODO: check return values
 	}
 	else{
-		
 		int permission = checkPermissions(block, 0); //need to finish this function before it will work.
-		
 		if(permission == -1){
 			retstat = -2; //TODO; check return values
 		}
-    }
-    return retstat;
+  }
+  return retstat;
 }
 
 /** Release an open file
@@ -341,14 +384,13 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
  * Changed in version 2.2
  */
 int sfs_release(const char *path, struct fuse_file_info *fi){
-    fprintf(stderr,"release");
-    int retstat = 0;
-    log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n",
-	  path, fi);
+	fprintf(stderr,"release");
+  int retstat = 0;
+  log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n", path, fi);
     
-    //not really sure we have to add anything here since our open doesn't do much either.
+	//not really sure we have to add anything here since our open doesn't do much either.
 
-    return retstat;
+  return retstat;
 }
 
 /** Read data from an open file
@@ -363,11 +405,10 @@ int sfs_release(const char *path, struct fuse_file_info *fi){
  * Changed in version 2.2
  */
 int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-    fprintf(stderr,"read");
-    int retstat = 0;
-    log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
-	    path, buf, size, offset, fi);
-
+  fprintf(stderr,"read");
+  int retstat = 0;
+  log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
+	path, buf, size, offset, fi);
 	int block = findInode(path);
 	
 	if(block == -1){
@@ -378,7 +419,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	
 	else{
 		int permission = checkPermissions(block, 1); //need to finish this function before it will work
-	
 		if(permission == -1){
 			retstat = -2; //TODO: check return values
 		}
@@ -403,12 +443,10 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
  * Changed in version 2.2
  */
 int sfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-    fprintf(stderr,"write");
-    int retstat = 0;
-    log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
-	    path, buf, size, offset, fi);
-    
-	int block = findInode(path);
+  fprintf(stderr,"write");
+  int retstat = 0;
+  log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
+ 	int block = findInode(path);
 	
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
@@ -418,7 +456,6 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	
 	else{
 		int permission = checkPermissions(block, 2); //need to finish this function before it will work.
-
 		if(permission == -1){
 			retstat = -2; //TODO: check return values
 		}
@@ -449,25 +486,19 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 
 /** Create a directory */
 int sfs_mkdir(const char *path, mode_t mode){
-    fprintf(stderr,"mkdir");
-    int retstat = 0;
-    log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n",
-	    path, mode);
-   
-    
-    return retstat;
+  fprintf(stderr,"mkdir");
+  int retstat = 0;
+  log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+  return retstat;
 }
 
 
 /** Remove a directory */
 int sfs_rmdir(const char *path){
-    fprintf(stderr,"rmdir");
-    int retstat = 0;
-    log_msg("sfs_rmdir(path=\"%s\")\n",
-	    path);
-    
-    
-    return retstat;
+  fprintf(stderr,"rmdir");
+  int retstat = 0;
+  log_msg("sfs_rmdir(path=\"%s\")\n",	path);
+  return retstat;
 }
 
 
@@ -479,12 +510,10 @@ int sfs_rmdir(const char *path){
  * Introduced in version 2.3
  */
 int sfs_opendir(const char *path, struct fuse_file_info *fi){
-    int retstat = 0;
-    fprintf(stderr, "opendir\n");
-    log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
-    
-    
-    return retstat;
+  int retstat = 0;
+  fprintf(stderr, "opendir\n");
+  log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
+  return retstat;
 }
 
 /** Read directory
@@ -509,10 +538,9 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
  * Introduced in version 2.3
  */
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
-    log_msg("\nsfs_readdir: %s\n", path);
+  log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
 	
-	//
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0); 
 
@@ -545,10 +573,9 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
  * Introduced in version 2.3
  */
 int sfs_releasedir(const char *path, struct fuse_file_info *fi){
-    int retstat = 0;
+  int retstat = 0;
 	fprintf(stderr,"releasedir");
-    
-    return retstat;
+  return retstat;
 }
 
 struct fuse_operations sfs_oper = {
@@ -572,29 +599,26 @@ struct fuse_operations sfs_oper = {
 };
 
 void sfs_usage(){
-    fprintf(stderr, "usage:  sfs [FUSE and mount options] diskFile mountPoint\n");
-    abort();
+  fprintf(stderr, "usage:  sfs [FUSE and mount options] diskFile mountPoint\n");
+  abort();
 }
 
 int main(int argc, char *argv[]){
 	fprintf(stderr, "in main\n");
-    int fuse_stat;
-    struct sfs_state *sfs_data;
-    // sanity checking on the command line
-    if ((argc < 3) || (argv[argc-2][0] == '-') || (argv[argc-1][0] == '-'))
-	sfs_usage();
-
-    sfs_data = malloc(sizeof(struct sfs_state));
+   int fuse_stat;
+   struct sfs_state *sfs_data;
+   // sanity checking on the command line
+   if ((argc < 3) || (argv[argc-2][0] == '-') || (argv[argc-1][0] == '-'))	sfs_usage();
+		sfs_data = malloc(sizeof(struct sfs_state));
     if (sfs_data == NULL) {
-		perror("main calloc");
-		abort();
+			perror("main calloc");
+			abort();
     }
     // Pull the diskfile and save it in internal data
     sfs_data->diskfile = argv[argc-2];
     argv[argc-2] = argv[argc-1];
     argv[argc-1] = NULL;
     argc--;
-    
     sfs_data->logfile = log_open();
     
     // turn over control to fuse
