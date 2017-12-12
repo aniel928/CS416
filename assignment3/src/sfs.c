@@ -517,25 +517,39 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 		}
 		else{
 			char buffer[BLOCK_SIZE];
-			block_read(block, buffer);
+			block_read(block, buffer);//<--inode
 			
-			//if there are existing blocks (internal array), check datablock array for how many bytes are currently written
-				//if anything is less than 512, keep writing in that block
-				//otherwise, go through data block array and find first one that is -1
 			
-			//if no existing blocks, go through data block array and firrst find one that is -1
+			firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
+			blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
+			firstWrite = BLOCK_SIZE - offset; //how many bytes to write
 			
-			//block_write to that block
-				//if writing to existing block, read the block into a buffer and then write to an offset.
+			//keep track of how much you've written with this
+			int bytesWritten = 0;
 			
-			//store that block in the array in the inode
-					
-			//write the inode back in to the file
+			//while(bytesWritten < size): 
+				//char tempbuffer[BLOCK_SIZE];
+				//data = findFirstFreeData();
+				//block_read(data, tempbuffer); //<--data
 			
-			//update blocks[] array to whichever blocks you wrote into.
+				//if bytesWritten == 0
+					//memcpy(buffer+blockIndex, buf, firstWrite);
+					//bytesWritten += firstWrite;
+				//else if size - bytesWritten < BLOCK_SIZE
+					//memcpy(buffer, buf, size - bytesWritten);
+					//bytesWritten = size;
+				//else
+					//memcpy(buffer, buf, BLOCK_SIZE);
+					//bytesWritten += BLOCK_SIZE;					
+				//blocks[data] = 1;		
+				//store data block in inode->blockArray						
+								
 						
-			//change size on inode to be += size
-
+			//change size of inode to be += size
+			((inode*)buffer)->size += size;
+			
+			//write the inode back in to the file
+			block_write(block, buffer);
 		}
 	}
     return retstat;
