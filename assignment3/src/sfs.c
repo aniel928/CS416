@@ -104,7 +104,6 @@ int findFirstFreeData(){
 	return block;	
 }
 
-
 //open every inode and check path for match.
 int findInode(const char* path){
 	fprintf(stderr,"findInode\n");
@@ -143,6 +142,9 @@ int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 fo
 	char buffer[BLOCK_SIZE];
 	block_read(block, buffer);
 	mode_t mode = ((inode*)buffer)->filemode;
+	
+	//for read -> EACCES is not able to open for reading
+	
 	
 	//if user id matches, then check first 3 bits only
 	if(getuid() == ((inode*)buffer)->userId){
@@ -298,7 +300,7 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
   fprintf(stderr,"create");
   log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
 
-	//TODO: check to make sure path doens't already exist
+	//TODO: check to make sure path doens't already exist: EEXIST
 
    
   //check array of inodes for first one that is 0.  Save block number.
@@ -312,7 +314,7 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	if (foundInd == -1){
 		fprintf(stderr, "No free nodes found\n");
 		log_msg("no free inodes found\n");
-		return -1;
+		return ENOSPC;
 	}
 	
 	inode* useNode = (inode*)buffer;
@@ -399,7 +401,7 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
   log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
   path, fi);
 	
-/*	//see if it exists.
+	//see if it exists.
 	int block = findInode(path);
 
 	if(block == -1){
@@ -409,12 +411,12 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
 	}
 	else{
 		int permission = checkPermissions(block, 0); //need to finish this function before it will work.
-		if(permission == -1){
-			retstat = -ENOENT; //TODO; check return values
+		if(permission != 0){
+			retstat = permission; //TODO; check return values
 		}
 	}
 	fprintf(stderr,"returning %d\n", retstat);
-*/  	return retstat;
+  	return retstat;
 }
 
 /** Release an open file
@@ -467,10 +469,10 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	else{
 		int permission = checkPermissions(block, 1); //need to finish this function before it will work
 		if(permission == -1){
-			retstat = -ENOENT; //TODO: check return values
+			retstat = EACCES; //TODO: check return values
 		}
 		else{
-			log_msg("ready to do some reading\n");
+			log_msg("ready to do some reading from block %d\n", block);
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);
 			int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
@@ -491,6 +493,7 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 				if(bytesread == 0){
 					log_msg("about to read from block %d\n", ((inode*)buffer)->blockNum[startBlock]);
 					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
+					log_msg("in while loop tembuff is: %s\n", tempbuff);
 					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE - startIndex);
 					bytesread += (BLOCK_SIZE - startIndex);
 				}else if (size - bytesread < BLOCK_SIZE){
@@ -514,7 +517,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 				log_msg("read returning: %s\n", buf);
 			}
 		}
-		
 	}
     return retstat;
 }
@@ -563,6 +565,7 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	
 				char tempbuffer[BLOCK_SIZE];
 				int data = findFirstFreeData();
+				log_msg("data block: %d\n", data);
 				block_read(data, tempbuffer); //<--data
 			
 				//nothing has been written yet
@@ -586,18 +589,18 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 					memcpy(tempbuffer, buf, BLOCK_SIZE);
 					bytesWritten += BLOCK_SIZE;					
 					blocks[data] = 1;		
+				}
 					
-					
-					//find next available index in blockNum;
-					int index = 0;
-					while (((inode*)buffer)->blockNum[index] != 0){
-						index++;
-					}					
-					((inode*)buffer)->blockNum[index] = data;
+				//find next available index in blockNum;
+				int index = 0;
+				while (((inode*)buffer)->blockNum[index] != 0){
+					index++;
+				}					
+				((inode*)buffer)->blockNum[index] = data;
 				
 					
 				//	store data block in inode->blockArray				
-				}
+				
 				block_write(data, tempbuffer);
 				log_msg("wrote: %s\n", tempbuffer);
 			}	
@@ -643,6 +646,10 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
   int retstat = 0;
   fprintf(stderr, "opendir\n");
   log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
+  
+  
+//  ENOTDIR - for if we do directories
+  
 
 	char buffer [BLOCK_SIZE];
 	if(blocks[1] ==1){
@@ -677,6 +684,10 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 //TODO: if we decide to implement directories, we have to change this.  It's currently taking all files and printing them.
 	log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
+
+
+	//ENOTDIR - for if we do directories
+
 
 	//this dir and parent dir
 	filler(buf, ".", NULL, 0);
