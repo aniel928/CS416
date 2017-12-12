@@ -513,42 +513,64 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	else{
 		int permission = checkPermissions(block, 2); //need to finish this function before it will work.
 		if(permission == -1){
-			retstat = -2; //TODO: check return values
+			retstat = -2; //TODO: check return va5lues
 		}
 		else{
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);//<--inode
 			
 			
-			firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
-			blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
-			firstWrite = BLOCK_SIZE - offset; //how many bytes to write
+			int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
+			int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
+			int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
 			
 			//keep track of how much you've written with this
 			int bytesWritten = 0;
 			
-			//while(bytesWritten < size): 
-				//char tempbuffer[BLOCK_SIZE];
-				//data = findFirstFreeData();
-				//block_read(data, tempbuffer); //<--data
+		
+			int count = 1;
+			while(bytesWritten < size ){
+
+	
+				char tempbuffer[BLOCK_SIZE];
+				int data = findFirstFreeData();
+				block_read(data, tempbuffer); //<--data
 			
-				//if bytesWritten == 0
-					//memcpy(buffer+blockIndex, buf, firstWrite);
-					//bytesWritten += firstWrite;
-				//else if size - bytesWritten < BLOCK_SIZE
-					//memcpy(buffer, buf, size - bytesWritten);
-					//bytesWritten = size;
-				//else
-					//memcpy(buffer, buf, BLOCK_SIZE);
-					//bytesWritten += BLOCK_SIZE;					
-				//blocks[data] = 1;		
-				//store data block in inode->blockArray						
-								
-						
+				//nothing has been written yet
+				if (bytesWritten == 0){
+					if (size > BLOCK_SIZE){
+						fprintf(stderr, "Size is greater than 1 block\n");
+					//	exit(-1);
+					}
+					memcpy(buffer+blockIndex, buf, firstWrite);
+					bytesWritten += firstWrite;
+				}
+				//amount left to write is less than full block
+				else if (size - bytesWritten < BLOCK_SIZE){
+					memcpy(buffer, buf, size - bytesWritten);
+					bytesWritten = size;
+				}	
+				else{
+					memcpy(buffer, buf, BLOCK_SIZE);
+					bytesWritten += BLOCK_SIZE;					
+					blocks[data] = 1;		
+					
+					
+					//find next available index in blockNum;
+					int index = 0;
+					while (((inode*)buffer)->blockNum[index] != 0){
+						index++;
+					}					
+					((inode*)buffer)->blockNum[index] = data;
+				
+					
+				//	store data block in inode->blockArray				
+				}
+			}					
 			//change size of inode to be += size
 			((inode*)buffer)->size += size;
 			
-			//write the inode back in to the file
+			//write the inode back in to the file	
 			block_write(block, buffer);
 		}
 	}
