@@ -9,295 +9,101 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 007284c0
+    fuse = 020754c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 00728010
-    logfile = 00728030
+    private_data = 02075010
+    logfile = 02075030
     diskfile = /tmp/alh220/testfsfile
     umask = 00000
 leaving init function
 
-sfs_getattr(path="/", statbuf=0x63ffec10)
+sfs_getattr(path="/", statbuf=0x9c81ac10)
 findInode
 input path: /
 inode path: /
-in the 2nd if statement
 else stmt of getattr
 leaving getattr
 
-sfs_getattr(path="/", statbuf=0x68c0ac10)
+sfs_getattr(path="/", statbuf=0x97ffec10)
 findInode
 input path: /
 inode path: /
-in the 2nd if statement
 else stmt of getattr
 leaving getattr
 
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-
-sfs_getattr(path="/testfile", statbuf=0x68c0ac40)
+sfs_getattr(path="/testfile", statbuf=0x97ffec40)
 findInode
 input path: /testfile
 inode path: /
 if stmt of getattr
 File not found
 
-sfs_create(path="/testfile", mode=0100600, fi=0x63ffecf0)
+sfs_create(path="/testfile", mode=0100600, fi=0x9c81acf0)
 findFirstFreeInode
 
-sfs_getattr(path="/testfile", statbuf=0x63ffec00)
+sfs_getattr(path="/testfile", statbuf=0x9c81ac00)
 findInode
 input path: /testfile
 inode path: /
 input path: /testfile
 inode path: /testfile
-in the 2nd if statement
 else stmt of getattr
 leaving getattr
 
-sfs_release(path="/testfile", fi=0x63ffecf0)
+sfs_release(path="/testfile", fi=0x9c81acf0)
 
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-before stat stuff
-after stat stuff
-filled path: .testfile
-
-sfs_getattr(path="/testfile", statbuf=0x63ffec40)
+sfs_getattr(path="/testfile", statbuf=0x97ffec40)
 findInode
 input path: /testfile
 inode path: /
 input path: /testfile
 inode path: /testfile
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
-sfs_unlink(path="/testfile")
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-in the 2nd if statement
-
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-
-sfs_getattr(path="/testfile", statbuf=0x68c0ac40)
-findInode
-input path: /testfile
-inode path: /
-if stmt of getattr
-File not found
-
-sfs_create(path="/testfile", mode=0100600, fi=0x63ffecf0)
-findFirstFreeInode
-
-sfs_getattr(path="/testfile", statbuf=0x63ffec00)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-in the 2nd if statement
 else stmt of getattr
 leaving getattr
 
-sfs_release(path="/testfile", fi=0x68c0acf0)
+sfs_open(path"/testfile", fi=0x9c81acf0)
 
-sfs_getattr(path="/testfile1", statbuf=0x63ffec40)
-findInode
-input path: /testfile1
-inode path: /
-input path: /testfile1
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_create(path="/testfile1", mode=0100600, fi=0x68c0acf0)
-findFirstFreeInode
-
-sfs_getattr(path="/testfile1", statbuf=0x68c0ac00)
-findInode
-input path: /testfile1
-inode path: /
-input path: /testfile1
-inode path: /testfile
-input path: /testfile1
-inode path: /testfile1
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
-
-sfs_release(path="/testfile1", fi=0x63ffecf0)
-
-sfs_getattr(path="/testfile2", statbuf=0x68c0ac40)
-findInode
-input path: /testfile2
-inode path: /
-input path: /testfile2
-inode path: /testfile
-input path: /testfile2
-inode path: /testfile1
-if stmt of getattr
-File not found
-
-sfs_create(path="/testfile2", mode=0100600, fi=0x63ffecf0)
-findFirstFreeInode
-
-sfs_getattr(path="/testfile2", statbuf=0x63ffec00)
-findInode
-input path: /testfile2
-inode path: /
-input path: /testfile2
-inode path: /testfile
-input path: /testfile2
-inode path: /testfile1
-input path: /testfile2
-inode path: /testfile2
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
-
-sfs_release(path="/testfile2", fi=0x68c0acf0)
-
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-before stat stuff
-after stat stuff
-filled path: .testfile
-before stat stuff
-after stat stuff
-filled path: .testfile1
-before stat stuff
-after stat stuff
-filled path: .testfile2
-
-sfs_getattr(path="/testfile", statbuf=0x63ffec40)
+sfs_write(path="/testfile", buf=0x9d436060, size=3, offset=0, fi=0x9c81ad70)
 findInode
 input path: /testfile
 inode path: /
 input path: /testfile
 inode path: /testfile
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
+findFirstFreeData
+wrote: hi
 
-sfs_getattr(path="/testfile1", statbuf=0x68c0ac40)
-findInode
-input path: /testfile1
-inode path: /
-input path: /testfile1
-inode path: /testfile
-input path: /testfile1
-inode path: /testfile1
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
 
-sfs_opendir
+sfs_release(path="/testfile", fi=0x97ffecf0)
 
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-before stat stuff
-after stat stuff
-filled path: .testfile
-before stat stuff
-after stat stuff
-filled path: .testfile1
-before stat stuff
-after stat stuff
-filled path: .testfile2
-
-sfs_getattr(path="/testfile", statbuf=0x63ffec40)
+sfs_getattr(path="/testfile", statbuf=0x9c81ac40)
 findInode
 input path: /testfile
 inode path: /
 input path: /testfile
 inode path: /testfile
-in the 2nd if statement
 else stmt of getattr
 leaving getattr
-sfs_unlink(path="/testfile")
+
+sfs_open(path"/testfile", fi=0x97ffecf0)
+
+sfs_read(path="/testfile", buf=0x98000d70, size=4096, offset=0, fi=0x9c81acf0)
 findInode
 input path: /testfile
 inode path: /
 input path: /testfile
 inode path: /testfile
-in the 2nd if statement
+ready to do some reading
+original size: 4096
+now size is: 3 and remainder is: 4093
+before while loop
+in here once
+about to read from block 0
+out of while
+size is: 3, remainder is 4093
+read returning: 
 
-sfs_getattr(path="/testfile1", statbuf=0x63ffec40)
-findInode
-input path: /testfile1
-inode path: /
-input path: /testfile1
-inode path: /testfile1
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
-sfs_unlink(path="/testfile1")
-findInode
-input path: /testfile1
-inode path: /
-input path: /testfile1
-inode path: /testfile1
-in the 2nd if statement
+sfs_release(path="/testfile", fi=0x97ffecf0)
 
-sfs_getattr(path="/testfile2", statbuf=0x68c0ac40)
-findInode
-input path: /testfile2
-inode path: /
-input path: /testfile2
-inode path: /testfile2
-in the 2nd if statement
-else stmt of getattr
-leaving getattr
-sfs_unlink(path="/testfile2")
-findInode
-input path: /testfile2
-inode path: /
-input path: /testfile2
-inode path: /testfile2
-in the 2nd if statement
-
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-in the 2nd if statement
-
-sfs_destroy(userdata=0x00728010)
+sfs_destroy(userdata=0x02075010)

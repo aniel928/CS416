@@ -121,7 +121,7 @@ int findInode(const char* path){
 			
 			log_msg("inode path: %s\n", ((inode*)buffer)->path);
 			if(strcmp(((inode*)buffer)->path, path) == 0){
-				log_msg("in the 2nd if statement\n");
+//				log_msg("in the 2nd if statement\n");
 				//the file was found/already exists
 				break;
 			}
@@ -399,21 +399,22 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
   log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
   path, fi);
 	
-	//see if it exists.
+/*	//see if it exists.
 	int block = findInode(path);
 
 	if(block == -1){
 		fprintf(stderr,"File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -1; //TODO: check return values
+		retstat = -ENOENT; //TODO: check return values
 	}
 	else{
 		int permission = checkPermissions(block, 0); //need to finish this function before it will work.
 		if(permission == -1){
-			retstat = -2; //TODO; check return values
+			retstat = -ENOENT; //TODO; check return values
 		}
-  }
-  return retstat;
+	}
+	fprintf(stderr,"returning %d\n", retstat);
+*/  	return retstat;
 }
 
 /** Release an open file
@@ -460,32 +461,60 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -1; //TODO: check return values
+		retstat = -ENOENT; //TODO: check return values
 	}
 	
 	else{
 		int permission = checkPermissions(block, 1); //need to finish this function before it will work
 		if(permission == -1){
-			retstat = -2; //TODO: check return values
+			retstat = -ENOENT; //TODO: check return values
 		}
 		else{
+			log_msg("ready to do some reading\n");
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);
 			int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
 			int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
 			int totalBlocks = size / BLOCK_SIZE;
 			char tempbuff[BLOCK_SIZE];
-			int i = 0;
-			int ptr = 0;
-			while(i < totalBlocks && ptr){
-				block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
-				memcpy(buf + (i*BLOCK_SIZE), tempbuff + startIndex, BLOCK_SIZE - startIndex);
-				startIndex = 0; 
+			int remainder = 0;
+			if(size > ((inode*)buffer)->size){
+				log_msg("original size: %d\n", size);
+				remainder = size - ((inode*)buffer)->size;
+				size  = ((inode*)buffer)->size;
+				log_msg("now size is: %d and remainder is: %d\n", size, remainder);
 			}
+			log_msg("before while loop\n");
+			int bytesread = 0;
+			while(bytesread < size){
+				log_msg("in here once\n");
+				if(bytesread == 0){
+					log_msg("about to read from block %d\n", ((inode*)buffer)->blockNum[startBlock]);
+					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
+					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE - startIndex);
+					bytesread += (BLOCK_SIZE - startIndex);
+				}else if (size - bytesread < BLOCK_SIZE){
+					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
+					memcpy(buf + bytesread, tempbuff, size - bytesread);
+					bytesread = size;
+				}else{
+					block_read(((inode*)buffer)->blockNum[startBlock],tempbuff);
+					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE);
+					bytesread += BLOCK_SIZE;
+				}
+				startBlock++;
 			//inode stored in buffer
 				//calculate block for offset 
 				//starting at offset, for each data block, start reading each datablock for until size reached.
+			}
+			log_msg("out of while\n");
+			if(remainder > 0){
+				log_msg("size is: %d, remainder is %d\n", size, remainder);
+				memcpy(buf + size, "0", remainder);
+				log_msg("read returning: %s\n", buf);
+			}
 		}
+		
 	}
     return retstat;
 }
@@ -507,13 +536,13 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -1; //TODO: check return values
+		retstat = -ENOENT; //TODO: check return values
 	}
 	
 	else{
 		int permission = checkPermissions(block, 2); //need to finish this function before it will work.
 		if(permission == -1){
-			retstat = -2; //TODO: check return va5lues
+			retstat = -ENOENT; //TODO: check return va5lues
 		}
 		else{
 			char buffer[BLOCK_SIZE];
@@ -542,16 +571,19 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 						fprintf(stderr, "Size is greater than 1 block\n");
 					//	exit(-1);
 					}
-					memcpy(buffer+blockIndex, buf, firstWrite);
+					if(size < BLOCK_SIZE){
+						firstWrite = size;
+					}
+					memcpy(tempbuffer+blockIndex, buf, firstWrite);
 					bytesWritten += firstWrite;
 				}
 				//amount left to write is less than full block
 				else if (size - bytesWritten < BLOCK_SIZE){
-					memcpy(buffer, buf, size - bytesWritten);
+					memcpy(tempbuffer, buf, size - bytesWritten);
 					bytesWritten = size;
 				}	
 				else{
-					memcpy(buffer, buf, BLOCK_SIZE);
+					memcpy(tempbuffer, buf, BLOCK_SIZE);
 					bytesWritten += BLOCK_SIZE;					
 					blocks[data] = 1;		
 					
@@ -566,13 +598,18 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 					
 				//	store data block in inode->blockArray				
 				}
-			}					
+				block_write(data, tempbuffer);
+				log_msg("wrote: %s\n", tempbuffer);
+			}	
+							
 			//change size of inode to be += size
 			((inode*)buffer)->size += size;
 			
 			//write the inode back in to the file	
 			block_write(block, buffer);
 		}
+		
+		
 	}
     return retstat;
 }
