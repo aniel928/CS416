@@ -422,12 +422,14 @@ int sfs_unlink(const char *path){
 	int retstat = 0;
 	log_msg("sfs_unlink(path=\"%s\")\n", path);
 	int block = findInode(path);
+	if(block == -1){
+		return -ENOENT;
+	}
 	char buffer [BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	block_read(block, buffer);
 	
-	//TODO: check to see if any other blocks are linked (indirection)
-	//TODO: check to see if exits 
+	//TODO: check to see if any other blocks are linked (if we implement indirection)
 	
 	//clear out all datablocks in inode
 	//for each datablock just remove from internal array (in inode) and external array
@@ -533,13 +535,14 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	int retstat = 0;
 	log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",path, buf, size, offset, fi);
 	int block = findInode(path);
-	
+	if(size > BLOCK_SIZE * BLOCKSPERINODE){
+		size = BLOCK_SIZE * BLOCKSPERINODE;
+	}
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
 		retstat = -ENOENT; //TODO: check return values
 	}
-	
 	else{
 		int permission = checkPermissions(block, 1); //need to finish this function before it will work
 		if(permission == -1){
@@ -604,7 +607,7 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
   int retstat = 0;
   log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
  	int block = findInode(path);
-	
+ 	
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
@@ -617,6 +620,10 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			retstat = -ENOENT; //TODO: check return va5lues
 		}
 		else{
+			if(size > BLOCK_SIZE * BLOCKSPERINODE){
+				retstat = ENOSPC; //not enough space in this file to finish.
+				size = BLOCK_SIZE * BLOCKSPERINODE; //but we'll write what we can.
+			}
 			char buffer[BLOCK_SIZE];
 			memset(buffer, 0, BLOCK_SIZE);
 			block_read(block, buffer);//<--inode
@@ -691,7 +698,6 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	}
     return retstat;
 }
-
 
 /** Create a directory */
 int sfs_mkdir(const char *path, mode_t mode){
@@ -802,7 +808,6 @@ int sfs_rmdir(const char *path){
   	}
 	return retstat;
 }
-
 
 /** Open directory
  *
