@@ -49,7 +49,7 @@ typedef enum _filetype{
 //This is probably going to need more data
 typedef struct _inode{	
 	int size; //size of file
-	int numBlocks; //how many blocks it currently takes up total
+	int numBlocks; //files: how many blocks it currently takes up total; dir: how many files assigned
 	int blockNum[BLOCKSPERINODE]; //physical block numbers (remove some of these when adding other attributes)
 	int links; //links to file (should always be 1 I'm pretty sure)
  	int indirectionBlock;//which block the inode continues
@@ -163,6 +163,52 @@ int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 fo
 	return 0;
 }
 
+int getParentDir(char* path){
+	log_msg("getParentDir, path: %s\n", path);
+	int length = strlen(path);
+	int i = length;
+	while(i > 0){
+		if(path[i] == '/'){
+			break;
+		}
+		i--;
+	}
+	if(i==0){
+		log_msg("So that happened\n");
+		path[0] = '/';
+		path[1] = '\0';	
+		log_msg("path: %s\n", path);	
+	}
+	else{
+		memset(path + i, '\0', PATHSIZE - i);
+		log_msg("path: %s\n", path);	
+	}
+	return 0;
+}
+
+int getShortPath(char* path){
+	log_msg("getShortPath, path: %s\n", path);
+	int length = strlen(path);
+	if(length == 1){
+		path[1] = '\0';
+		return 0;
+	}
+	int i = length;
+	while(i > 0){
+		if(path[i] == '/'){
+			break;
+		}
+		i--;
+	}
+	char path2[PATHSIZE];
+	memset(path2, '\0', PATHSIZE);
+	memcpy(path2, path + i + 1, PATHSIZE - (i + 1));
+	memset(path, '\0', PATHSIZE);
+	memcpy(path, path2, PATHSIZE);
+	log_msg("path: %s\n", path);	
+	return 0;
+}
+
 /******************************************************************/
 
 
@@ -263,6 +309,7 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 	else{
 		fprintf(stderr,"in else\n");
 		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
 		block_read(block, (void*)buffer);
 
 		//fill in stat
@@ -310,7 +357,7 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 
   //create new char buffer: (
 	char buffer[BLOCK_SIZE];
-    
+	memset(buffer, 0, BLOCK_SIZE);    
   //create new inode and cast buffer into it.
 	int foundInd = findFirstFreeInode();
 	if (foundInd == -1){
@@ -343,9 +390,20 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	fprintf(stderr,"%s %d\n", path, foundInd);
 	blocks[foundInd] = 1;
 	
-	char* buffer2[BLOCK_SIZE];
+	char buffer2[BLOCK_SIZE];
 	block_read(foundInd, buffer2);
 	fprintf(stderr,"path is: %s\n", ((inode*)buffer2)->path);
+	
+	char parentDir[PATHSIZE];
+	memcpy(parentDir, path, PATHSIZE);
+	getParentDir(&(parentDir[0]));
+	
+	int parentBlock = findInode(parentDir);
+	char buffer3[BLOCK_SIZE];
+	block_read(parentBlock, buffer3);
+	((inode*)buffer3)->numBlocks++;
+	
+	block_write(parentBlock, buffer3);
 	   
   //fill inode with information passed in and other info (same as init, but for file).
   	//path and mode are given in function call.
@@ -365,6 +423,7 @@ int sfs_unlink(const char *path){
 	log_msg("sfs_unlink(path=\"%s\")\n", path);
 	int block = findInode(path);
 	char buffer [BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
 	block_read(block, buffer);
 	
 	//TODO: check to see if any other blocks are linked (indirection)
@@ -384,6 +443,18 @@ int sfs_unlink(const char *path){
 
   	//set inodes[] array block index back to 0.
 	blocks[block] = 0;
+	
+	char parentDir[PATHSIZE];
+	memcpy(parentDir, path, PATHSIZE);
+	getParentDir(&(parentDir[0]));
+	
+	int parentBlock = findInode(parentDir);
+	char buffer3[BLOCK_SIZE];
+	block_read(parentBlock, buffer3);
+	((inode*)buffer3)->numBlocks--;
+	
+	block_write(parentBlock, buffer3);
+	
 	return retstat;
 }
 
@@ -476,6 +547,7 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 		else{
 			log_msg("ready to do some reading from inode block %d\n", block);
 			char buffer[BLOCK_SIZE];
+			memset(buffer, 0, BLOCK_SIZE);
 			block_read(block, buffer);
 			int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
 			int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
@@ -625,15 +697,102 @@ int sfs_mkdir(const char *path, mode_t mode){
   fprintf(stderr,"mkdir");
   int retstat = 0;
   log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+  
+  	//TODO: check to make sure path doens't already exist: EEXIST
+
+   
+  //check array of inodes for first one that is 0.  Save block number.
+ 	//write a separate function to do this.
+
+  //create new char buffer: 
+	char buffer[BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);    
+  //create new inode and cast buffer into it.
+	int foundInd = findFirstFreeInode();
+	if (foundInd == -1){
+		fprintf(stderr, "No free nodes found\n");
+		log_msg("no free inodes found\n");
+		return ENOSPC;
+	}
+	
+	inode* useNode = (inode*)buffer;
+	//ANNE: Definitely check over these declarations cause I'm only like 14% sure bout this
+	useNode->size = 0;
+	useNode->numBlocks = 0;
+	useNode->links = 2;
+	useNode->indirectionBlock = FALSE;
+	useNode->type = DIR_NODE;
+	useNode->filemode = S_IFDIR | mode;
+	useNode->createtime = time(NULL);		
+	useNode->modifytime = useNode->createtime;
+	useNode->accesstime = useNode->createtime;
+	useNode->userId = getuid(); 
+	useNode->groupId = getgid(); 
+
+	fprintf(stderr,"SIZE OF PATH IS: %d\n", strlen(path));
+
+	strncpy(useNode->path, path, strlen(path));
+	useNode->path[strlen(path)] = '\0';
+
+	block_write(foundInd, (void*)buffer);
+
+	fprintf(stderr,"%s %d\n", path, foundInd);
+	blocks[foundInd] = 1;
+	
+	char buffer2[BLOCK_SIZE];
+	block_read(foundInd, buffer2);
+	fprintf(stderr,"path is: %s\n", ((inode*)buffer2)->path);  
+
+	char parentDir[PATHSIZE];
+	memcpy(parentDir, path, PATHSIZE);
+	getParentDir(&(parentDir[0]));
+	
+	int parentBlock = findInode(parentDir);
+	char buffer3[BLOCK_SIZE];
+	block_read(parentBlock, buffer3);
+	((inode*)buffer3)->numBlocks++;
+	((inode*)buffer3)->links++;
+	
+	block_write(parentBlock, buffer3);  
+  
   return retstat;
 }
 
 /** Remove a directory */
 int sfs_rmdir(const char *path){
-  fprintf(stderr,"rmdir");
-  int retstat = 0;
-  log_msg("sfs_rmdir(path=\"%s\")\n",	path);
-  return retstat;
+	fprintf(stderr,"rmdir");
+	int retstat = 0;
+	log_msg("sfs_rmdir(path=\"%s\")\n",	path);
+  
+  
+	int block = findInode(path);
+	char buffer[BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
+	block_read(block, buffer);
+	if(((inode*)buffer)->numBlocks != 0){
+		log_msg("cannot delete\n");
+		fprintf(stderr, "cannot delete\n");
+		retstat = ENOTEMPTY;
+	}
+	else{
+		log_msg("delete it\n");
+		fprintf(stderr, "delete it\n");
+		
+		blocks[block] = 0;
+	
+		char parentDir[PATHSIZE];
+		memcpy(parentDir, path, PATHSIZE);
+		getParentDir(&(parentDir[0]));
+		
+		int parentBlock = findInode(parentDir);
+		char buffer3[BLOCK_SIZE];
+		block_read(parentBlock, buffer3);
+		((inode*)buffer3)->numBlocks--;
+		
+		block_write(parentBlock, buffer3);	
+	}
+  
+	return retstat;
 }
 
 
@@ -688,7 +847,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
 
-
+	
 	//ENOTDIR - for if we do directories
 
 
@@ -702,42 +861,59 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	memset(buffer, 0, BLOCK_SIZE);
 	int block = findInode(path);
 	if(block == -1){
-		fprintf(stderr,"Couldn't find file\n");
+		fprintf(stderr,"Couldn't find directory\n");
 		log_msg("Couldn't find file\n");
 		return -1; //TODO: is this right?
 	}
 	else{
+		log_msg("in readdir else\n");
 		fprintf(stderr,"block: %d\n", block);
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
+			log_msg("dealing with a dir\n");
 			char buffer2[BLOCK_SIZE];
 			memset(buffer, 0, BLOCK_SIZE);
 			int i = 1;
 			while(i < INODEBLOCKS){
+//				log_msg("while: %d\n", i);
 				if(blocks[i] == 1){
 					fprintf(stderr, "%d\n", i);
 					block_read(i,(void*)buffer2);
 					fprintf(stderr, "now path is: %s\n", ((inode*)buffer2)->path);
-					//fill in stat
-					struct stat stat;
-					log_msg("before stat stuff\n");
-					stat.st_dev = 0;
-					stat.st_ino = i;
-					stat.st_rdev = 0;
-					stat.st_mode = ((inode*)buffer2)->filemode;
-					stat.st_nlink = ((inode*)buffer2)->links;
-					stat.st_uid = ((inode*)buffer2)->userId;
-					stat.st_gid = ((inode*)buffer2)->groupId;
-					stat.st_size = ((inode*)buffer2)->size;
-					stat.st_atime = ((inode*)buffer2)->accesstime;
-					stat.st_mtime = ((inode*)buffer2)->modifytime;
-					stat.st_ctime = ((inode*)buffer2)->createtime;
-					stat.st_blocks = ((inode*)buffer2)->numBlocks;
-					log_msg("after stat stuff\n");
-					char* fullpath = ((inode*)buffer2)->path + 1;
-					fprintf(stderr,"fullpath: %s\n", fullpath);
-					filler(buf, fullpath, &stat, 0);
-					log_msg("filled path: .%s\n", fullpath);
+					char parentDir[PATHSIZE];
+					log_msg("this path: %s\n", ((inode*)buffer2)->path);
+					memcpy(parentDir, ((inode*)buffer2)->path, PATHSIZE);
+					getParentDir(&(parentDir[0]));				
+					log_msg("parentDir: %s inode: %s\n", parentDir, path);
+					if(strcmp(parentDir, path) == 0){
+						log_msg("did the compare\n");
+						//fill in stat
+						struct stat stat;
+						log_msg("before stat stuff\n");
+						stat.st_dev = 0;
+						stat.st_ino = i;
+						stat.st_rdev = 0;
+						stat.st_mode = ((inode*)buffer2)->filemode;
+						stat.st_nlink = ((inode*)buffer2)->links;
+						stat.st_uid = ((inode*)buffer2)->userId;
+						stat.st_gid = ((inode*)buffer2)->groupId;
+						stat.st_size = ((inode*)buffer2)->size;
+						stat.st_atime = ((inode*)buffer2)->accesstime;
+						stat.st_mtime = ((inode*)buffer2)->modifytime;
+						stat.st_ctime = ((inode*)buffer2)->createtime;
+						stat.st_blocks = ((inode*)buffer2)->numBlocks;
+						log_msg("after stat stuff\n");
+
+
+						char* fullpath = ((inode*)buffer2)->path;
+						getShortPath(fullpath);
+						fprintf(stderr,"fullpath: %s\n", fullpath);
+						filler(buf, fullpath, &stat, 0);
+						log_msg("filled path: .%s\n", fullpath);
+					}
+					else{
+						log_msg("skip this block %d\n", i);
+					}
 				}
 				i++;
 			}
@@ -758,9 +934,9 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
  * Introduced in version 2.3
  */
 int sfs_releasedir(const char *path, struct fuse_file_info *fi){
-  int retstat = 0;
-	fprintf(stderr,"releasedir");
-  return retstat;
+	int retstat = 0;
+	fprintf(stderr,"releasedir");	
+	return retstat;
 }
 
 struct fuse_operations sfs_oper = {
