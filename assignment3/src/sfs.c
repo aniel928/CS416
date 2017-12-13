@@ -427,6 +427,7 @@ int sfs_unlink(const char *path){
 	block_read(block, buffer);
 	
 	//TODO: check to see if any other blocks are linked (indirection)
+	//TODO: check to see if exits 
 	
 	//clear out all datablocks in inode
 	//for each datablock just remove from internal array (in inode) and external array
@@ -716,7 +717,7 @@ int sfs_mkdir(const char *path, mode_t mode){
 	}
 	
 	inode* useNode = (inode*)buffer;
-	//ANNE: Definitely check over these declarations cause I'm only like 14% sure bout this
+
 	useNode->size = 0;
 	useNode->numBlocks = 0;
 	useNode->links = 2;
@@ -755,7 +756,7 @@ int sfs_mkdir(const char *path, mode_t mode){
 	
 	block_write(parentBlock, buffer3);  
   
-  return retstat;
+	return retstat;
 }
 
 /** Remove a directory */
@@ -766,32 +767,39 @@ int sfs_rmdir(const char *path){
   
   
 	int block = findInode(path);
-	char buffer[BLOCK_SIZE];
-	memset(buffer, 0, BLOCK_SIZE);
-	block_read(block, buffer);
-	if(((inode*)buffer)->numBlocks != 0){
-		log_msg("cannot delete\n");
-		fprintf(stderr, "cannot delete\n");
-		retstat = ENOTEMPTY;
+	if(block == -1){
+		retstat = -ENOENT;
 	}
 	else{
-		log_msg("delete it\n");
-		fprintf(stderr, "delete it\n");
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+		if(((inode*)buffer)->type == FILE_NODE){
+			retstat = ENOTDIR;
+		}
+		else if(((inode*)buffer)->numBlocks != 0){
+			log_msg("cannot delete\n");
+			fprintf(stderr, "cannot delete\n");
+			retstat = ENOTEMPTY;
+		}
+		else{
+			log_msg("delete it\n");
+			fprintf(stderr, "delete it\n");
+			
+			blocks[block] = 0;
 		
-		blocks[block] = 0;
-	
-		char parentDir[PATHSIZE];
-		memcpy(parentDir, path, PATHSIZE);
-		getParentDir(&(parentDir[0]));
-		
-		int parentBlock = findInode(parentDir);
-		char buffer3[BLOCK_SIZE];
-		block_read(parentBlock, buffer3);
-		((inode*)buffer3)->numBlocks--;
-		
-		block_write(parentBlock, buffer3);	
-	}
-  
+			char parentDir[PATHSIZE];
+			memcpy(parentDir, path, PATHSIZE);
+			getParentDir(&(parentDir[0]));
+			
+			int parentBlock = findInode(parentDir);
+			char buffer3[BLOCK_SIZE];
+			block_read(parentBlock, buffer3);
+			((inode*)buffer3)->numBlocks--;
+			
+			block_write(parentBlock, buffer3);	
+		}
+  	}
 	return retstat;
 }
 
@@ -804,19 +812,22 @@ int sfs_rmdir(const char *path){
  * Introduced in version 2.3
  */
 int sfs_opendir(const char *path, struct fuse_file_info *fi){
-  int retstat = 0;
-  fprintf(stderr, "opendir\n");
-  log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
-  
-  
-//  ENOTDIR - for if we do directories
-  
+	int retstat = 0;
+	fprintf(stderr, "opendir\n");
+	log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
 
-	char buffer [BLOCK_SIZE];
-	memset(buffer, 0, BLOCK_SIZE);
-	if(blocks[1] ==1){
-		block_read(1, buffer);
-		fprintf(stderr, "opendir path is %s\n", ((inode*)buffer)->path);
+	int block = findInode(path);
+	if(block == -1){
+		retstat = -ENOENT;
+	}
+	else{
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+	
+		if(((inode*)buffer)->type == FILE_NODE){
+			retstat = ENOTDIR;
+		}
 	}
   return retstat;
 }
@@ -846,15 +857,8 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 //TODO: if we decide to implement directories, we have to change this.  It's currently taking all files and printing them.
 	log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
-
-	
 	//ENOTDIR - for if we do directories
-
-
 	//this dir and parent dir
-	filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0); 
-
 	log_msg("in readdir\n");	
 	
 	char buffer [BLOCK_SIZE];
@@ -863,14 +867,14 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	if(block == -1){
 		fprintf(stderr,"Couldn't find directory\n");
 		log_msg("Couldn't find file\n");
-		return -1; //TODO: is this right?
+		return -ENOENT; //TODO: is this right?
 	}
 	else{
-		log_msg("in readdir else\n");
+		filler(buf, ".", NULL, 0);
+		filler(buf, "..", NULL, 0); 
 		fprintf(stderr,"block: %d\n", block);
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
-			log_msg("dealing with a dir\n");
 			char buffer2[BLOCK_SIZE];
 			memset(buffer, 0, BLOCK_SIZE);
 			int i = 1;
@@ -881,15 +885,11 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 					block_read(i,(void*)buffer2);
 					fprintf(stderr, "now path is: %s\n", ((inode*)buffer2)->path);
 					char parentDir[PATHSIZE];
-					log_msg("this path: %s\n", ((inode*)buffer2)->path);
 					memcpy(parentDir, ((inode*)buffer2)->path, PATHSIZE);
 					getParentDir(&(parentDir[0]));				
-					log_msg("parentDir: %s inode: %s\n", parentDir, path);
 					if(strcmp(parentDir, path) == 0){
-						log_msg("did the compare\n");
 						//fill in stat
 						struct stat stat;
-						log_msg("before stat stuff\n");
 						stat.st_dev = 0;
 						stat.st_ino = i;
 						stat.st_rdev = 0;
@@ -902,7 +902,6 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 						stat.st_mtime = ((inode*)buffer2)->modifytime;
 						stat.st_ctime = ((inode*)buffer2)->createtime;
 						stat.st_blocks = ((inode*)buffer2)->numBlocks;
-						log_msg("after stat stuff\n");
 
 
 						char* fullpath = ((inode*)buffer2)->path;
@@ -912,7 +911,6 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 						log_msg("filled path: .%s\n", fullpath);
 					}
 					else{
-						log_msg("skip this block %d\n", i);
 					}
 				}
 				i++;
@@ -923,6 +921,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 		else{
 			fprintf(stderr, "Not a directory\n");
 			log_msg("Not a directory\n");
+			retstat = ENOTDIR;
 		}
 	}
     
@@ -936,6 +935,21 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 int sfs_releasedir(const char *path, struct fuse_file_info *fi){
 	int retstat = 0;
 	fprintf(stderr,"releasedir");	
+	
+	int block = findInode(path);
+	if(block == -1){
+		retstat = -ENOENT;
+	}
+	else{
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+		if(((inode*)buffer)->type == FILE_NODE){
+			retstat = ENOTDIR;
+		}
+	}
+	
+	
 	return retstat;
 }
 

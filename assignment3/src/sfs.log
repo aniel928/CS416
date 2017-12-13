@@ -9,178 +9,982 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 0227e4c0
+    fuse = 022dd4c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 0227e010
-    logfile = 0227e030
+    private_data = 022dd010
+    logfile = 022dd030
     diskfile = /tmp/alh220/testfsfile
     umask = 00000
 leaving init function
 
-sfs_getattr(path="/", statbuf=0xc3ffec10)
+sfs_getattr(path="/", statbuf=0x3fe4ac10)
 findInode
 input path: /
 inode path: /
 else stmt of getattr
 leaving getattr
 
-sfs_getattr(path="/", statbuf=0xc8aa8c10)
+sfs_opendir
 findInode
 input path: /
 inode path: /
-else stmt of getattr
-leaving getattr
 
-sfs_getattr(path="/testfile", statbuf=0xc8aa8c40)
+sfs_readdir: /
+in readdir
 findInode
-input path: /testfile
+input path: /
+inode path: /
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir
 inode path: /
 if stmt of getattr
 File not found
 
-sfs_create(path="/testfile", mode=0100600, fi=0xc3ffecf0)
+sfs_mkdir(path="/testdir", mode=0700)
 findFirstFreeInode
-getParentDir, path: /testfile
+getParentDir, path: /testdir
 So that happened
 path: /
 findInode
 input path: /
 inode path: /
 
-sfs_getattr(path="/testfile", statbuf=0xc3ffec00)
+sfs_getattr(path="/testdir", statbuf=0x4064bc40)
 findInode
-input path: /testfile
+input path: /testdir
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir
+inode path: /testdir
 else stmt of getattr
 leaving getattr
 
-sfs_release(path="/testfile", fi=0xc3ffecf0)
+sfs_getattr(path="/test", statbuf=0x3fe4ac40)
+findInode
+input path: /test
+inode path: /
+input path: /test
+inode path: /testdir
+if stmt of getattr
+File not found
+
+sfs_create(path="/test", mode=0100600, fi=0x4064bcf0)
+findFirstFreeInode
+getParentDir, path: /test
+So that happened
+path: /
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/test", statbuf=0x4064bc00)
+findInode
+input path: /test
+inode path: /
+input path: /test
+inode path: /testdir
+input path: /test
+inode path: /test
+else stmt of getattr
+leaving getattr
+
+sfs_release(path="/test", fi=0x4064bcf0)
 
 sfs_opendir
+findInode
+input path: /
+inode path: /
 
 sfs_readdir: /
 in readdir
 findInode
 input path: /
 inode path: /
-in readdir else
-dealing with a dir
-this path: /testfile
-getParentDir, path: /testfile
+getParentDir, path: /testdir
 So that happened
 path: /
-parentDir: / inode: /
-did the compare
-before stat stuff
-after stat stuff
-getShortPath, path: /testfile
-path: testfile
-filled path: .testfile
+getShortPath, path: /testdir
+path: testdir
+filled path: .testdir
+getParentDir, path: /test
+So that happened
+path: /
+getShortPath, path: /test
+path: test
+filled path: .test
 
-sfs_getattr(path="/testfile", statbuf=0xc3ffec40)
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
 findInode
-input path: /testfile
+input path: /testdir
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir
+inode path: /testdir
+else stmt of getattr
+leaving getattr
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/", statbuf=0x3fe4ac10)
+findInode
+input path: /
+inode path: /
 else stmt of getattr
 leaving getattr
 
-sfs_open(path"/testfile", fi=0xc8aa8cf0)
+sfs_getattr(path="/testdir", statbuf=0x4064bc40)
 findInode
-input path: /testfile
+input path: /testdir
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir
+inode path: /testdir
+else stmt of getattr
+leaving getattr
 
-sfs_write(path="/testfile", buf=0xc9695060, size=58, offset=0, fi=0xc3ffed70)
+sfs_getattr(path="/testdir/test1", statbuf=0x3fe4ac40)
 findInode
-input path: /testfile
+input path: /testdir/test1
 inode path: /
-input path: /testfile
-inode path: /testfile
-findFirstFreeData
-data block: 323
-wrote: This is a test line of code.  Testing our write function.
+input path: /testdir/test1
+inode path: /testdir
+input path: /testdir/test1
+inode path: /test
+if stmt of getattr
+File not found
 
+sfs_create(path="/testdir/test1", mode=0100600, fi=0x4064bcf0)
+findFirstFreeInode
+getParentDir, path: /testdir/test1
+path: /testdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
 
-sfs_release(path="/testfile", fi=0xc8aa8cf0)
+sfs_getattr(path="/testdir/test1", statbuf=0x4064bc00)
+findInode
+input path: /testdir/test1
+inode path: /
+input path: /testdir/test1
+inode path: /testdir
+input path: /testdir/test1
+inode path: /test
+input path: /testdir/test1
+inode path: /testdir/test1
+else stmt of getattr
+leaving getattr
+
+sfs_release(path="/testdir/test1", fi=0x3fe4acf0)
 
 sfs_opendir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_readdir: /testdir
+in readdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getShortPath, path: /testdir/test1
+path: test1
+filled path: .test1
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+if stmt of getattr
+File not found
+
+sfs_mkdir(path="/testdir/dir1", mode=0700)
+findFirstFreeInode
+getParentDir, path: /testdir/dir1
+path: /testdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir2", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+if stmt of getattr
+File not found
+
+sfs_mkdir(path="/testdir/dir2", mode=0700)
+findFirstFreeInode
+getParentDir, path: /testdir/dir2
+path: /testdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/testdir/dir2", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir3", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir3
+inode path: /
+input path: /testdir/dir3
+inode path: /testdir
+input path: /testdir/dir3
+inode path: /test
+input path: /testdir/dir3
+inode path: /testdir/test1
+input path: /testdir/dir3
+inode path: /testdir/dir1
+input path: /testdir/dir3
+inode path: /testdir/dir2
+if stmt of getattr
+File not found
+
+sfs_mkdir(path="/testdir/dir3", mode=0700)
+findFirstFreeInode
+getParentDir, path: /testdir/dir3
+path: /testdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/testdir/dir3", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir3
+inode path: /
+input path: /testdir/dir3
+inode path: /testdir
+input path: /testdir/dir3
+inode path: /test
+input path: /testdir/dir3
+inode path: /testdir/test1
+input path: /testdir/dir3
+inode path: /testdir/dir1
+input path: /testdir/dir3
+inode path: /testdir/dir2
+input path: /testdir/dir3
+inode path: /testdir/dir3
+else stmt of getattr
+leaving getattr
+
+sfs_opendir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_readdir: /testdir
+in readdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getShortPath, path: /testdir/test1
+path: test1
+filled path: .test1
+getParentDir, path: /testdir/dir1
+path: /testdir
+getShortPath, path: /testdir/dir1
+path: dir1
+filled path: .dir1
+getParentDir, path: /testdir/dir2
+path: /testdir
+getShortPath, path: /testdir/dir2
+path: dir2
+filled path: .dir2
+getParentDir, path: /testdir/dir3
+path: /testdir
+getShortPath, path: /testdir/dir3
+path: dir3
+filled path: .dir3
+
+sfs_getattr(path="/testdir/test1", statbuf=0x4064bc40)
+findInode
+input path: /testdir/test1
+inode path: /
+input path: /testdir/test1
+inode path: /testdir
+input path: /testdir/test1
+inode path: /test
+input path: /testdir/test1
+inode path: /testdir/test1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir2", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+else stmt of getattr
+leaving getattr
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/", statbuf=0x3fe4ac10)
+findInode
+input path: /
+inode path: /
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir", statbuf=0x4064bc40)
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+else stmt of getattr
+leaving getattr
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
 
 sfs_readdir: /
 in readdir
 findInode
 input path: /
 inode path: /
-in readdir else
-dealing with a dir
-this path: /testfile
-getParentDir, path: /testfile
+getParentDir, path: /testdir
 So that happened
 path: /
-parentDir: / inode: /
-did the compare
-before stat stuff
-after stat stuff
-getShortPath, path: /testfile
-path: testfile
-filled path: .testfile
+getShortPath, path: /testdir
+path: testdir
+filled path: .testdir
+getParentDir, path: /test
+So that happened
+path: /
+getShortPath, path: /test
+path: test
+filled path: .test
+getParentDir, path: /testdir/test1
+path: /testdir
+getParentDir, path: /testdir/dir1
+path: /testdir
+getParentDir, path: /testdir/dir2
+path: /testdir
+getParentDir, path: /testdir/dir3
+path: /testdir
 
-sfs_getattr(path="/", statbuf=0xc3ffec10)
+sfs_getattr(path="/test", statbuf=0x3fe4ac40)
+findInode
+input path: /test
+inode path: /
+input path: /test
+inode path: /testdir
+input path: /test
+inode path: /test
+else stmt of getattr
+leaving getattr
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/", statbuf=0x4064bc10)
 findInode
 input path: /
 inode path: /
 else stmt of getattr
 leaving getattr
 
-sfs_getattr(path="/testfile", statbuf=0xc8aa8c40)
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
 findInode
-input path: /testfile
+input path: /testdir
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir
+inode path: /testdir
 else stmt of getattr
 leaving getattr
 
-sfs_getattr(path="/", statbuf=0xc3ffec10)
+sfs_opendir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_readdir: /testdir
+in readdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getShortPath, path: /testdir/test1
+path: test1
+filled path: .test1
+getParentDir, path: /testdir/dir1
+path: /testdir
+getShortPath, path: /testdir/dir1
+path: dir1
+filled path: .dir1
+getParentDir, path: /testdir/dir2
+path: /testdir
+getShortPath, path: /testdir/dir2
+path: dir2
+filled path: .dir2
+getParentDir, path: /testdir/dir3
+path: /testdir
+getShortPath, path: /testdir/dir3
+path: dir3
+filled path: .dir3
+
+sfs_getattr(path="/testdir/test1", statbuf=0x4064bc40)
+findInode
+input path: /testdir/test1
+inode path: /
+input path: /testdir/test1
+inode path: /testdir
+input path: /testdir/test1
+inode path: /test
+input path: /testdir/test1
+inode path: /testdir/test1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir2", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir3", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir3
+inode path: /
+input path: /testdir/dir3
+inode path: /testdir
+input path: /testdir/dir3
+inode path: /test
+input path: /testdir/dir3
+inode path: /testdir/test1
+input path: /testdir/dir3
+inode path: /testdir/dir1
+input path: /testdir/dir3
+inode path: /testdir/dir2
+input path: /testdir/dir3
+inode path: /testdir/dir3
+else stmt of getattr
+leaving getattr
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/", statbuf=0x4064bc10)
 findInode
 input path: /
 inode path: /
 else stmt of getattr
 leaving getattr
 
-sfs_getattr(path="/testfile", statbuf=0xc8aa8c40)
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
 findInode
-input path: /testfile
+input path: /testdir
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir
+inode path: /testdir
 else stmt of getattr
 leaving getattr
 
-sfs_open(path"/testfile", fi=0xc3ffecf0)
+sfs_getattr(path="/testdir/dir2", statbuf=0x4064bc40)
 findInode
-input path: /testfile
+input path: /testdir/dir2
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+else stmt of getattr
+leaving getattr
 
-sfs_read(path="/testfile", buf=0xc4000d70, size=4096, offset=0, fi=0xc8aa8cf0)
+sfs_getattr(path="/testdir/dir2/file3", statbuf=0x3fe4ac40)
 findInode
-input path: /testfile
+input path: /testdir/dir2/file3
 inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from inode block 1
-about to read from data block 323
-read returning: This is a test line of code.  Testing our write function.
+input path: /testdir/dir2/file3
+inode path: /testdir
+input path: /testdir/dir2/file3
+inode path: /test
+input path: /testdir/dir2/file3
+inode path: /testdir/test1
+input path: /testdir/dir2/file3
+inode path: /testdir/dir1
+input path: /testdir/dir2/file3
+inode path: /testdir/dir2
+input path: /testdir/dir2/file3
+inode path: /testdir/dir3
+if stmt of getattr
+File not found
 
+sfs_create(path="/testdir/dir2/file3", mode=0100600, fi=0x4064bcf0)
+findFirstFreeInode
+getParentDir, path: /testdir/dir2/file3
+path: /testdir/dir2
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
 
-sfs_release(path="/testfile", fi=0xc3ffecf0)
+sfs_getattr(path="/testdir/dir2/file3", statbuf=0x4064bc00)
+findInode
+input path: /testdir/dir2/file3
+inode path: /
+input path: /testdir/dir2/file3
+inode path: /testdir
+input path: /testdir/dir2/file3
+inode path: /test
+input path: /testdir/dir2/file3
+inode path: /testdir/test1
+input path: /testdir/dir2/file3
+inode path: /testdir/dir1
+input path: /testdir/dir2/file3
+inode path: /testdir/dir2
+input path: /testdir/dir2/file3
+inode path: /testdir/dir3
+input path: /testdir/dir2/file3
+inode path: /testdir/dir2/file3
+else stmt of getattr
+leaving getattr
 
-sfs_destroy(userdata=0x0227e010)
+sfs_release(path="/testdir/dir2/file3", fi=0x3fe4acf0)
+
+sfs_opendir
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+
+sfs_readdir: /testdir/dir2
+in readdir
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getParentDir, path: /testdir/dir1
+path: /testdir
+getParentDir, path: /testdir/dir2
+path: /testdir
+getParentDir, path: /testdir/dir3
+path: /testdir
+getParentDir, path: /testdir/dir2/file3
+path: /testdir/dir2
+getShortPath, path: /testdir/dir2/file3
+path: file3
+filled path: .file3
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+
+sfs_getattr(path="/", statbuf=0x4064bc10)
+findInode
+input path: /
+inode path: /
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir2", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir2
+inode path: /
+input path: /testdir/dir2
+inode path: /testdir
+input path: /testdir/dir2
+inode path: /test
+input path: /testdir/dir2
+inode path: /testdir/test1
+input path: /testdir/dir2
+inode path: /testdir/dir1
+input path: /testdir/dir2
+inode path: /testdir/dir2
+else stmt of getattr
+leaving getattr
+
+sfs_opendir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_readdir: /testdir
+in readdir
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getShortPath, path: /testdir/test1
+path: test1
+filled path: .test1
+getParentDir, path: /testdir/dir1
+path: /testdir
+getShortPath, path: /testdir/dir1
+path: dir1
+filled path: .dir1
+getParentDir, path: /testdir/dir2
+path: /testdir
+getShortPath, path: /testdir/dir2
+path: dir2
+filled path: .dir2
+getParentDir, path: /testdir/dir3
+path: /testdir
+getShortPath, path: /testdir/dir3
+path: dir3
+filled path: .dir3
+getParentDir, path: /testdir/dir2/file3
+path: /testdir/dir2
+
+sfs_getattr(path="/testdir/test1", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/test1
+inode path: /
+input path: /testdir/test1
+inode path: /testdir
+input path: /testdir/test1
+inode path: /test
+input path: /testdir/test1
+inode path: /testdir/test1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir3", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir/dir3
+inode path: /
+input path: /testdir/dir3
+inode path: /testdir
+input path: /testdir/dir3
+inode path: /test
+input path: /testdir/dir3
+inode path: /testdir/test1
+input path: /testdir/dir3
+inode path: /testdir/dir1
+input path: /testdir/dir3
+inode path: /testdir/dir2
+input path: /testdir/dir3
+inode path: /testdir/dir3
+else stmt of getattr
+leaving getattr
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+
+sfs_getattr(path="/", statbuf=0x4064bc10)
+findInode
+input path: /
+inode path: /
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir", statbuf=0x3fe4ac40)
+findInode
+input path: /testdir
+inode path: /
+input path: /testdir
+inode path: /testdir
+else stmt of getattr
+leaving getattr
+
+sfs_getattr(path="/testdir/dir1", statbuf=0x4064bc40)
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+else stmt of getattr
+leaving getattr
+
+sfs_opendir
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+
+sfs_readdir: /testdir/dir1
+in readdir
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+getParentDir, path: /testdir
+So that happened
+path: /
+getParentDir, path: /test
+So that happened
+path: /
+getParentDir, path: /testdir/test1
+path: /testdir
+getParentDir, path: /testdir/dir1
+path: /testdir
+getParentDir, path: /testdir/dir2
+path: /testdir
+getParentDir, path: /testdir/dir3
+path: /testdir
+getParentDir, path: /testdir/dir2/file3
+path: /testdir/dir2
+findInode
+input path: /testdir/dir1
+inode path: /
+input path: /testdir/dir1
+inode path: /testdir
+input path: /testdir/dir1
+inode path: /test
+input path: /testdir/dir1
+inode path: /testdir/test1
+input path: /testdir/dir1
+inode path: /testdir/dir1
+
+sfs_destroy(userdata=0x022dd010)
