@@ -9,135 +9,14 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 00c094c0
+    fuse = 0210e4c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 00c09010
-    logfile = 00c09030
+    private_data = 0210e010
+    logfile = 0210e030
     diskfile = /tmp/alh220/testfsfile
     umask = 00000
 leaving init function
 
-sfs_getattr(path="/", statbuf=0x8558cc10)
-findInode
-input path: /
-inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/testfile", statbuf=0x8558cc40)
-findInode
-input path: /testfile
-inode path: /
-if stmt of getattr
-File not found
-
-sfs_create(path="/testfile", mode=0100600, fi=0x84d8bcf0)
-findFirstFreeInode
-
-sfs_getattr(path="/testfile", statbuf=0x84d8bc00)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_write(path="/testfile", buf=0x861a8060, size=5, offset=0, fi=0x8558cd70)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-findFirstFreeData
-data block: 323
-wrote: test
- 7.4
-
-sfs_release(path="/testfile", fi=0x84d8bcf0)
-
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-before stat stuff
-after stat stuff
-filled path: .testfile
-
-sfs_getattr(path="/testfile", statbuf=0x8558cc10)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_opendir
-
-sfs_readdir: /
-in readdir
-findInode
-input path: /
-inode path: /
-before stat stuff
-after stat stuff
-filled path: .testfile
-
-sfs_getattr(path="/", statbuf=0x84d8bc10)
-findInode
-input path: /
-inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/testfile", statbuf=0x8558cc40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/testfile", statbuf=0x84d8bc40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_open(path"/testfile", fi=0x8558ccf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-
-sfs_read(path="/testfile", buf=0x78000af0, size=4096, offset=0, fi=0x84d8bcf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from block 1
-original size: 4096
-now size is: 5 and remainder is: 4091
-before while loop
-in here once
-about to read from block 323
-in while loop tembuff is: test
- 7.4
-out of while
-size is: 5, remainder is 4091
-read returning: test
-0
-
-sfs_release(path="/testfile", fi=0x8558ccf0)
+sfs_destroy(userdata=0x0210e010)

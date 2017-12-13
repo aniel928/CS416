@@ -110,6 +110,7 @@ int findInode(const char* path){
 	log_msg("findInode\n");
 	int block = 0;
 	char buffer[BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
 	while(block < INODEBLOCKS){
 //		log_msg("block #: %d\n", block);
 //		log_msg("blocks[block] = %d\n", blocks[block]);
@@ -140,6 +141,7 @@ int findInode(const char* path){
 
 int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 for write.  Functions will pass this in.
 	char buffer[BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
 	block_read(block, buffer);
 	mode_t mode = ((inode*)buffer)->filemode;
 	
@@ -455,7 +457,7 @@ int sfs_release(const char *path, struct fuse_file_info *fi){
  * Changed in version 2.2
  */
 int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-	fprintf(stderr,"read");
+	fprintf(stderr,"read\n");
 	int retstat = 0;
 	log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",path, buf, size, offset, fi);
 	int block = findInode(path);
@@ -472,28 +474,24 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 			retstat = EACCES; //TODO: check return values
 		}
 		else{
-			log_msg("ready to do some reading from block %d\n", block);
+			log_msg("ready to do some reading from inode block %d\n", block);
 			char buffer[BLOCK_SIZE];
 			block_read(block, buffer);
 			int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
 			int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
 			int totalBlocks = size / BLOCK_SIZE;
 			char tempbuff[BLOCK_SIZE];
+			memset(tempbuff, 0, BLOCK_SIZE);
 			int remainder = 0;
 			if(size > ((inode*)buffer)->size){
-				log_msg("original size: %d\n", size);
 				remainder = size - ((inode*)buffer)->size;
 				size  = ((inode*)buffer)->size;
-				log_msg("now size is: %d and remainder is: %d\n", size, remainder);
 			}
-			log_msg("before while loop\n");
 			int bytesread = 0;
 			while(bytesread < size){
-				log_msg("in here once\n");
 				if(bytesread == 0){
-					log_msg("about to read from block %d\n", ((inode*)buffer)->blockNum[startBlock]);
+					log_msg("about to read from data block %d\n", ((inode*)buffer)->blockNum[startBlock]);
 					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
-					log_msg("in while loop tembuff is: %s\n", tempbuff);
 					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE - startIndex);
 					bytesread += (BLOCK_SIZE - startIndex);
 				}else if (size - bytesread < BLOCK_SIZE){
@@ -510,12 +508,11 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 				//calculate block for offset 
 				//starting at offset, for each data block, start reading each datablock for until size reached.
 			}
-			log_msg("out of while\n");
 			if(remainder > 0){
-				log_msg("size is: %d, remainder is %d\n", size, remainder);
-				memcpy(buf + size, "0", remainder);
-				log_msg("read returning: %s\n", buf);
+				memcpy(buf + size, "", remainder);
 			}
+			log_msg("read returning: %s\n", buf);
+			
 		}
 	}
     return retstat;
@@ -548,6 +545,7 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 		}
 		else{
 			char buffer[BLOCK_SIZE];
+			memset(buffer, 0, BLOCK_SIZE);
 			block_read(block, buffer);//<--inode
 			
 			
@@ -562,9 +560,11 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			int count = 1;
 			while(bytesWritten < size ){
 
-	
+				
 				char tempbuffer[BLOCK_SIZE];
-				int data = findFirstFreeData();
+				memset(tempbuffer, 0, BLOCK_SIZE);
+				int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
+				count++;
 				log_msg("data block: %d\n", data);
 				block_read(data, tempbuffer); //<--data
 			
@@ -607,11 +607,13 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 							
 			//change size of inode to be += size
 			((inode*)buffer)->size += size;
+			((inode*)buffer)->numBlocks = count;
 			
 			//write the inode back in to the file	
 			block_write(block, buffer);
+			memset(buffer, 0, sizeof(buffer));
+
 		}
-		
 		
 	}
     return retstat;
@@ -652,6 +654,7 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
   
 
 	char buffer [BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
 	if(blocks[1] ==1){
 		block_read(1, buffer);
 		fprintf(stderr, "opendir path is %s\n", ((inode*)buffer)->path);
@@ -696,6 +699,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	log_msg("in readdir\n");	
 	
 	char buffer [BLOCK_SIZE];
+	memset(buffer, 0, BLOCK_SIZE);
 	int block = findInode(path);
 	if(block == -1){
 		fprintf(stderr,"Couldn't find file\n");
@@ -707,6 +711,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
 			char buffer2[BLOCK_SIZE];
+			memset(buffer, 0, BLOCK_SIZE);
 			int i = 1;
 			while(i < INODEBLOCKS){
 				if(blocks[i] == 1){
