@@ -30,7 +30,7 @@
 
 #include "log.h"
 
-
+//TODO: ANNE/MIKE UPDATE TIME STAMPS EVERYWHERE!! (directory too)
 /******************************************************************/
 //#definitions
 #define INODEBLOCKS 323
@@ -590,10 +590,15 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 			if(remainder > 0){
 				memcpy(buf + size, "", remainder);
 			}
-			log_msg("read returning: %s\n", buf);
+			log_msg("read returning: %s, strlen: %d\n", buf, strlen(buf));
+			fprintf(stderr, "buffer: %s\n", buf);
+			retstat = strlen(buf);
 			
 		}
 	}
+	log_msg("return stat: %d, about to leave read\n", retstat);
+	fprintf(stderr, "retstat: %d\n<<", retstat);
+	
     return retstat;
 }
 
@@ -648,7 +653,8 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 				memset(tempbuffer, 0, BLOCK_SIZE);
 				int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
 				count++;
-				log_msg("data block: %d\n", data);
+				log_msg("*******data block: %d, temp buffer: %s\n", data, tempbuffer);
+				fprintf(stderr, "*******data block: %d, temp buffer: %s\n", data, tempbuffer);
 				block_read(data, tempbuffer); //<--data
 			
 				//nothing has been written yet
@@ -686,6 +692,8 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 				
 				block_write(data, tempbuffer);
 				log_msg("wrote: %s\n", tempbuffer);
+				fprintf(stderr, "this is what was written: %s\n", tempbuffer);
+				log_msg("wrote: %s<<\n", tempbuffer);
 			}	
 							
 			//change size of inode to be += size
@@ -695,10 +703,11 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			//write the inode back in to the file	
 			block_write(block, buffer);
 			memset(buffer, 0, sizeof(buffer));
-
+			retstat = strlen(buffer);
 		}
 		
 	}
+		log_msg("leaving write..\n");
     return retstat;
 }
 
