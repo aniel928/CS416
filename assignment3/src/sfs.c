@@ -436,6 +436,9 @@ int sfs_unlink(const char *path){
 	int i = 0;
 	while(i < BLOCKSPERINODE){
 		if(((inode*)buffer)->blockNum[i] != 0){
+                        char buffer2[BLOCK_SIZE];
+                        memset(buffer2, 0, BLOCK_SIZE);
+                        block_write(((inode*)buffer)->blockNum[i],buffer2);
 			blocks[((inode*)buffer)->blockNum[i]] = 0;
 			((inode*)buffer)->blockNum[i] = 0;
 			//when datablocks are cleared, set path == NULL;
