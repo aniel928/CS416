@@ -9,21 +9,24 @@ Quick Important Notes:
 
 blocks[INODEBLOCKS + DATABLOCKS] is an array of block indices, partitioned into two regions. The first region references iNodes and the second references data blocks.
 
-iNodes:
-	The iNode struct is exactly 512 bytes and contains:
-		-Integer representing the size of the file it references
-		-Integer representing the number of blocks that it uses
-		-Integer array of all blocks that it references
-		*-Integer representing links to the file
-		-filetype type which is used to distinguish if the iNode is used for a file or a directory
-		-mode_t mode which is used for the read, write, and execute capabilities of a file
-		-time_t value used for the time that the iNode was created
-		-time_t value used for the time that the iNode was last modified
-		-time_t value used for the time that the iNode was last accessed
-		-Integer representing the permissions for the user
-		-Integer representing the permissions for the group
-		-Char arry used to store the path
+**// will we also do additional indirection?
+The extesion/improvement we decided to implement was directory support. We also implemented the Extended Directory Operations for extra credit. 
 
+
+Inodes:
+The iNode struct is exactly 512 bytes and contains:
+	-Integer representing the size of the file it references
+	-Integer representing the number of blocks that it uses
+	-Integer array of all blocks that it references
+	*-Integer representing links to the file
+	-filetype type which is used to distinguish if the iNode is used for a file or a directory
+	-mode_t mode which is used for the read, write, and execute capabilities of a file
+	-time_t value used for the time that the iNode was created
+	-time_t value used for the time that the iNode was last modified
+	-time_t value used for the time that the iNode was last accessed
+	-Integer representing the permissions for the user
+	-Integer representing the permissions for the group
+	-Char arry used to store the path
 
 Things We tested*
 	-Creating 5 nested directories
@@ -36,10 +39,10 @@ Things We tested*
 	
 	
 int findFirstFreeInode();
-	This function is used to locate the first available iNode in the iNode region of the blocks array. If an available iNode is not found in the while loop the function will return -1, if an iNode is found it will return the block index. 
+	This function is used to locate the first available iNode in the iNode region of the blocks array. If an available iNode is not found the function will return -1, if an iNode is found it will return the block index. 
 
 int findFirstFreeData();
-	This function is used to locate the first available data block in the data region of the blocks array. If an available data block is not found in the while loop the function will return -1, if a data block is found it will return the block index. 
+	This function is used to locate the first available data block in the data region of the blocks array. If an available data block is not found the function will return -1, if a data block is found it will return the block index. 
 
 int findInode(const char* path);
 	This function is given a path and searches through the blocks array to find an iNode with a matching path. If an iNode is found, the block number is returned, otherwise, the function returns -1.
@@ -48,13 +51,13 @@ int findInode(const char* path);
 	This function takes a block index and a type. The type is either set to 0 (for open), 1 (for read), or 2 (for write).
 
 int getParentDir(char* path);
-	This function is given a path and is used to determine the immediate directory that it is located in. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set path to parent directory, which is all of the characters before the '\'.
+	This function is given a path and is used to determine the immediate directory that it is located in. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set path to parent directory, which is all of the characters before the '/'.
 
 int getShortPath(char* path);
-	This function is given a path and is used to find the name of the current directory/file of the given path. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set the path to the file/directory name after the last '/'.
+	This function is given a path and is used to find the name of the current directory/file of the given path. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set the path to the file/directory name after the last '/' in the path.
 	
 int *sfs_init(struct fuse_conn_info *conn);
-	This function is used to initialize the blocks array and sets all of the iNode blocks to zero which represents they are not in use. It also sets all of the attributes for the root directory iNode and then sets the first block in the block array to one. Lastly, it uses the block_write function to write the root iNode to the file and return SFS_DATA. 
+	This function is used to initialize the blocks array and sets all of the iNode blocks to 0 which indicates they are not in use. It also sets all of the attributes for the root directory iNode and then sets the first block in the block array to 1. Lastly, it uses the block_write function to write the root iNode to the file and return SFS_DATA. 
 
 **void sfs_destroy(void *userdata);
 	This function uses disk_close to close the path of the current file. 
@@ -63,7 +66,7 @@ int *sfs_init(struct fuse_conn_info *conn);
 	This function is given a path and a stat. It uses the findInode function to determine which block that the path references. If the findInode returnes -1 the function -ENOENT, if it is found it uses block_read to read the block into a buffer. It then fills in the given stat struct with all information in the iNode. 
 
 int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi);
-	This function is given a path, mode, and a fuse_file_info and creates and opens a file in the current directory. It uses the findFirstFreeInode function to locate the first available iNode location and then enters all applicable data into the iNode. The function then writes  the data to the file using block_write and sets the block index value to one. The function returns 0 upon success and -1 if an index is not found. 
+	This function is given a path, mode, and a fuse_file_info and creates and opens a file in the current directory. It uses the findFirstFreeInode function to locate the first available iNode location and then enters all applicable data into the iNode. The function then writes  the data to the file using block_write and sets its index in the block array to 1, to indicate that it is in use. The function returns 0 upon success and -1 if an index is not found. 
 
 int sfs_unlink(const char *path);
 	This function is given a path and is used to remove a file from the current directory. It uses the findInode function to locate the correct iNode block and set all of blocks the iNode references in its inner blockNum array to zero. It also sets those same block values to zero in the blocks array. Lastly, the given block index is set to zero in the block array and the function returns 0. 
