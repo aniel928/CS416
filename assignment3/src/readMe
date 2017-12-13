@@ -1,0 +1,100 @@
+Anne Whitman: alh220
+Michael Mazzola: mjm706
+
+Quick Important Notes:
+	Total Data Blocks: 32445
+	Total iNode Blocks: 323
+	Blocks Per iNode: 100
+	Maximum Path Size: 50
+
+blocks[INODEBLOCKS + DATABLOCKS] is an array of block indices, partitioned into two regions. The first region references iNodes and the second references data blocks.
+
+iNodes:
+	The iNode struct is exactly 512 bytes and contains:
+		-Integer representing the size of the file it references
+		-Integer representing the number of blocks that it uses
+		-Integer array of all blocks that it references
+		*-Integer representing links to the file
+		-filetype type which is used to distinguish if the iNode is used for a file or a directory
+		-mode_t mode which is used for the read, write, and execute capabilities of a file
+		-time_t value used for the time that the iNode was created
+		-time_t value used for the time that the iNode was last modified
+		-time_t value used for the time that the iNode was last accessed
+		-Integer representing the permissions for the user
+		-Integer representing the permissions for the group
+		-Char arry used to store the path
+
+
+Things We tested*
+	-Creating 5 nested directories
+	-Using 'touch' to create 50 files
+	-Creating 10 files in 10 directories
+	-Creating and Deleting 10 directories
+	-Creating and Deleting 10 files
+	-Writing less than a blocks worth of characters and reading the data
+	-Writing more than a blocks worth of characters and reading the data
+	
+	
+int findFirstFreeInode();
+	This function is used to locate the first available iNode in the iNode region of the blocks array. If an available iNode is not found in the while loop the function will return -1, if an iNode is found it will return the block index. 
+
+int findFirstFreeData();
+	This function is used to locate the first available data block in the data region of the blocks array. If an available data block is not found in the while loop the function will return -1, if a data block is found it will return the block index. 
+
+int findInode(const char* path);
+	This function is given a path and searches through the blocks array to find an iNode with a matching path. If an iNode is found, the block number is returned, otherwise, the function returns -1.
+	
+**//Is this function finished/being used? >int checkPermission(int block, int type); 
+	This function takes a block index and a type. The type is either set to 0 (for open), 1 (for read), or 2 (for write).
+
+int getParentDir(char* path);
+	This function is given a path and is used to determine the immediate directory that it is located in. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set path to parent directory, which is all of the characters before the '\'.
+
+int getShortPath(char* path);
+	This function is given a path and is used to find the name of the current directory/file of the given path. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set the path to the file/directory name after the last '/'.
+	
+int *sfs_init(struct fuse_conn_info *conn);
+	This function is used to initialize the blocks array and sets all of the iNode blocks to zero which represents they are not in use. It also sets all of the attributes for the root directory iNode and then sets the first block in the block array to one. Lastly, it uses the block_write function to write the root iNode to the file and return SFS_DATA. 
+
+**void sfs_destroy(void *userdata);
+	This function uses disk_close to close the path of the current file. 
+	
+**int sfs_getattr(const char *path, struct stat *statbuf);
+	This function is given a path and a stat. It uses the findInode function to determine which block that the path references. If the findInode returnes -1 the function -ENOENT, if it is found it uses block_read to read the block into a buffer. It then fills in the given stat struct with all information in the iNode. 
+
+int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi);
+	This function is given a path, mode, and a fuse_file_info and creates and opens a file in the current directory. It uses the findFirstFreeInode function to locate the first available iNode location and then enters all applicable data into the iNode. The function then writes  the data to the file using block_write and sets the block index value to one. The function returns 0 upon success and -1 if an index is not found. 
+
+int sfs_unlink(const char *path);
+	This function is given a path and is used to remove a file from the current directory. It uses the findInode function to locate the correct iNode block and set all of blocks the iNode references in its inner blockNum array to zero. It also sets those same block values to zero in the blocks array. Lastly, the given block index is set to zero in the block array and the function returns 0. 
+
+int sfs_open(const char *path, struct fuse_file_info *fi)
+	This function is given a path and fuse_file_info and is used to open a file. It uses the findInode function to first locate the block index. If the block is not found the function returns -1, otherwise, it checks the permissions of the block with the checkPermissions function. If the permissions restrict the file from being opened, the function will return -2, if not, the file will be opened and 0 will be returned. 
+
+**int sfs_release(const char *path, struct fuse_file_info *fi);
+
+
+int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+	This function is given a path, buffer, size, offset, and fuse_file_info and is used to read data from a file. First, the findInode function is used to locate the block that corresponds to the given path. If a block is not found the function returns -1, otherwise, the permissions of the file are then checked. If the file is unable to be accessed because of the permissions, the function returns -2, if not, the data from the file is copied into the given buffer using memcpy. Upon success, 0 is returned. 
+
+**//Is this findind a new inode if theres too many bytes?? int sfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+	This function is given a path, buffer, size, offset, and fuse_file_info and is used to write to a file. First, the findInode function is used to locate the appropriate block. When the block is found the function the permissions are then checked with the checkPermissions function. If the permissions don't allow for writing to the file the function returns -2, otherwise, the given buffer is written to the file. If the buffer will not fit into a single iNode, the appropriate amount of iNodes will be calculated and each will be written to. Upon success, the function returns 0. 
+
+int sfs_mkdir(const char *path, mode_t mode);
+	This function is given a path and a mode and is used to create a directory. It returns 0 upon completion. 
+
+
+int sfs_rmdir(const char *path);
+	This function is given a path and is used to remove a directory. It returns 0 upon completion.
+
+
+int sfs_opendir(const char *path, struct fuse_file_info *fi);
+	This function is given a path and fuse_file_info and is used to open a directory. It returns 0 upon completion. 
+
+
+int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
+	..zz (I'll worry bout this tomorrow) 
+
+
+int sfs_releasedir(const char *path, struct fuse_file_info *fi);
+	This function is given a path and a fuse_file_info is used to release a directory. it returns 0 upon completion. 
