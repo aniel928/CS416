@@ -30,9 +30,6 @@
 
 #include "log.h"
 
-//TODO: ANNE/MIKE UPDATE TIME STAMPS EVERYWHERE!! (directory too)
-	//but do we do access on open or close?
-
 /********* ADDED DEFINITIONS *********/
 #define INODEBLOCKS 323
 #define DATABLOCKS 32445
@@ -66,7 +63,7 @@ typedef struct _inode{
 }inode;
 
 /********* GLOBAL VARAIBLES *********/
-int blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0 (used unused)
+char blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0 (used unused)
 //TODO: Change to chars.
 
 /********* ADDED FUNCTIONS *********/
@@ -76,7 +73,7 @@ int findFirstFreeInode(){
 	log_msg("findFirstFreeInode\n");
 	int block = 0;
 	while (block < INODEBLOCKS){
-		if (blocks[block] == 0){
+		if (blocks[block] == '0'){
 			break;
 		}
 		block++;
@@ -93,7 +90,7 @@ int findFirstFreeData(){
 	log_msg("findFirstFreeData\n");
 	int block = INODEBLOCKS;
 	while (block < INODEBLOCKS + DATABLOCKS){
-		if (blocks[block] == 0){
+		if (blocks[block] == '0'){
 			break;
 		}
 		block++;
@@ -112,7 +109,7 @@ int findInode(const char* path){
 	char buffer[BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	while(block < INODEBLOCKS){
-		if(blocks[block] == 1){
+		if(blocks[block] == '1'){
 			block_read(block, (void*)buffer);
 			log_msg("input path: %s\n", path);			
 			log_msg("inode path: %s\n", ((inode*)buffer)->path);
@@ -212,7 +209,7 @@ void *sfs_init(struct fuse_conn_info *conn){
 	/* INITIALIZE ARRAY */
 	int i = 0;
 	while(i < INODEBLOCKS + DATABLOCKS){
-		blocks[i] = 0;
+		blocks[i] = '0';
 		i++;
 	}
 	
@@ -238,7 +235,7 @@ void *sfs_init(struct fuse_conn_info *conn){
 
 	//now that inode is set, write it into the first inode (block 0 in our file) and update array
 	block_write(0, (void*)root);
-	blocks[0] = 1;
+	blocks[0] = '1';
 
 	log_conn(conn);
 	log_fuse_context(fuse_get_context());
@@ -669,7 +666,7 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			else{
 				memcpy(tempbuffer, buf, BLOCK_SIZE);
 				bytesWritten += BLOCK_SIZE;					
-				blocks[data] = 1;		
+				blocks[data] = '1';		
 			}
 				
 			//find next available index in blockNum;
@@ -747,7 +744,7 @@ int sfs_mkdir(const char *path, mode_t mode){
 
 	//write inode to file and update array
 	block_write(foundInd, (void*)buffer);
-	blocks[foundInd] = 1;
+	blocks[foundInd] = '1';
 
 	//find this guy's parent.
 	char parentDir[PATHSIZE];
@@ -798,7 +795,7 @@ int sfs_rmdir(const char *path){
 		}
 		else{
 			//clear the array
-			blocks[block] = 0;
+			blocks[block] = '0';
 
 			//get parent inode		
 			char parentDir[PATHSIZE];
@@ -906,7 +903,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 
 			int i = 1;
 			while(i < INODEBLOCKS){
-				if(blocks[i] == 1){
+				if(blocks[i] == '1'){
 					//read in every inode one at a time
 					block_read(i,(void*)buffer2);
 
