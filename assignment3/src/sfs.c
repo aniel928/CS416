@@ -64,7 +64,6 @@ typedef struct _inode{
 
 /********* GLOBAL VARAIBLES *********/
 char blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0 (used unused)
-//TODO: Change to chars.
 
 /********* ADDED FUNCTIONS *********/
 //Finds the first inode set to 0
@@ -204,7 +203,6 @@ void *sfs_init(struct fuse_conn_info *conn){
 	
 	//debugging statement so we can keep track of size while changing inodes.
 	fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
-	//TODO:  make sure this ^^ is still 512.		
 
 	/* INITIALIZE ARRAY */
 	int i = 0;
@@ -320,7 +318,7 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	fprintf(stderr,"create\n");
 	log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
 
-	//TODO: check to make sure path doens't already exist: EEXIST
+	//check to make sure path doens't already exist
 	int block = findInode(path);
 	if(block != -1){
 		retstat = EEXIST;
@@ -611,88 +609,90 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 		retstat = -ENOENT;
 	}	
 	else{
-		if(size > BLOCK_SIZE * BLOCKSPERINODE){//TODO: how do i deal with this?
+		//you're asking to write more than i can give you
+		if(size > BLOCK_SIZE * BLOCKSPERINODE){
 			log_msg("Size too big\n");
 			fprintf(stderr, "Size too big\n");
 			retstat = ENOSPC; //not enough space in this file to finish.
-			size = BLOCK_SIZE * BLOCKSPERINODE; //but we'll write what we can.
 		}
-
-		//read inode into buffer
-		char buffer[BLOCK_SIZE];
-		memset(buffer, 0, BLOCK_SIZE);
-		block_read(block, buffer);//
-
-		int count = 0;//for how many blocks were used.
-
-		//TODO: grab existing block and fill the rest of that first.
-		//if you do this, change count to -1 (so when it increments in loop it goes to zero.
+		else{
 		
-		//store info about where to start and how far to go, etc.
-		int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
-		int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
-		int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
-		
-		//keep track of how much you've written with this
-		int bytesWritten = 0;
-		while(bytesWritten < size ){
-			//block sized buffer //TODO: add buffer for remaining size of existing node.
-			char tempbuffer[BLOCK_SIZE];
-			memset(tempbuffer, 0, BLOCK_SIZE);
+			//read inode into buffer
+			char buffer[BLOCK_SIZE];
+			memset(buffer, 0, BLOCK_SIZE);
+			block_read(block, buffer);//
 
-			//get free data block to fill.
-			int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
-			count++;
-			block_read(data, tempbuffer); //TODO: wait... what?
+			int count = 0;//for how many blocks were used.
+
+			//TODO: grab existing block and fill the rest of that first.
+			//if you do this, change count to -1 (so when it increments in loop it goes to zero.
 		
-			//nothing has been written yet
-			if (bytesWritten == 0){
-				if (size > BLOCK_SIZE){
-					fprintf(stderr, "Size is greater than 1 block\n");
-				//	exit(-1);
+			//store info about where to start and how far to go, etc.
+			int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
+			int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
+			int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
+		
+			//keep track of how much you've written with this
+			int bytesWritten = 0;
+			while(bytesWritten < size ){
+				//block sized buffer //TODO: add buffer for remaining size of existing node.
+				char tempbuffer[BLOCK_SIZE];
+				memset(tempbuffer, 0, BLOCK_SIZE);
+
+				//get free data block to fill.
+				int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
+				count++;
+				block_read(data, tempbuffer); //TODO: wait... what?
+		
+				//nothing has been written yet
+				if (bytesWritten == 0){
+					if (size > BLOCK_SIZE){
+						fprintf(stderr, "Size is greater than 1 block\n");
+					//	exit(-1);
+					}
+					if(size < BLOCK_SIZE){
+						firstWrite = size; //TODO: this is probably not doing hwat I want it to do.
+					}
+					memcpy(tempbuffer+blockIndex, buf, firstWrite);
+					bytesWritten += firstWrite;
 				}
-				if(size < BLOCK_SIZE){
-					firstWrite = size; //TODO: this is probably not doing hwat I want it to do.
+				//amount left to write is less than full block
+				else if (size - bytesWritten < BLOCK_SIZE){
+					memcpy(tempbuffer, buf, size - bytesWritten);
+					bytesWritten = size;
+				}	
+				//just write the whole block.
+				else{
+					memcpy(tempbuffer, buf, BLOCK_SIZE);
+					bytesWritten += BLOCK_SIZE;					
+					blocks[data] = '1';		
 				}
-				memcpy(tempbuffer+blockIndex, buf, firstWrite);
-				bytesWritten += firstWrite;
-			}
-			//amount left to write is less than full block
-			else if (size - bytesWritten < BLOCK_SIZE){
-				memcpy(tempbuffer, buf, size - bytesWritten);
-				bytesWritten = size;
+				
+				//find next available index in blockNum;
+				int index = 0;
+				while (((inode*)buffer)->blockNum[index] != 0){
+					index++;
+				}					
+				((inode*)buffer)->blockNum[index] = data;
+				
+				//	store data block in inode->blockArray				
+				block_write(data, tempbuffer);
+				log_msg("wrote: %s\n", tempbuffer);
+				fprintf(stderr, "this is what was written: %s\n", tempbuffer);
 			}	
-			//just write the whole block.
-			else{
-				memcpy(tempbuffer, buf, BLOCK_SIZE);
-				bytesWritten += BLOCK_SIZE;					
-				blocks[data] = '1';		
-			}
-				
-			//find next available index in blockNum;
-			int index = 0;
-			while (((inode*)buffer)->blockNum[index] != 0){
-				index++;
-			}					
-			((inode*)buffer)->blockNum[index] = data;
-				
-			//	store data block in inode->blockArray				
-			block_write(data, tempbuffer);
-			log_msg("wrote: %s\n", tempbuffer);
-			fprintf(stderr, "this is what was written: %s\n", tempbuffer);
-		}	
 						
-		//change size of inode to be += size and numBlocks + count (how many were filled during write)
-		((inode*)buffer)->size += size;
-		((inode*)buffer)->numBlocks = count;
+			//change size of inode to be += size and numBlocks + count (how many were filled during write)
+			((inode*)buffer)->size += size;
+			((inode*)buffer)->numBlocks = count;
 		
-		//update modify time.
-		((inode*)buffer)->modifytime = time(NULL);		
+			//update modify time.
+			((inode*)buffer)->modifytime = time(NULL);		
 		
-		//write the inode back in to the file	
-		block_write(block, buffer);
-		memset(buffer, 0, sizeof(buffer));
-		retstat = size;
+			//write the inode back in to the file	
+			block_write(block, buffer);
+			memset(buffer, 0, sizeof(buffer));
+			retstat = size;
+		}
 	}		
 	log_msg("leaving write..\n");
     return retstat;
@@ -888,7 +888,7 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 	if(block == -1){
 		fprintf(stderr,"Couldn't find directory\n");
 		log_msg("Couldn't find file\n");
-		return -ENOENT; //TODO: is this right?
+		return -ENOENT; 
 	}
 	else{
 		//fill . and .. b/c directory
