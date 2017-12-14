@@ -1,6 +1,9 @@
 Anne Whitman: alh220
 Michael Mazzola: mjm706
 
+
+//Need to double check return values of functions
+
 Quick Important Notes:
 	Total Data Blocks: 32445
 	Total iNode Blocks: 323
@@ -47,16 +50,13 @@ int findFirstFreeData();
 int findInode(const char* path);
 	This function is given a path and searches through the blocks array to find an iNode with a matching path. If an iNode is found, the block number is returned, otherwise, the function returns -1.
 	
-**//Is this function finished/being used? >int checkPermission(int block, int type); 
-	This function takes a block index and a type. The type is either set to 0 (for open), 1 (for read), or 2 (for write).
-
 int getParentDir(char* path);
-	This function is given a path and is used to determine the immediate directory that it is located in. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set path to parent directory, which is all of the characters before the '/'.
+	This function is given a path and is used to determine the immediate directory of the path. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set path to parent directory, which is all of the characters before the '/'.
 
 int getShortPath(char* path);
 	This function is given a path and is used to find the name of the current directory/file of the given path. It does this by starting at the end of the path and moving backwards until the '/' character is found. It then uses the memset function to set the path to the file/directory name after the last '/' in the path.
-	
-int *sfs_init(struct fuse_conn_info *conn);
+
+**int *sfs_init(struct fuse_conn_info *conn);
 	This function is used to initialize the blocks array and sets all of the iNode blocks to 0 which indicates they are not in use. It also sets all of the attributes for the root directory iNode and then sets the first block in the block array to 1. Lastly, it uses the block_write function to write the root iNode to the file and return SFS_DATA. 
 
 **void sfs_destroy(void *userdata);
@@ -64,6 +64,8 @@ int *sfs_init(struct fuse_conn_info *conn);
 	
 **int sfs_getattr(const char *path, struct stat *statbuf);
 	This function is given a path and a stat. It uses the findInode function to determine which block that the path references. If the findInode returnes -1 the function -ENOENT, if it is found it uses block_read to read the block into a buffer. It then fills in the given stat struct with all information in the iNode. 
+
+
 
 int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 	This function is given a path, mode, and a fuse_file_info and creates and opens a file in the current directory. It uses the findFirstFreeInode function to locate the first available iNode location and then enters all applicable data into the iNode. The function then writes  the data to the file using block_write and sets its index in the block array to 1, to indicate that it is in use. The function returns 0 upon success and -1 if an index is not found. 
@@ -74,8 +76,9 @@ int sfs_unlink(const char *path);
 int sfs_open(const char *path, struct fuse_file_info *fi)
 	This function is given a path and fuse_file_info and is used to open a file. It uses the findInode function to first locate the block index. If the block is not found the function returns -1, otherwise, it checks the permissions of the block with the checkPermissions function. If the permissions restrict the file from being opened, the function will return -2, if not, the file will be opened and 0 will be returned. 
 
-**int sfs_release(const char *path, struct fuse_file_info *fi);
 
+--
+**int sfs_release(const char *path, struct fuse_file_info *fi);
 
 int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
 	This function is given a path, buffer, size, offset, and fuse_file_info and is used to read data from a file. First, the findInode function is used to locate the block that corresponds to the given path. If a block is not found the function returns -1, otherwise, the permissions of the file are then checked. If the file is unable to be accessed because of the permissions, the function returns -2, if not, the data from the file is copied into the given buffer using memcpy. Upon success, 0 is returned. 
