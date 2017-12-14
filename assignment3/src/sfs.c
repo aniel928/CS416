@@ -633,7 +633,7 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 					firstWrite = BLOCK_SIZE;
 				}
 			}
-			int remainingBlock = (((inode*)buffer)->size % BLOCK_SIZE);//size remaining in last block allocated.
+			int remainingBlock = BLOCK_SIZE - (((inode*)buffer)->size % BLOCK_SIZE);//size remaining in last block allocated.
 			fprintf(stderr, "-------------------------WRITE BLOCK: %d\n", firstBlock);
 			//if offset isn't pointing to end of file, return error.
 			if(offset != ((inode*)buffer)->size){
@@ -654,8 +654,8 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 				memset(tempbuffer, 0, BLOCK_SIZE);
 				
 				//will only happen on first read.
-				if(remainingBlock != 0){
-					log_msg("remainingBlock = %d\n");
+				if(!(remainingBlock == 0 || remainingBlock == 512)){
+					log_msg("remainingBlock = %d\n", remainingBlock);
 					if(remainingBlock > size){
 						remainingBlock = size;
 					}

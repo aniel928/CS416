@@ -9,41 +9,29 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 010834c0
+    fuse = 00f434c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 01083010
-    logfile = 01083030
+    private_data = 00f43010
+    logfile = 00f43030
     diskfile = /tmp/alh220/testfsfile
     umask = 00000
 leaving init function
 
-sfs_getattr(path="/", statbuf=0xffab5c10)
+sfs_getattr(path="/", statbuf=0x95affc10)
 findInode
 input path: /
 inode path: /
 stat filled for /
 
-sfs_getattr(path="/", statbuf=0x002b6c10)
-findInode
-input path: /
-inode path: /
-stat filled for /
-
-sfs_getattr(path="/", statbuf=0xffab5c10)
-findInode
-input path: /
-inode path: /
-stat filled for /
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
+sfs_getattr(path="/512", statbuf=0x95affc40)
 findInode
 input path: /512
 inode path: /
 File not found
 
-sfs_create(path="/512", mode=0100600, fi=0x002b6cf0)
+sfs_create(path="/512", mode=0100600, fi=0x952fecf0)
 findInode
 input path: /512
 inode path: /
@@ -54,7 +42,7 @@ findInode
 input path: /
 inode path: /
 
-sfs_getattr(path="/512", statbuf=0x002b6c00)
+sfs_getattr(path="/512", statbuf=0x952fec00)
 findInode
 input path: /512
 inode path: /
@@ -62,7 +50,7 @@ input path: /512
 inode path: /512
 stat filled for /512
 
-sfs_write(path="/512", buf=0x00ea3060, size=512, offset=0, fi=0xffab5d70)
+sfs_write(path="/512", buf=0x9671b060, size=512, offset=0, fi=0x95affd70)
 findInode
 input path: /512
 inode path: /
@@ -73,384 +61,7 @@ wrote: 1234567890123456789012345678901234567890123456789012345678901234567890123
 
 leaving write..
 
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_write(path="/512", buf=0x00ea3060, size=2, offset=512, fi=0xffab5d70)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-findFirstFreeData
-wrote: 1
-
-leaving write..
-
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_read(path="/512", buf=0xf0000af0, size=4096, offset=0, fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-, strlen: 514
-return stat: 514, about to leave read
-
-sfs_getattr(path="/512", statbuf=0x002b6c10)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_release(path="/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0x002b6c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_write(path="/512", buf=0x00ed2060, size=2, offset=514, fi=0x002b6d70)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-remainingBlock = 0
-wrote: 1
-1
-
-leaving write..
-
-sfs_release(path="/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0x002b6c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_read(path="/512", buf=0xf8000d70, size=4096, offset=0, fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-, strlen: 516
-return stat: 516, about to leave read
-
-sfs_getattr(path="/512", statbuf=0xffab5c10)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_open(path"/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_write(path="/512", buf=0x00ed2060, size=2, offset=516, fi=0x002b6d70)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-remainingBlock = 0
-wrote: 1
-1
-1
-
-leaving write..
-
-sfs_release(path="/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0x002b6c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_read(path="/512", buf=0xf8000d70, size=4096, offset=0, fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-1
-, strlen: 518
-return stat: 518, about to leave read
-
-sfs_getattr(path="/512", statbuf=0xffab5c10)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_write(path="/512", buf=0x00ea3060, size=512, offset=518, fi=0xffab5d70)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-remainingBlock = 0
-wrote: 1
-1
-1
-123456
-findFirstFreeData
-wrote: 7890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-
-leaving write..
-
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_read(path="/512", buf=0xf0000af0, size=4096, offset=0, fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-1
-123456, strlen: 524
-return stat: 524, about to leave read
-
-sfs_getattr(path="/512", statbuf=0x002b6c10)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_read(path="/512", buf=0xf0000af0, size=4096, offset=0, fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-1
-123456, strlen: 524
-return stat: 524, about to leave read
-
-sfs_release(path="/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_getattr(path="/512", statbuf=0xffab5c40)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_open(path"/512", fi=0x002b6cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-
-sfs_read(path="/512", buf=0xf0000af0, size=4096, offset=0, fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-1
-123456, strlen: 524
-return stat: 524, about to leave read
-
-sfs_getattr(path="/512", statbuf=0x002b6c10)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-stat filled for /512
-
-sfs_read(path="/512", buf=0xf0000af0, size=4096, offset=0, fi=0xffab5cf0)
-findInode
-input path: /512
-inode path: /
-input path: /512
-inode path: /512
-about to read from data block 323
-read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-1
-1
-1
-123456, strlen: 524
-return stat: 524, about to leave read
-
-sfs_release(path="/512", fi=0x002b6cf0)
+sfs_release(path="/512", fi=0x952fecf0)
 findInode
 input path: /512
 inode path: /
@@ -471,22 +82,3099 @@ path: /
 getShortPath, path: /512
 path: 512
 put this file into directory: 512
-
-sfs_getattr(path="/", statbuf=0xffab5c10)
 findInode
 input path: /
 inode path: /
-stat filled for /
 
-sfs_getattr(path="/512", statbuf=0x002b6c40)
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/512", statbuf=0x952fec40)
 findInode
 input path: /512
 inode path: /
 input path: /512
 inode path: /512
 stat filled for /512
+
+sfs_opendir
 findInode
 input path: /
 inode path: /
 
-sfs_destroy(userdata=0x01083010)
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_open(path"/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_read(path="/512", buf=0x88000df0, size=4096, offset=0, fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+about to read from data block 323
+read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+, strlen: 512
+return stat: 512, about to leave read
+
+sfs_getattr(path="/512", statbuf=0x95affc10)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_release(path="/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x952fec40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x966ca060, size=2, offset=512, fi=0x94afdd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+findFirstFreeData
+wrote: 2
+
+leaving write..
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x95affc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_read(path="/512", buf=0x88000df0, size=4096, offset=0, fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+about to read from data block 323
+read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+2
+, strlen: 514
+return stat: 514, about to leave read
+
+sfs_getattr(path="/512", statbuf=0x95affc10)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_release(path="/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x952fec40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x966ca060, size=512, offset=514, fi=0x94afdd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 2
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890‹Øîƒ
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/testfile", statbuf=0x95affc40)
+findInode
+input path: /testfile
+inode path: /
+input path: /testfile
+inode path: /512
+File not found
+
+sfs_getattr(path="/512", statbuf=0x94afdc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_read(path="/512", buf=0x90000d70, size=4096, offset=0, fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+about to read from data block 323
+read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+2
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+, strlen: 1026
+return stat: 1026, about to leave read
+
+sfs_getattr(path="/512", statbuf=0x94afdc10)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/testfile", statbuf=0x95affc40)
+findInode
+input path: /testfile
+inode path: /
+input path: /testfile
+inode path: /512
+File not found
+
+sfs_getattr(path="/512", statbuf=0x94afdc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x9671b060, size=512, offset=1026, fi=0x95affd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 1
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_open(path"/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x9671b060, size=512, offset=1538, fi=0x95affd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 1
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890¸Øïƒ
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x952fec40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x966ca060, size=512, offset=2050, fi=0x94afdd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 1
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890‹Øîƒ
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_open(path"/512", fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x966ca060, size=512, offset=2562, fi=0x94afdd70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 1
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890‹Øîƒ
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x95affc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x94afdcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_write(path="/512", buf=0x966ec060, size=512, offset=3074, fi=0x952fed70)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+remainingBlock = 510
+wrote: 1
+123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890Ï/ïƒ
+findFirstFreeData
+wrote: 1
+
+leaving write..
+
+sfs_release(path="/512", fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_getattr(path="/512", statbuf=0x94afdc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_open(path"/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_read(path="/512", buf=0x90000d70, size=4096, offset=0, fi=0x95affcf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+about to read from data block 323
+read returning: 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+2
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+, strlen: 3586
+return stat: 3586, about to leave read
+
+sfs_getattr(path="/512", statbuf=0x94afdc10)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_release(path="/512", fi=0x952fecf0)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/512", statbuf=0x95affc40)
+findInode
+input path: /512
+inode path: /
+input path: /512
+inode path: /512
+stat filled for /512
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/", statbuf=0x94afdc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/", statbuf=0x95affc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/", statbuf=0x952fec10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/", statbuf=0x94afdc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/robertFrost3times", statbuf=0x95affc40)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+File not found
+
+sfs_create(path="/robertFrost3times", mode=0100600, fi=0x952fecf0)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+findFirstFreeInode
+getParentDir, path: /robertFrost3times
+path: /
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/robertFrost3times", statbuf=0x952fec00)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+stat filled for /robertFrost3times
+
+sfs_write(path="/robertFrost3times", buf=0x966ca060, size=2201, offset=0, fi=0x94afdd70)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+findFirstFreeData
+wrote:  Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to 
+findFirstFreeData
+wrote: way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+
+
+
+
+
+
+AGAIN
+
+
+
+
+
+
+Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was gr
+findFirstFreeData
+wrote: assy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+
+
+
+
+
+ONE MORE TIME
+
+
+
+
+
+Two roads diverged in a yello
+findFirstFreeData
+wrote: w wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should eve
+findFirstFreeData
+wrote: r come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+
+leaving write..
+
+sfs_write(path="/robertFrost3times", buf=0x9671b060, size=38, offset=2201, fi=0x95affd70)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+remainingBlock = 359
+wrote: r come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+
+leaving write..
+
+sfs_release(path="/robertFrost3times", fi=0x952fecf0)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+
+sfs_opendir
+input path: /
+inode path: /
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+
+sfs_getattr(path="/robertFrost3times", statbuf=0x94afdc40)
+input path: /
+inode path: /
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+stat filled for /robertFrost3times
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+input path: /
+inode path: /
+
+sfs_open(path"/robertFrost3times", fi=0x952fecf0)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+
+sfs_read(path="/robertFrost3times", buf=0x8c000af0, size=4096, offset=0, fi=0x94afdcf0)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+about to read from data block 331
+read returning:  Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+
+
+
+
+
+
+AGAIN
+
+
+
+
+
+
+Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+
+
+
+
+
+ONE MORE TIME
+
+
+
+
+
+Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I‚Äî
+I took the one less traveled by,
+And that has made all the difference.
+, strlen: 2239
+return stat: 2239, about to leave read
+
+sfs_getattr(path="/robertFrost3times", statbuf=0x95affc10)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+stat filled for /robertFrost3times
+
+sfs_release(path="/robertFrost3times", fi=0x952fecf0)
+findInode
+input path: /robertFrost3times
+inode path: /
+input path: /robertFrost3times
+inode path: /512
+input path: /robertFrost3times
+inode path: /robertFrost3times
+
+sfs_getattr(path="/", statbuf=0x94afdc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/", statbuf=0x95affc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/", statbuf=0x94afdc10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/", statbuf=0x952fec10)
+findInode
+input path: /
+inode path: /
+stat filled for /
+
+sfs_getattr(path="/RLS", statbuf=0x94afdc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+File not found
+
+sfs_create(path="/RLS", mode=0100600, fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+findFirstFreeInode
+getParentDir, path: /RLS
+path: /
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/RLS", statbuf=0x95affc00)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_release(path="/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x94afdc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x966ec060, size=11, offset=0, fi=0x952fed70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+findFirstFreeData
+wrote: My Shadow:
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x95affc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x966ca060, size=1, offset=11, fi=0x94afdd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 501
+wrote: My Shadow:
+
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x952fec40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x9671b060, size=1, offset=12, fi=0x95affd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 500
+wrote: My Shadow:
+
+
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/RLS", statbuf=0x94afdc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x966ec060, size=853, offset=13, fi=0x952fed70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 499
+wrote: My Shadow:
+
+
+I have a little shadow that goes in and out with me,
+And what can be the use of him is more than I can see.
+He is very, very like me from the heels up to the head;
+And I see him jump before me, when I jump into my bed.
+The funniest thing about him is the way he likes to grow‚Äî
+Not at all like proper children, which is always very slow;
+For he sometimes shoots up taller like an india-rubber ball,
+And he sometimes gets so little that there's none of him at all.
+He hasn't got a notion of how chil
+findFirstFreeData
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+
+leaving write..
+
+sfs_write(path="/RLS", buf=0x966ca060, size=57, offset=866, fi=0x94afdd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 158
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x952fec40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x9671b060, size=1, offset=923, fi=0x95affd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 101
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x94afdc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x966ec060, size=1, offset=924, fi=0x952fed70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 100
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x95affc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x966ca060, size=20, offset=925, fi=0x94afdd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 99
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+Land Of Counterpane
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x95affcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x952fec40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x9671b060, size=1, offset=945, fi=0x95affd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 79
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+Land Of Counterpane
+
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_opendir
+findInode
+input path: /
+inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /512
+path: /
+getShortPath, path: /512
+path: 512
+put this file into directory: 512
+getParentDir, path: /robertFrost3times
+path: /
+getShortPath, path: /robertFrost3times
+path: robertFrost3times
+put this file into directory: robertFrost3times
+getParentDir, path: /RLS
+path: /
+getShortPath, path: /RLS
+path: RLS
+put this file into directory: RLS
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/RLS", statbuf=0x952fec40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_write(path="/RLS", buf=0x9671b060, size=503, offset=946, fi=0x95affd70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 78
+wrote: dren ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+Land Of Counterpane
+
+When I was sick and lay a-bed,
+I had two pillows at my head,
+And all my toys b
+findFirstFreeData
+wrote: eside me lay
+To keep me happy all the day.
+And sometimes for an hour or so
+I watched my leaden soldiers go,
+With different uniforms and drills,
+Among the bed-clothes, through the hills;
+And sometimes sent my ships in fleets
+All up and down among the sheets;
+Or brought my trees and houses out,
+And planted cities all about.
+I was the giant great and still
+That sits upon the pillow-hill,
+And sees before him, dale and plain,
+
+leaving write..
+
+sfs_write(path="/RLS", buf=0x966ec060, size=34, offset=1449, fi=0x952fed70)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+remainingBlock = 87
+wrote: eside me lay
+To keep me happy all the day.
+And sometimes for an hour or so
+I watched my leaden soldiers go,
+With different uniforms and drills,
+Among the bed-clothes, through the hills;
+And sometimes sent my ships in fleets
+All up and down among the sheets;
+Or brought my trees and houses out,
+And planted cities all about.
+I was the giant great and still
+That sits upon the pillow-hill,
+And sees before him, dale and plain,
+The pleasant land of counterpane.
+
+leaving write..
+
+sfs_release(path="/RLS", fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_getattr(path="/RLS", statbuf=0x95affc40)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_open(path"/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_read(path="/RLS", buf=0x8c000af0, size=4096, offset=0, fi=0x94afdcf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+about to read from data block 336
+read returning: My Shadow:
+
+
+I have a little shadow that goes in and out with me,
+And what can be the use of him is more than I can see.
+He is very, very like me from the heels up to the head;
+And I see him jump before me, when I jump into my bed.
+The funniest thing about him is the way he likes to grow‚Äî
+Not at all like proper children, which is always very slow;
+For he sometimes shoots up taller like an india-rubber ball,
+And he sometimes gets so little that there's none of him at all.
+He hasn't got a notion of how children ought to play,
+And can only make a fool of me in every sort of way.
+He stays so close beside me, he's a coward you can see;
+I'd think shame to stick to nursie as that shadow sticks to me!‚Äù  
+One morning, very early, before the sun was up,
+I rose and found the shining dew on every buttercup;
+But my lazy little shadow, like an arrant sleepy-head,
+Had stayed at home behind me and was fast asleep in bed.
+
+
+Land Of Counterpane
+
+When I was sick and lay a-bed,
+I had two pillows at my head,
+And all my toys beside me lay
+To keep me happy all the day.
+And sometimes for an hour or so
+I watched my leaden soldiers go,
+With different uniforms and drills,
+Among the bed-clothes, through the hills;
+And sometimes sent my ships in fleets
+All up and down among the sheets;
+Or brought my trees and houses out,
+And planted cities all about.
+I was the giant great and still
+That sits upon the pillow-hill,
+And sees before him, dale and plain,
+The pleasant land of counterpane.
+, strlen: 1483
+return stat: 1483, about to leave read
+
+sfs_getattr(path="/RLS", statbuf=0x95affc10)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+stat filled for /RLS
+
+sfs_release(path="/RLS", fi=0x952fecf0)
+findInode
+input path: /RLS
+inode path: /
+input path: /RLS
+inode path: /512
+input path: /RLS
+inode path: /robertFrost3times
+input path: /RLS
+inode path: /RLS
+
+sfs_destroy(userdata=0x00f43010)
