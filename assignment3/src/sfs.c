@@ -518,10 +518,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	int retstat = 0;
 	log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",path, buf, size, offset, fi);
 	
-	//TODO: do we need this?  Ask about test cases.	
-	if(size > BLOCK_SIZE * BLOCKSPERINODE){
-		size = BLOCK_SIZE * BLOCKSPERINODE;
-	}
 	//get inode
 	int block = findInode(path);
 	//if doesn't exist, return error.
@@ -539,7 +535,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 		//figure out where to start, how many blocks and how tow write it.
 		int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
 		int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
-		int totalBlocks = size / BLOCK_SIZE; //TODO: need to add this in
 
 		//now create a zeroed out buffer to store data in from file.
 		char tempbuff[BLOCK_SIZE];
@@ -547,11 +542,11 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 
 		//if the file is shorter than bytes read, we will return the file size, then return the rest as 0's (from spec)\
 			this is so we know how many need to be zeroed out.  
-		int remainder = 0;
-		if(size > ((inode*)buffer)->size){
-			remainder = size - ((inode*)buffer)->size;
-			size  = ((inode*)buffer)->size;
-		}
+//		int remainder = 0;
+//		if(size > ((inode*)buffer)->size){
+//			remainder = size - ((inode*)buffer)->size;
+//			size  = ((inode*)buffer)->size;
+//		}
 
 		//
 		int bytesread = 0;
@@ -578,9 +573,9 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 			startBlock++;
 		}
 		//null out the rest of the buffer
-		if(remainder > 0){
-			memcpy(buf + size, "", remainder); //TODO:  we might not need this now that the buffer starts out zeroed.
-		}
+//		if(remainder > 0){
+//			memcpy(buf + size, "", remainder); //TODO:  we might not need this now that the buffer starts out zeroed.
+//		}
 		log_msg("read returning: %s, strlen: %d\n", buf, strlen(buf));
 		retstat = strlen(buf);
 	}
@@ -600,7 +595,8 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 	fprintf(stderr,"write");
 	int retstat = 0;
 	log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
-	fprintf(stderr,"\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi); 	//find corresponding inode and check for existence.
+
+	//find path of file and make sure it exists
  	int block = findInode(path);
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
@@ -608,25 +604,25 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 		retstat = -ENOENT;
 	}	
 	else{
+		//read inode into buffer
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+
 		//you're asking to write more than i can give you
-		if(size > BLOCK_SIZE * BLOCKSPERINODE){
+		if((((inode*)buffer)->size + size) > (BLOCK_SIZE * BLOCKSPERINODE)){
 			log_msg("Size too big\n");
 			fprintf(stderr, "Size too big\n");
 			retstat = ENOSPC; //not enough space in this file to finish.
 		}
 		else{
-			//read inode into buffer
-			char buffer[BLOCK_SIZE];
-			memset(buffer, 0, BLOCK_SIZE);
-			block_read(block, buffer);
-
 
 			int count = 0;//for how many blocks were used.
 		
 			//store info about where to start and how far to go, etc.
 			int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
 			int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
-			int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
+			int firstWrite = BLOCK_SIZE - (offset % BLOCK_SIZE); //how many bytes to write
 			if(firstWrite == 0){
 				firstWrite = size;
 				if(firstWrite > BLOCK_SIZE){
@@ -634,13 +630,13 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 				}
 			}
 			int remainingBlock = BLOCK_SIZE - (((inode*)buffer)->size % BLOCK_SIZE);//size remaining in last block allocated.
-			fprintf(stderr, "-------------------------WRITE BLOCK: %d\n", firstBlock);
+			
 			//if offset isn't pointing to end of file, return error.
 			if(offset != ((inode*)buffer)->size){
-				return 0; //TODO: put in readme. Overwriting random bits in file is not allowed\
-							We append, or do nothing.
+				return 0; //TODO: put in readme. Overwriting random bits in file is not allowed we append, or do nothing.
 							//TODO: check for better errno.
 			}
+			
 			//if offset points to a block we don't have yet. (Like if file is 300 bytes asking for offset 315.
 			if(offset > ((inode*)buffer)->size){
 				return 0; //TODO: find error code.
@@ -649,7 +645,6 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			//keep track of how much you've written with this
 			int bytesWritten = 0;
 			while(bytesWritten < size ){
-				//block sized buffer //TODO: add buffer for remaining size of existing node.
 				char tempbuffer[BLOCK_SIZE];
 				memset(tempbuffer, 0, BLOCK_SIZE);
 				
@@ -668,9 +663,8 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 				}
 				else{				
 					//get free data block to fill.
-					int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
+					int data = findFirstFreeData(); 
 					count++;
-//					block_read(data, tempbuffer); //TODO: wait... what?
 			
 					//nothing has been written yet
 					if (bytesWritten == 0){
@@ -691,9 +685,9 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 						bytesWritten += BLOCK_SIZE;					
 					}
 					blocks[data] = '1';		
-	
-					//find next available index in blockNum;
-					int index = 0;
+
+					//find next available index in blockNum;	
+					int index = 0;	
 					while (((inode*)buffer)->blockNum[index] != 0){
 						index++;
 					}					
@@ -703,8 +697,9 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 					block_write(data, tempbuffer);
 					log_msg("wrote: %s\n", tempbuffer);
 					fprintf(stderr, "this is what was written: %s\n", tempbuffer);
-				}	
-			}					
+				}
+			}	
+							
 			//change size of inode to be += size and numBlocks + count (how many were filled during write)
 			((inode*)buffer)->size += size;
 			((inode*)buffer)->numBlocks = count;
