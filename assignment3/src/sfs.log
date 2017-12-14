@@ -9,96 +9,59 @@ sfs_init()
     capable = 00000ffb
     want = 00000010
     context:
-    fuse = 01f4c4c0
+    fuse = 007104c0
     uid = 0
     gid = 0
     pid = 0
-    private_data = 01f4c010
-    logfile = 01f4c030
+    private_data = 00710010
+    logfile = 00710030
     diskfile = /tmp/alh220/testfsfile
     umask = 00000
 leaving init function
 
-sfs_getattr(path="/", statbuf=0x87497c10)
+sfs_getattr(path="/", statbuf=0x10cdbc10)
 findInode
 input path: /
 inode path: /
-else stmt of getattr
-leaving getattr
+stat filled for /
 
-sfs_getattr(path="/", statbuf=0x86c96c10)
+sfs_getattr(path="/", statbuf=0x0bffec10)
 findInode
 input path: /
 inode path: /
-else stmt of getattr
-leaving getattr
+stat filled for /
 
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
+sfs_getattr(path="/file", statbuf=0x0bffec40)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-if stmt of getattr
 File not found
 
-sfs_create(path="/testfile", mode=0100600, fi=0x87497cf0)
+sfs_create(path="/file", mode=0100600, fi=0x10cdbcf0)
+findInode
+input path: /file
+inode path: /
 findFirstFreeInode
-getParentDir, path: /testfile
-So that happened
+getParentDir, path: /file
 path: /
 findInode
 input path: /
 inode path: /
 
-sfs_getattr(path="/testfile", statbuf=0x87497c00)
+sfs_getattr(path="/file", statbuf=0x10cdbc00)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
+input path: /file
+inode path: /file
+stat filled for /file
 
-sfs_write(path="/testfile", buf=0x88084060, size=23, offset=0, fi=0x86c96d70)
+sfs_release(path="/file", fi=0x10cdbcf0)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-findFirstFreeData
-data block: 323
-wrote: Heeeeyyyyy YOOOOOUUUUU
-
-
-sfs_release(path="/testfile", fi=0x87497cf0)
-
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_open(path"/testfile", fi=0x87497cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-
-sfs_read(path="/testfile", buf=0x78000af0, size=4096, offset=0, fi=0x86c96cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from inode block 1
-about to read from data block 323
-read returning: Heeeeyyyyy YOOOOOUUUUU
-
-
-sfs_release(path="/testfile", fi=0x87497cf0)
+input path: /file
+inode path: /file
 
 sfs_opendir
 findInode
@@ -106,926 +69,58 @@ input path: /
 inode path: /
 
 sfs_readdir: /
-in readdir
 findInode
 input path: /
 inode path: /
-getParentDir, path: /testfile
-So that happened
+getParentDir, path: /file
 path: /
-getShortPath, path: /testfile
-path: testfile
-filled path: .testfile
+getShortPath, path: /file
+path: file
+put this file into directory: file
 
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
+sfs_getattr(path="/file", statbuf=0x0bffec40)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
+input path: /file
+inode path: /file
+stat filled for /file
 findInode
 input path: /
 inode path: /
 
-sfs_getattr(path="/testfile", statbuf=0x87497c40)
+sfs_getattr(path="/file", statbuf=0x0bffec40)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
+input path: /file
+inode path: /file
+stat filled for /file
 
-sfs_open(path"/testfile", fi=0x86c96cf0)
+sfs_open(path"/file", fi=0x10cdbcf0)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /file
+inode path: /file
 
-sfs_write(path="/testfile", buf=0x880b3060, size=19, offset=23, fi=0x87497d70)
+sfs_write(path="/file", buf=0x118c8060, size=3, offset=0, fi=0x0bffed70)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /file
+inode path: /file
 findFirstFreeData
-data block: 323
-wrote: Heeeeyyyyy YOOOOOUUUUU
- don't make me cry
+wrote: hi
 
+leaving write..
 
-sfs_release(path="/testfile", fi=0x86c96cf0)
-
-sfs_getattr(path="/testfile", statbuf=0x87497c40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_open(path"/testfile", fi=0x86c96cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-
-sfs_read(path="/testfile", buf=0x80000d70, size=4096, offset=0, fi=0x87497cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from inode block 1
-about to read from data block 323
-read returning: Heeeeyyyyy YOOOOOUUUUU
- don't make me cry
-
-
-sfs_release(path="/testfile", fi=0x86c96cf0)
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/cscope.out", statbuf=0x87497c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/cscope.out", statbuf=0x86c96c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/testfile", statbuf=0x87497c40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-sfs_unlink(path="/testfile")
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-getParentDir, path: /testfile
-So that happened
-path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
-findInode
-input path: /testfile
-inode path: /
-if stmt of getattr
-File not found
-
-sfs_create(path="/testfile", mode=0100600, fi=0x87497cf0)
-findFirstFreeInode
-getParentDir, path: /testfile
-So that happened
-path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/testfile", statbuf=0x87497c00)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_write(path="/testfile", buf=0x88084060, size=3, offset=0, fi=0x86c96d70)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-findFirstFreeData
-data block: 323
-wrote: ok
-
-
-sfs_release(path="/testfile", fi=0x87497cf0)
-
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
-
-sfs_open(path"/testfile", fi=0x87497cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-
-sfs_read(path="/testfile", buf=0x78000af0, size=4096, offset=0, fi=0x86c96cf0)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from inode block 1
-about to read from data block 323
-read returning: ok
-
-
-sfs_release(path="/testfile", fi=0x87497cf0)
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/cscope.out", statbuf=0x86c96c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/cscope.out", statbuf=0x87497c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/cscope.out", statbuf=0x86c96c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/cscope.out", statbuf=0x87497c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
+sfs_release(path="/file", fi=0x10cdbcf0)
 findInode
-input path: /
+input path: /file
 inode path: /
+input path: /file
+inode path: /file
 
 sfs_opendir
 findInode
@@ -1033,424 +128,304 @@ input path: /
 inode path: /
 
 sfs_readdir: /
-in readdir
 findInode
 input path: /
 inode path: /
-getParentDir, path: /testfile
-So that happened
+getParentDir, path: /file
 path: /
-getShortPath, path: /testfile
-path: testfile
-filled path: .testfile
+getShortPath, path: /file
+path: file
+put this file into directory: file
 
-sfs_getattr(path="/", statbuf=0x86c96c10)
+sfs_getattr(path="/file", statbuf=0x0bffec40)
 findInode
-input path: /
+input path: /file
 inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/testfile", statbuf=0x87497c40)
-findInode
-input path: /testfile
-inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
+input path: /file
+inode path: /file
+stat filled for /file
 findInode
 input path: /
 inode path: /
 
-sfs_getattr(path="/testfile", statbuf=0x86c96c40)
+sfs_getattr(path="/file", statbuf=0x10cdbc40)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-else stmt of getattr
-leaving getattr
+input path: /file
+inode path: /file
+stat filled for /file
 
-sfs_open(path"/testfile", fi=0x87497cf0)
+sfs_open(path"/file", fi=0x0bffecf0)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
+input path: /file
+inode path: /file
 
-sfs_read(path="/testfile", buf=0x78000af0, size=4096, offset=0, fi=0x86c96cf0)
+sfs_read(path="/file", buf=0x0c000d70, size=4096, offset=0, fi=0x10cdbcf0)
 findInode
-input path: /testfile
+input path: /file
 inode path: /
-input path: /testfile
-inode path: /testfile
-ready to do some reading from inode block 1
+input path: /file
+inode path: /file
 about to read from data block 323
-read returning: ok
+read returning: hi
+, strlen: 3
+return stat: 3, about to leave read
 
+sfs_getattr(path="/file", statbuf=0x0bffec10)
+findInode
+input path: /file
+inode path: /
+input path: /file
+inode path: /file
+stat filled for /file
 
-sfs_release(path="/testfile", fi=0x87497cf0)
+sfs_release(path="/file", fi=0x10cdbcf0)
+findInode
+input path: /file
+inode path: /
+input path: /file
+inode path: /file
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x0bffec40)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/cscope.out", statbuf=0x86c96c40)
-findInode
-input path: /cscope.out
-inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
+input path: /file2
+inode path: /file
 File not found
 
-sfs_getattr(path="/cscope.out", statbuf=0x87497c40)
+sfs_create(path="/file2", mode=0100600, fi=0x10cdbcf0)
 findInode
-input path: /cscope.out
+input path: /file2
 inode path: /
-input path: /cscope.out
-inode path: /testfile
-if stmt of getattr
-File not found
+input path: /file2
+inode path: /file
+findFirstFreeInode
+getParentDir, path: /file2
+path: /
+findInode
+input path: /
+inode path: /
+
+sfs_getattr(path="/file2", statbuf=0x10cdbc00)
+findInode
+input path: /file2
+inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
+
+sfs_write(path="/file2", buf=0x118c8060, size=3, offset=0, fi=0x0bffed70)
+findInode
+input path: /file2
+inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+findFirstFreeData
+wrote: hi
+
+leaving write..
+
+sfs_release(path="/file2", fi=0x10cdbcf0)
+findInode
+input path: /file2
+inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
 sfs_opendir
 findInode
 input path: /
 inode path: /
+
+sfs_readdir: /
+findInode
+input path: /
+inode path: /
+getParentDir, path: /file
+path: /
+getShortPath, path: /file
+path: file
+put this file into directory: file
+getParentDir, path: /file2
+path: /
+getShortPath, path: /file2
+path: file2
+put this file into directory: file2
+
+sfs_getattr(path="/file", statbuf=0x0bffec40)
+findInode
+input path: /file
+inode path: /
+input path: /file
+inode path: /file
+stat filled for /file
+
+sfs_getattr(path="/file2", statbuf=0x10cdbc40)
+findInode
+input path: /file2
+inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 findInode
 input path: /
 inode path: /
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x0bffec40)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 
-sfs_opendir
+sfs_open(path"/file2", fi=0x10cdbcf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
+sfs_read(path="/file2", buf=0x04000af0, size=4096, offset=0, fi=0x0bffecf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+about to read from data block 323
+read returning: hi
+, strlen: 3
+return stat: 3, about to leave read
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x10cdbc10)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 
-sfs_opendir
+sfs_release(path="/file2", fi=0x0bffecf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x10cdbc40)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 
-sfs_opendir
+sfs_open(path"/file2", fi=0x0bffecf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
+sfs_write(path="/file2", buf=0x118f7060, size=3, offset=3, fi=0x10cdbd70)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+findFirstFreeData
+wrote: hi
+hi
 
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
+leaving write..
 
-sfs_opendir
+sfs_release(path="/file2", fi=0x0bffecf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x10cdbc40)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 
-sfs_opendir
+sfs_open(path"/file2", fi=0x0bffecf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
+sfs_read(path="/file2", buf=0x0c000d70, size=4096, offset=0, fi=0x10cdbcf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+about to read from data block 323
+read returning: hi
+hi
+, strlen: 6
+return stat: 6, about to leave read
 
-sfs_opendir
+sfs_getattr(path="/file2", statbuf=0x0bffec10)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
+stat filled for /file2
 
-sfs_opendir
+sfs_release(path="/file2", fi=0x10cdbcf0)
 findInode
-input path: /
+input path: /file2
 inode path: /
-findInode
-input path: /
-inode path: /
+input path: /file2
+inode path: /file
+input path: /file2
+inode path: /file2
 
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_opendir
-findInode
-input path: /
-inode path: /
-findInode
-input path: /
-inode path: /
-
-sfs_getattr(path="/", statbuf=0x86c96c10)
-findInode
-input path: /
-inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/.git", statbuf=0x87497c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x86c96c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/objects", statbuf=0x87497c40)
-findInode
-input path: /objects
-inode path: /
-input path: /objects
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x86c96c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x87497c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/", statbuf=0x86c96c10)
-findInode
-input path: /
-inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_getattr(path="/.git", statbuf=0x87497c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x86c96c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/objects", statbuf=0x87497c40)
-findInode
-input path: /objects
-inode path: /
-input path: /objects
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x86c96c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/.git", statbuf=0x87497c40)
-findInode
-input path: /.git
-inode path: /
-input path: /.git
-inode path: /testfile
-if stmt of getattr
-File not found
-
-sfs_getattr(path="/", statbuf=0x86c96c10)
-findInode
-input path: /
-inode path: /
-else stmt of getattr
-leaving getattr
-
-sfs_destroy(userdata=0x01f4c010)
+sfs_destroy(userdata=0x00710010)

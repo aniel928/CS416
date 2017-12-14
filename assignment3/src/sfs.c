@@ -31,13 +31,16 @@
 #include "log.h"
 
 //TODO: ANNE/MIKE UPDATE TIME STAMPS EVERYWHERE!! (directory too)
-/******************************************************************/
-//#definitions
+	//but do we do access on open or close?
+
+/********* ADDED DEFINITIONS *********/
 #define INODEBLOCKS 323
 #define DATABLOCKS 32445
 #define BLOCKSPERINODE 100
 #define PATHSIZE 50
-//enums and structs
+
+
+/********* ADDED ENUMS / STRUCTS *********/
 typedef enum _bool{
 	FALSE, TRUE
 }bool;
@@ -46,13 +49,12 @@ typedef enum _filetype{
 	FILE_NODE, DIR_NODE
 }filetype;
 
-//This is probably going to need more data
 typedef struct _inode{	
 	int size; //size of file
 	int numBlocks; //files: how many blocks it currently takes up total; dir: how many files assigned
 	int blockNum[BLOCKSPERINODE]; //physical block numbers (remove some of these when adding other attributes)
 	int links; //links to file (should always be 1 I'm pretty sure)
- 	int indirectionBlock;//which block the inode continues
+ 	int indirectionBlock;//which block the inode continues;
  	filetype type; //FILE_NODE or DIR_NODE (for extra credit)
  	mode_t filemode; //read/write/execute
  	time_t createtime;//created 
@@ -63,18 +65,17 @@ typedef struct _inode{
 	char path[PATHSIZE]; //file path
 }inode;
 
-//global vars
-int blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0
+/********* GLOBAL VARAIBLES *********/
+int blocks[INODEBLOCKS + DATABLOCKS]; //1 or 0 (used unused)
+//TODO: Change to chars.
 
-//more methods
-
+/********* ADDED FUNCTIONS *********/
 //Finds the first inode set to 0
 int findFirstFreeInode(){
 	fprintf(stderr,"findFirstFreeInode\n");
 	log_msg("findFirstFreeInode\n");
 	int block = 0;
 	while (block < INODEBLOCKS){
-//		log_msg("block #: %d\n", block);
 		if (blocks[block] == 0){
 			break;
 		}
@@ -92,7 +93,6 @@ int findFirstFreeData(){
 	log_msg("findFirstFreeData\n");
 	int block = INODEBLOCKS;
 	while (block < INODEBLOCKS + DATABLOCKS){
-//		log_msg("block #: %d\n", block);
 		if (blocks[block] == 0){
 			break;
 		}
@@ -112,26 +112,17 @@ int findInode(const char* path){
 	char buffer[BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	while(block < INODEBLOCKS){
-//		log_msg("block #: %d\n", block);
-//		log_msg("blocks[block] = %d\n", blocks[block]);
 		if(blocks[block] == 1){
-//			log_msg("in the 1st if statement\n");
 			block_read(block, (void*)buffer);
-			log_msg("input path: %s\n", path);
-			
+			log_msg("input path: %s\n", path);			
 			log_msg("inode path: %s\n", ((inode*)buffer)->path);
 			if(strcmp(((inode*)buffer)->path, path) == 0){
-//				log_msg("in the 2nd if statement\n");
 				//the file was found/already exists
 				break;
 			}
-//			log_msg("out of 2nd\n");
 		}
-//		log_msg("out of 1st\n");
 		block++;
-	}
-	
-	
+	}	
 	if(block == INODEBLOCKS){
 		return -1; 
 	}
@@ -139,33 +130,11 @@ int findInode(const char* path){
 	return block;
 }
 
-int checkPermissions(int block, int type){//type is 0 for open, 1 for read, 2 for write.  Functions will pass this in.
-	char buffer[BLOCK_SIZE];
-	memset(buffer, 0, BLOCK_SIZE);
-	block_read(block, buffer);
-	mode_t mode = ((inode*)buffer)->filemode;
-	
-	//for read -> EACCES is not able to open for reading
-	
-	
-	//if user id matches, then check first 3 bits only
-	if(getuid() == ((inode*)buffer)->userId){
-		//check permissions
-	}
-	//otherwise if group, check middle 3
-	else if(getgid() == ((inode*)buffer)->groupId){
-		//check permissions
-	}
-	//otherwise check last 3 (other)
-	else{
-		//check permissions
-	}
-	return 0;
-}
-
+//strip current file from path and return path to file (parentDir path)
 int getParentDir(char* path){
 	log_msg("getParentDir, path: %s\n", path);
 	int length = strlen(path);
+	//start at end and move back until you find '/'
 	int i = length;
 	while(i > 0){
 		if(path[i] == '/'){
@@ -173,12 +142,13 @@ int getParentDir(char* path){
 		}
 		i--;
 	}
+	//if it starts at end and breaks at 0, then the only '/' in this path is root.  So root is the parent.
 	if(i==0){
-		log_msg("So that happened\n");
 		path[0] = '/';
 		path[1] = '\0';	
 		log_msg("path: %s\n", path);	
 	}
+	//otherwise return everything before this index (because there is stuff before the slash if we're not at index 0.
 	else{
 		memset(path + i, '\0', PATHSIZE - i);
 		log_msg("path: %s\n", path);	
@@ -186,9 +156,11 @@ int getParentDir(char* path){
 	return 0;
 }
 
+//strip path to file and return current filename only
 int getShortPath(char* path){
 	log_msg("getShortPath, path: %s\n", path);
 	int length = strlen(path);
+	//start at end and move back until you find '/'
 	if(length == 1){
 		path[1] = '\0';
 		return 0;
@@ -200,18 +172,18 @@ int getShortPath(char* path){
 		}
 		i--;
 	}
+	//buffer to hold filename, then copy the from the index to the end into this new buffer
 	char path2[PATHSIZE];
 	memset(path2, '\0', PATHSIZE);
 	memcpy(path2, path + i + 1, PATHSIZE - (i + 1));
+	//Now clear out original path and memcpy path2 back in (b/c we were given a pointer, it's this one that must be updated.)
 	memset(path, '\0', PATHSIZE);
 	memcpy(path, path2, PATHSIZE);
 	log_msg("path: %s\n", path);	
 	return 0;
 }
 
-/******************************************************************/
-
-
+/********* FUNCTIONS PROVIDED BY FUSE *********/
 ///////////////////////////////////////////////////////////
 //
 // Prototypes for all these functions, and the C-style comments,
@@ -228,7 +200,6 @@ int getShortPath(char* path){
  * Introduced in version 2.3
  * Changed in version 2.6
  */
-
 void *sfs_init(struct fuse_conn_info *conn){
 	fprintf(stderr, "in bb-init\n");
 	log_msg("\nsfs_init()\n");
@@ -236,8 +207,9 @@ void *sfs_init(struct fuse_conn_info *conn){
 	
 	//debugging statement so we can keep track of size while changing inodes.
 	fprintf(stderr, "size of inode is: %d\n", sizeof(inode));
-		
-	//intializing arrays 
+	//TODO:  make sure this ^^ is still 512.		
+
+	/* INITIALIZE ARRAY */
 	int i = 0;
 	while(i < INODEBLOCKS + DATABLOCKS){
 		blocks[i] = 0;
@@ -282,11 +254,12 @@ void *sfs_init(struct fuse_conn_info *conn){
  * Introduced in version 2.3
  */
 void sfs_destroy(void *userdata){
-  fprintf(stderr,"destroy");
+  fprintf(stderr,"destroy\n");
   log_msg("\nsfs_destroy(userdata=0x%08x)\n", userdata);
+
   //close file
   disk_close(SFS_DATA->diskfile);
-  //if we end up having to malloc something in init, free it here.
+
 }
 
 /** Get file attributes.
@@ -299,23 +272,26 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 	fprintf(stderr, "in get attr\n");
 	int retstat = 0;
 	log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
+
+	//take path and find inode
 	int block = findInode(path);
+	//if not found, return error message.
 	if (block == -1){
-		log_msg("if stmt of getattr\n");
 		fprintf(stderr,"File not found\n");
 		log_msg("File not found\n");
-		return -ENOENT; //TODO: make sure this is right
+		return -ENOENT; 
 	}
+	//otherwise, it was found, so set the stat that was passed in.
 	else{
-		fprintf(stderr,"in else\n");
+		//read the inode into a buffer
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, BLOCK_SIZE);
 		block_read(block, (void*)buffer);
 
-		//fill in stat
-		statbuf->st_dev = 0;
-		statbuf->st_ino = block;
-		statbuf->st_rdev = 0;
+		//fill in stat with info from inode
+		statbuf->st_dev = 0; //spec says to initialize to 0 if we don't have a value
+		statbuf->st_ino = block; //our inode ID
+		statbuf->st_rdev = 0; //spec says to initialize to 0 if we don't have a value.
 		statbuf->st_mode = ((inode*)buffer)->filemode;
 		statbuf->st_nlink = ((inode*)buffer)->links;
 		statbuf->st_uid = ((inode*)buffer)->userId;
@@ -325,10 +301,8 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 		statbuf->st_mtime = ((inode*)buffer)->modifytime;
 		statbuf->st_ctime = ((inode*)buffer)->createtime;
 		statbuf->st_blocks = ((inode*)buffer)->numBlocks;
-		fprintf(stderr,"getattr path is: %s\n", ((inode*)buffer)->path);
-		log_msg("else stmt of getattr\n");
+		log_msg("stat filled for %s\n", ((inode*)buffer)->path);
 	}    
-	log_msg("leaving getattr\n");
   return retstat;
 }
 
@@ -345,74 +319,65 @@ int sfs_getattr(const char *path, struct stat *statbuf){
  * Introduced in version 2.5
  */
 int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
-  int retstat = 0;
-  fprintf(stderr,"create");
-  log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
+	int retstat = 0;
+	fprintf(stderr,"create\n");
+	log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
 
 	//TODO: check to make sure path doens't already exist: EEXIST
-
-   
-  //check array of inodes for first one that is 0.  Save block number.
- 	//write a separate function to do this.
-
-  //create new char buffer: (
-	char buffer[BLOCK_SIZE];
-	memset(buffer, 0, BLOCK_SIZE);    
-  //create new inode and cast buffer into it.
-	int foundInd = findFirstFreeInode();
-	if (foundInd == -1){
-		fprintf(stderr, "No free nodes found\n");
-		log_msg("no free inodes found\n");
-		return ENOSPC;
+	int block = findInode(path);
+	if(block != -1){
+		retstat = EEXIST;
 	}
-	
-	inode* useNode = (inode*)buffer;
-	//ANNE: Definitely check over these declarations cause I'm only like 14% sure bout this
-	useNode->size = 0;
-	useNode->numBlocks = 0;
-	useNode->links = 0;
-	useNode->indirectionBlock = FALSE;
-	useNode->type = FILE_NODE;//also not sure about this
-	useNode->filemode = S_IFREG | mode; 		//S_ISREG 
-	useNode->createtime = time(NULL);		
-	useNode->modifytime = useNode->createtime;
-	useNode->accesstime = useNode->createtime;
-	useNode->userId = getuid(); 
-	useNode->groupId = getgid(); 
+	else{
+		//declare a buffer and zero out
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);    
 
-	fprintf(stderr,"SIZE OF PATH IS: %d\n", strlen(path));
+		//check for first free inode, 
+		int foundInd = findFirstFreeInode();
+		if (foundInd == -1){
+			fprintf(stderr, "No free nodes found\n");
+			log_msg("no free inodes found\n");
+			return ENOSPC;
+		}
 
-	strncpy(useNode->path, path, strlen(path));
-	useNode->path[strlen(path)] = '\0';
+		//create new inode and cast buffer into it.
+		inode* useNode = (inode*)buffer;
+		useNode->size = 0;
+		useNode->numBlocks = 0;
+		useNode->links = 0;
+		useNode->indirectionBlock = -1; //start as -1 (some invalid block number)
+		useNode->type = FILE_NODE;
+		useNode->filemode = S_IFREG | mode;
+		useNode->createtime = time(NULL);		
+		useNode->modifytime = useNode->createtime;
+		useNode->accesstime = useNode->createtime;
+		useNode->userId = getuid(); 
+		useNode->groupId = getgid(); 
 
-	block_write(foundInd, (void*)buffer);
+		//copy path passed in into inode->path
+		strncpy(useNode->path, path, strlen(path));
+		useNode->path[strlen(path)] = '\0';
 
-	fprintf(stderr,"%s %d\n", path, foundInd);
-	blocks[foundInd] = 1;
-	
-	char buffer2[BLOCK_SIZE];
-	block_read(foundInd, buffer2);
-	fprintf(stderr,"path is: %s\n", ((inode*)buffer2)->path);
-	
-	char parentDir[PATHSIZE];
-	memcpy(parentDir, path, PATHSIZE);
-	getParentDir(&(parentDir[0]));
-	
-	int parentBlock = findInode(parentDir);
-	char buffer3[BLOCK_SIZE];
-	block_read(parentBlock, buffer3);
-	((inode*)buffer3)->numBlocks++;
-	
-	block_write(parentBlock, buffer3);
-	   
-  //fill inode with information passed in and other info (same as init, but for file).
-  	//path and mode are given in function call.
-  		//along with mode given, use S_ISREG | mode
+		//that's it, right it to the file and update blocks array
+		block_write(foundInd, (void*)buffer);
+		blocks[foundInd] = 1;
 
-  //disk_write the buffer to the block number saved above.
-    
-  //change inode block number to 1 (to signify "used")
-    
+		//now figure out who this guy's parent is
+		char parentDir[PATHSIZE];
+		memcpy(parentDir, path, PATHSIZE);
+		getParentDir(&(parentDir[0]));
+	
+		//go get the parent and update modifytime and numBlocks (for directories numBlocks is the number of files linked).
+		int parentBlock = findInode(parentDir);
+		char buffer3[BLOCK_SIZE];
+		block_read(parentBlock, buffer3);
+		((inode*)buffer3)->numBlocks++;
+		((inode*)buffer3)->modifytime = time(NULL);
+			
+		//because it was updated, write it back
+		block_write(parentBlock, buffer3);
+    }
   return retstat;
 }
 
@@ -421,45 +386,60 @@ int sfs_unlink(const char *path){
 	fprintf(stderr,"unlink");
 	int retstat = 0;
 	log_msg("sfs_unlink(path=\"%s\")\n", path);
+
+	//find inode, if doen'st exist return error
 	int block = findInode(path);
 	if(block == -1){
 		return -ENOENT;
 	}
+	
+	//otherwise read inode into new buffer.
 	char buffer [BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	block_read(block, buffer);
 	
 	//TODO: check to see if any other blocks are linked (if we implement indirection)
 	
-	//clear out all datablocks in inode
-	//for each datablock just remove from internal array (in inode) and external array
+	//declare zeroed out buffer to clear out blocks in file
+	char buffer2[BLOCK_SIZE];
+	memset(buffer2, 0, BLOCK_SIZE);
+	
+	//go through each data block that belongs to file
 	int i = 0;
 	while(i < BLOCKSPERINODE){
 		if(((inode*)buffer)->blockNum[i] != 0){
-                        char buffer2[BLOCK_SIZE];
-                        memset(buffer2, 0, BLOCK_SIZE);
-                        block_write(((inode*)buffer)->blockNum[i],buffer2);
+			//zero out a buffer and write that into the block so old data does sneak in			
+			block_write(((inode*)buffer)->blockNum[i],buffer2);
+			//tell external array this block is free
 			blocks[((inode*)buffer)->blockNum[i]] = 0;
+			//set internal array to 0 (so when new inode comes in it is initialized properly
 			((inode*)buffer)->blockNum[i] = 0;
-			//when datablocks are cleared, set path == NULL;
-			memset(((inode*)buffer)->path, '\0',50);
 		}
 		i++;
 	}
+	
+	//when datablocks are cleared, set path == NULL;
+	memset(((inode*)buffer)->path, '\0',50);
 
   	//set inodes[] array block index back to 0.
 	blocks[block] = 0;
 	
+	//find this file's parent directory
 	char parentDir[PATHSIZE];
 	memcpy(parentDir, path, PATHSIZE);
 	getParentDir(&(parentDir[0]));
 	
+	//read in that inode and update modify time and decrement numBlocks (numBlocks in directory is number of files)
 	int parentBlock = findInode(parentDir);
 	char buffer3[BLOCK_SIZE];
 	block_read(parentBlock, buffer3);
 	((inode*)buffer3)->numBlocks--;
-	
+	((inode*)buffer3)->modifytime = time(NULL);
+	//we made a change, so write it back in.	
 	block_write(parentBlock, buffer3);
+
+	//and finally, clear out this inode to be super safe
+	block_write(block, buffer2);
 	
 	return retstat;
 }
@@ -482,19 +462,12 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
 	
 	//see if it exists.
 	int block = findInode(path);
-
+	//if doesn't exist, return error
 	if(block == -1){
 		fprintf(stderr,"File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -ENOENT; //TODO: check return values
+		retstat = -ENOENT;
 	}
-	else{
-		int permission = checkPermissions(block, 0); //need to finish this function before it will work.
-		if(permission != 0){
-			retstat = permission; //TODO; check return values
-		}
-	}
-	fprintf(stderr,"returning %d\n", retstat);
   	return retstat;
 }
 
@@ -516,8 +489,20 @@ int sfs_release(const char *path, struct fuse_file_info *fi){
 	fprintf(stderr,"release\n");
 	int retstat = 0;
 	log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n", path, fi);
-    
-	//not really sure we have to add anything here since our open doesn't do much either.
+
+    //make sure the path exists
+	int block = findInode(path);
+	if(block == -1){
+		retstat = -ENOENT;
+	}
+	else{
+		//if it does, update access time.
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+		((inode*)buffer)->accesstime = time(NULL);
+		block_write(block, buffer);
+	}
 
   return retstat;
 }
@@ -537,68 +522,74 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 	fprintf(stderr,"read\n");
 	int retstat = 0;
 	log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",path, buf, size, offset, fi);
-	int block = findInode(path);
+	
+	//TODO: do we need this?  Ask about test cases.	
 	if(size > BLOCK_SIZE * BLOCKSPERINODE){
 		size = BLOCK_SIZE * BLOCKSPERINODE;
 	}
+	//get inode
+	int block = findInode(path);
+	//if doesn't exist, return error.
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -ENOENT; //TODO: check return values
+		retstat = -ENOENT; 
 	}
 	else{
-		int permission = checkPermissions(block, 1); //need to finish this function before it will work
-		if(permission == -1){
-			retstat = EACCES; //TODO: check return values
+		//read the inode in from file
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);
+
+		//figure out where to start, how many blocks and how tow write it.
+		int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
+		int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
+		int totalBlocks = size / BLOCK_SIZE; //TODO: need to add this in
+
+		//now create a zeroed out buffer to store data in from file.
+		char tempbuff[BLOCK_SIZE];
+		memset(tempbuff, 0, BLOCK_SIZE);
+
+		//if the file is shorter than bytes read, we will return the file size, then return the rest as 0's (from spec)\
+			this is so we know how many need to be zeroed out.  
+		int remainder = 0;
+		if(size > ((inode*)buffer)->size){
+			remainder = size - ((inode*)buffer)->size;
+			size  = ((inode*)buffer)->size;
 		}
-		else{
-			log_msg("ready to do some reading from inode block %d\n", block);
-			char buffer[BLOCK_SIZE];
-			memset(buffer, 0, BLOCK_SIZE);
-			block_read(block, buffer);
-			int startBlock = offset / BLOCK_SIZE; //integer division automatically rounds down.
-			int startIndex = offset % BLOCK_SIZE; //this is the index to start at in that block.
-			int totalBlocks = size / BLOCK_SIZE;
-			char tempbuff[BLOCK_SIZE];
-			memset(tempbuff, 0, BLOCK_SIZE);
-			int remainder = 0;
-			if(size > ((inode*)buffer)->size){
-				remainder = size - ((inode*)buffer)->size;
-				size  = ((inode*)buffer)->size;
+
+		//
+		int bytesread = 0;
+		while(bytesread < size){
+			//first read might have offset, start there
+			if(bytesread == 0){
+				log_msg("about to read from data block %d\n", ((inode*)buffer)->blockNum[startBlock]);
+				block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
+				memcpy(buf + bytesread, tempbuff, BLOCK_SIZE - startIndex);
+				bytesread += (BLOCK_SIZE - startIndex);
 			}
-			int bytesread = 0;
-			while(bytesread < size){
-				if(bytesread == 0){
-					log_msg("about to read from data block %d\n", ((inode*)buffer)->blockNum[startBlock]);
-					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
-					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE - startIndex);
-					bytesread += (BLOCK_SIZE - startIndex);
-				}else if (size - bytesread < BLOCK_SIZE){
-					block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
-					memcpy(buf + bytesread, tempbuff, size - bytesread);
-					bytesread = size;
-				}else{
-					block_read(((inode*)buffer)->blockNum[startBlock],tempbuff);
-					memcpy(buf + bytesread, tempbuff, BLOCK_SIZE);
-					bytesread += BLOCK_SIZE;
-				}
-				startBlock++;
-			//inode stored in buffer
-				//calculate block for offset 
-				//starting at offset, for each data block, start reading each datablock for until size reached.
+			//the last thing being read might be less than BLOCK_SIZE, so read that.
+			else if (size - bytesread < BLOCK_SIZE){
+				block_read(((inode*)buffer)->blockNum[startBlock], tempbuff);
+				memcpy(buf + bytesread, tempbuff, size - bytesread);
+				bytesread = size;
 			}
-			if(remainder > 0){
-				memcpy(buf + size, "", remainder);
+			//otherwise just read in a full block.
+			else{
+				block_read(((inode*)buffer)->blockNum[startBlock],tempbuff);
+				memcpy(buf + bytesread, tempbuff, BLOCK_SIZE);
+				bytesread += BLOCK_SIZE;
 			}
-			log_msg("read returning: %s, strlen: %d\n", buf, strlen(buf));
-			fprintf(stderr, "buffer: %s\n", buf);
-			retstat = strlen(buf);
-			
+			startBlock++;
 		}
+		//null out the rest of the buffer
+		if(remainder > 0){
+			memcpy(buf + size, "", remainder); //TODO:  we might not need this now that the buffer starts out zeroed.
+		}
+		log_msg("read returning: %s, strlen: %d\n", buf, strlen(buf));
+		retstat = strlen(buf);
 	}
-	log_msg("return stat: %d, about to leave read\n", retstat);
-	fprintf(stderr, "retstat: %d\n<<", retstat);
-	
+	log_msg("return stat: %d, about to leave read\n", retstat);	
     return retstat;
 }
 
@@ -611,135 +602,137 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
  * Changed in version 2.2
  */
 int sfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-  fprintf(stderr,"write");
-  int retstat = 0;
-  log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
- 	int block = findInode(path);
+	fprintf(stderr,"write");
+	int retstat = 0;
+	log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
  	
+ 	//find corresponding inode and check for existence.
+ 	int block = findInode(path);
 	if(block == -1){
 		fprintf(stderr, "File does not exist\n");
 		log_msg("File does not exist\n");
-		retstat = -ENOENT; //TODO: check return values
-	}
-	
+		retstat = -ENOENT;
+	}	
 	else{
-		int permission = checkPermissions(block, 2); //need to finish this function before it will work.
-		if(permission == -1){
-			retstat = -ENOENT; //TODO: check return va5lues
+		if(size > BLOCK_SIZE * BLOCKSPERINODE){//TODO: how do i deal with this?
+			log_msg("Size too big\n");
+			fprintf(stderr, "Size too big\n");
+			retstat = ENOSPC; //not enough space in this file to finish.
+			size = BLOCK_SIZE * BLOCKSPERINODE; //but we'll write what we can.
 		}
-		else{
-			if(size > BLOCK_SIZE * BLOCKSPERINODE){
-				retstat = ENOSPC; //not enough space in this file to finish.
-				size = BLOCK_SIZE * BLOCKSPERINODE; //but we'll write what we can.
-			}
-			char buffer[BLOCK_SIZE];
-			memset(buffer, 0, BLOCK_SIZE);
-			block_read(block, buffer);//<--inode
-			
-			
-			int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
-			int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
-			int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
-			
-			//keep track of how much you've written with this
-			int bytesWritten = 0;
-			
-		
-			int count = 1;
-			while(bytesWritten < size ){
 
-				
-				char tempbuffer[BLOCK_SIZE];
-				memset(tempbuffer, 0, BLOCK_SIZE);
-				int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
-				count++;
-				log_msg("*******data block: %d, temp buffer: %s\n", data, tempbuffer);
-				fprintf(stderr, "*******data block: %d, temp buffer: %s\n", data, tempbuffer);
-				block_read(data, tempbuffer); //<--data
-			
-				//nothing has been written yet
-				if (bytesWritten == 0){
-					if (size > BLOCK_SIZE){
-						fprintf(stderr, "Size is greater than 1 block\n");
-					//	exit(-1);
-					}
-					if(size < BLOCK_SIZE){
-						firstWrite = size;
-					}
-					memcpy(tempbuffer+blockIndex, buf, firstWrite);
-					bytesWritten += firstWrite;
-				}
-				//amount left to write is less than full block
-				else if (size - bytesWritten < BLOCK_SIZE){
-					memcpy(tempbuffer, buf, size - bytesWritten);
-					bytesWritten = size;
-				}	
-				else{
-					memcpy(tempbuffer, buf, BLOCK_SIZE);
-					bytesWritten += BLOCK_SIZE;					
-					blocks[data] = 1;		
-				}
-					
-				//find next available index in blockNum;
-				int index = 0;
-				while (((inode*)buffer)->blockNum[index] != 0){
-					index++;
-				}					
-				((inode*)buffer)->blockNum[index] = data;
-				
-					
-				//	store data block in inode->blockArray				
-				
-				block_write(data, tempbuffer);
-				log_msg("wrote: %s\n", tempbuffer);
-				fprintf(stderr, "this is what was written: %s\n", tempbuffer);
-				log_msg("wrote: %s<<\n", tempbuffer);
-			}	
-							
-			//change size of inode to be += size
-			((inode*)buffer)->size += size;
-			((inode*)buffer)->numBlocks = count;
-			
-			//write the inode back in to the file	
-			block_write(block, buffer);
-			memset(buffer, 0, sizeof(buffer));
-			retstat = strlen(buffer);
-		}
+		//read inode into buffer
+		char buffer[BLOCK_SIZE];
+		memset(buffer, 0, BLOCK_SIZE);
+		block_read(block, buffer);//
+
+		int count = 0;//for how many blocks were used.
+
+		//TODO: grab existing block and fill the rest of that first.
+		//if you do this, change count to -1 (so when it increments in loop it goes to zero.
 		
-	}
-		log_msg("leaving write..\n");
+		//store info about where to start and how far to go, etc.
+		int firstBlock = offset / BLOCK_SIZE; //this tells you where to go in your internal array.  Integer division rounds down.
+		int blockIndex = offset % BLOCK_SIZE; //this tells you where to start in ^^ that block.
+		int firstWrite = BLOCK_SIZE - offset; //how many bytes to write
+		
+		//keep track of how much you've written with this
+		int bytesWritten = 0;
+		while(bytesWritten < size ){
+			//block sized buffer //TODO: add buffer for remaining size of existing node.
+			char tempbuffer[BLOCK_SIZE];
+			memset(tempbuffer, 0, BLOCK_SIZE);
+
+			//get free data block to fill.
+			int data = findFirstFreeData(); //this isnt great TODO: size / BLOCK_SIZE, start in that block, don't grab new one
+			count++;
+			block_read(data, tempbuffer); //TODO: wait... what?
+		
+			//nothing has been written yet
+			if (bytesWritten == 0){
+				if (size > BLOCK_SIZE){
+					fprintf(stderr, "Size is greater than 1 block\n");
+				//	exit(-1);
+				}
+				if(size < BLOCK_SIZE){
+					firstWrite = size; //TODO: this is probably not doing hwat I want it to do.
+				}
+				memcpy(tempbuffer+blockIndex, buf, firstWrite);
+				bytesWritten += firstWrite;
+			}
+			//amount left to write is less than full block
+			else if (size - bytesWritten < BLOCK_SIZE){
+				memcpy(tempbuffer, buf, size - bytesWritten);
+				bytesWritten = size;
+			}	
+			//just write the whole block.
+			else{
+				memcpy(tempbuffer, buf, BLOCK_SIZE);
+				bytesWritten += BLOCK_SIZE;					
+				blocks[data] = 1;		
+			}
+				
+			//find next available index in blockNum;
+			int index = 0;
+			while (((inode*)buffer)->blockNum[index] != 0){
+				index++;
+			}					
+			((inode*)buffer)->blockNum[index] = data;
+				
+			//	store data block in inode->blockArray				
+			block_write(data, tempbuffer);
+			log_msg("wrote: %s\n", tempbuffer);
+			fprintf(stderr, "this is what was written: %s\n", tempbuffer);
+		}	
+						
+		//change size of inode to be += size and numBlocks + count (how many were filled during write)
+		((inode*)buffer)->size += size;
+		((inode*)buffer)->numBlocks = count;
+		
+		//update modify time.
+		((inode*)buffer)->modifytime = time(NULL);		
+		
+		//write the inode back in to the file	
+		block_write(block, buffer);
+		memset(buffer, 0, sizeof(buffer));
+		retstat = size;
+	}		
+	log_msg("leaving write..\n");
     return retstat;
 }
 
 /** Create a directory */
 int sfs_mkdir(const char *path, mode_t mode){
-  fprintf(stderr,"mkdir");
-  int retstat = 0;
-  log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+	fprintf(stderr,"mkdir");
+	int retstat = 0;
+	log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
   
-  	//TODO: check to make sure path doens't already exist: EEXIST
+	//check to see if path already exists and return error
+	if(findInode(path)!= -1){
+		return EEXIST;	
+	}
 
-   
-  //check array of inodes for first one that is 0.  Save block number.
- 	//write a separate function to do this.
 
-  //create new char buffer: 
+	//create new zeroed out char buffer: 
 	char buffer[BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);    
-  //create new inode and cast buffer into it.
-	int foundInd = findFirstFreeInode();
+	
+	//check array of inodes for first one that is 0.  Save block number.
+ 	int foundInd = findFirstFreeInode();
 	if (foundInd == -1){
 		fprintf(stderr, "No free nodes found\n");
 		log_msg("no free inodes found\n");
 		return ENOSPC;
 	}
-	
+
+	//create new inode and cast buffer into it.
 	inode* useNode = (inode*)buffer;
 
-	useNode->size = 0;
-	useNode->numBlocks = 0;
-	useNode->links = 2;
-	useNode->indirectionBlock = FALSE;
+	//fill in inode
+	useNode->size = 0; 
+	useNode->numBlocks = 0;//this is number of files in directory
+	useNode->links = 2; //at least . and .. to start.  Increases when directories are made inside.
+	useNode->indirectionBlock = -1;//this will never need to be updated.
 	useNode->type = DIR_NODE;
 	useNode->filemode = S_IFDIR | mode;
 	useNode->createtime = time(NULL);		
@@ -748,30 +741,28 @@ int sfs_mkdir(const char *path, mode_t mode){
 	useNode->userId = getuid(); 
 	useNode->groupId = getgid(); 
 
-	fprintf(stderr,"SIZE OF PATH IS: %d\n", strlen(path));
-
+	//write path into node
 	strncpy(useNode->path, path, strlen(path));
 	useNode->path[strlen(path)] = '\0';
 
+	//write inode to file and update array
 	block_write(foundInd, (void*)buffer);
-
-	fprintf(stderr,"%s %d\n", path, foundInd);
 	blocks[foundInd] = 1;
-	
-	char buffer2[BLOCK_SIZE];
-	block_read(foundInd, buffer2);
-	fprintf(stderr,"path is: %s\n", ((inode*)buffer2)->path);  
 
+	//find this guy's parent.
 	char parentDir[PATHSIZE];
 	memcpy(parentDir, path, PATHSIZE);
 	getParentDir(&(parentDir[0]));
-	
+
+	//read parent block in and update modifytime, numblocks and links	
 	int parentBlock = findInode(parentDir);
 	char buffer3[BLOCK_SIZE];
 	block_read(parentBlock, buffer3);
 	((inode*)buffer3)->numBlocks++;
-	((inode*)buffer3)->links++;
+	((inode*)buffer3)->links++;//again this is because of inode.
+	((inode*)buffer3)->modifytime = time(NULL);
 	
+	//now write it back since we updated it
 	block_write(parentBlock, buffer3);  
   
 	return retstat;
@@ -779,43 +770,58 @@ int sfs_mkdir(const char *path, mode_t mode){
 
 /** Remove a directory */
 int sfs_rmdir(const char *path){
-	fprintf(stderr,"rmdir");
+	fprintf(stderr,"rmdir\n");
 	int retstat = 0;
 	log_msg("sfs_rmdir(path=\"%s\")\n",	path);
   
-  
+  	//find block number of inode and/or make sure inode exists  
 	int block = findInode(path);
 	if(block == -1){
 		retstat = -ENOENT;
 	}
 	else{
+		//read in inode
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, BLOCK_SIZE);
 		block_read(block, buffer);
+		//if this inode is for a file, return error
 		if(((inode*)buffer)->type == FILE_NODE){
+			log_msg("Not a directory\n");
+			fprintf(stderr, "Not a directory\n");
 			retstat = ENOTDIR;
 		}
+		//if this directory is not empty, return error
 		else if(((inode*)buffer)->numBlocks != 0){
-			log_msg("cannot delete\n");
-			fprintf(stderr, "cannot delete\n");
+			log_msg("Directory not empty\n");
+			fprintf(stderr, "Directory not empty\n");
 			retstat = ENOTEMPTY;
 		}
 		else{
-			log_msg("delete it\n");
-			fprintf(stderr, "delete it\n");
-			
+			//clear the array
 			blocks[block] = 0;
-		
+
+			//get parent inode		
 			char parentDir[PATHSIZE];
 			memcpy(parentDir, path, PATHSIZE);
 			getParentDir(&(parentDir[0]));
 			
+			//read it in and reduce numBlocks and links.
 			int parentBlock = findInode(parentDir);
 			char buffer3[BLOCK_SIZE];
 			block_read(parentBlock, buffer3);
 			((inode*)buffer3)->numBlocks--;
-			
+			((inode*)buffer3)->links--;			
+			((inode*)buffer3)->modifytime = time(NULL);
+
+			//write parent back to file
 			block_write(parentBlock, buffer3);	
+			
+			//now to be safe, write empty buffer back to file for this inode to prevent data leaks.
+			char buffer2[BLOCK_SIZE];
+			memset(buffer2, 0, BLOCK_SIZE);
+			block_write(block, buffer2);
+			
+			log_msg("Directory deleted\n");
 		}
   	}
 	return retstat;
@@ -833,15 +839,18 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
 	fprintf(stderr, "opendir\n");
 	log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
 
+	//check for existence.
 	int block = findInode(path);
 	if(block == -1){
 		retstat = -ENOENT;
 	}
 	else{
+		//if exists, then read in the inode
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, BLOCK_SIZE);
 		block_read(block, buffer);
 	
+		//if not a directory, return error
 		if(((inode*)buffer)->type == FILE_NODE){
 			retstat = ENOTDIR;
 		}
@@ -871,39 +880,41 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
  * Introduced in version 2.3
  */
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
-//TODO: if we decide to implement directories, we have to change this.  It's currently taking all files and printing them.
 	log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
-	//ENOTDIR - for if we do directories
-	//this dir and parent dir
-	log_msg("in readdir\n");	
-	
+
+	//pull in inode	
 	char buffer [BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	int block = findInode(path);
+	//make sure exists
 	if(block == -1){
 		fprintf(stderr,"Couldn't find directory\n");
 		log_msg("Couldn't find file\n");
 		return -ENOENT; //TODO: is this right?
 	}
 	else{
+		//fill . and .. b/c directory
 		filler(buf, ".", NULL, 0);
 		filler(buf, "..", NULL, 0); 
 		fprintf(stderr,"block: %d\n", block);
+		//read in the inode
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == DIR_NODE){
 			char buffer2[BLOCK_SIZE];
 			memset(buffer, 0, BLOCK_SIZE);
+
 			int i = 1;
 			while(i < INODEBLOCKS){
-//				log_msg("while: %d\n", i);
 				if(blocks[i] == 1){
-					fprintf(stderr, "%d\n", i);
+					//read in every inode one at a time
 					block_read(i,(void*)buffer2);
-					fprintf(stderr, "now path is: %s\n", ((inode*)buffer2)->path);
+
+					//get each inode's parent and check to see if is the directory being read.
 					char parentDir[PATHSIZE];
 					memcpy(parentDir, ((inode*)buffer2)->path, PATHSIZE);
 					getParentDir(&(parentDir[0]));				
+					//if it is a match, fill a stat
 					if(strcmp(parentDir, path) == 0){
 						//fill in stat
 						struct stat stat;
@@ -920,28 +931,22 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 						stat.st_ctime = ((inode*)buffer2)->createtime;
 						stat.st_blocks = ((inode*)buffer2)->numBlocks;
 
-
 						char* fullpath = ((inode*)buffer2)->path;
 						getShortPath(fullpath);
-						fprintf(stderr,"fullpath: %s\n", fullpath);
+						//put this file into the directory
 						filler(buf, fullpath, &stat, 0);
-						log_msg("filled path: .%s\n", fullpath);
-					}
-					else{
+						log_msg("put this file into directory: %s\n", fullpath);
 					}
 				}
 				i++;
 			}
-			//read each inode in block and get name and stat info
-			//filler(buf, "name", &stat, 0);
 		}
-		else{
+		else{//not a directory, return error
 			fprintf(stderr, "Not a directory\n");
 			log_msg("Not a directory\n");
 			retstat = ENOTDIR;
 		}
-	}
-    
+	}    
     return retstat;
 }
 
@@ -952,21 +957,28 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 int sfs_releasedir(const char *path, struct fuse_file_info *fi){
 	int retstat = 0;
 	fprintf(stderr,"releasedir");	
-	
+
+	//make sure file exists	
 	int block = findInode(path);
 	if(block == -1){
 		retstat = -ENOENT;
 	}
 	else{
+		//make sure it's a directory
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, BLOCK_SIZE);
 		block_read(block, buffer);
 		if(((inode*)buffer)->type == FILE_NODE){
 			retstat = ENOTDIR;
 		}
+		else{
+			//if it is, update access time
+			((inode*)buffer)->accesstime = time(NULL);
+			block_write(block, buffer);
+		}
 	}
 	
-	
+		
 	return retstat;
 }
 
