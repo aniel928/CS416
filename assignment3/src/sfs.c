@@ -358,7 +358,7 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 
 		//that's it, right it to the file and update blocks array
 		block_write(foundInd, (void*)buffer);
-		blocks[foundInd] = 1;
+		blocks[foundInd] = '1';
 
 		//now figure out who this guy's parent is
 		char parentDir[PATHSIZE];
