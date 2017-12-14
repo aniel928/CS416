@@ -540,15 +540,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 		char tempbuff[BLOCK_SIZE];
 		memset(tempbuff, 0, BLOCK_SIZE);
 
-		//if the file is shorter than bytes read, we will return the file size, then return the rest as 0's (from spec)\
-			this is so we know how many need to be zeroed out.  
-//		int remainder = 0;
-//		if(size > ((inode*)buffer)->size){
-//			remainder = size - ((inode*)buffer)->size;
-//			size  = ((inode*)buffer)->size;
-//		}
-
-		//
 		int bytesread = 0;
 		while(bytesread < size){
 			//first read might have offset, start there
@@ -572,10 +563,6 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 			}
 			startBlock++;
 		}
-		//null out the rest of the buffer
-//		if(remainder > 0){
-//			memcpy(buf + size, "", remainder); //TODO:  we might not need this now that the buffer starts out zeroed.
-//		}
 		log_msg("read returning: %s, strlen: %d\n", buf, strlen(buf));
 		retstat = strlen(buf);
 	}
