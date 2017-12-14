@@ -27,17 +27,124 @@ The iNode struct is exactly 512 bytes and contains:
 	-Integer representing the permissions for the user
 	-Integer representing the permissions for the group
 	-Char arry used to store the path
-
+/*********************************************************************************/
 Things We tested*
-	-Creating 5 nested directories
+	-Creating 10 nested directories
+		mkdir first
+		cd first
+		mkdir second
+		cd second
+		mkdir third
+		cd third
+		mkdir fourth
+		cd fourth
+		mkdir fifth
+		cd fifth
+		mkdir sixth
+		cd sixth
+		mkdir seventh
+		cd seventh
+		mkdir eighth
+		cd eighth
+		mkdir ninth
+		cd ninth
+		mkdir tenth
+		cd tenth
+
 	-Using 'touch' to create 50 files
-	-Creating 10 files in 10 directories
-	-Creating and Deleting 10 directories
+		touch f1
+		touch f2
+		touch f3
+		..
+		touch f50
+
+	-Creating 5 files in 5 directories
+		mkdir first
+		cd first
+		touch firstf
+		mkdir second
+		cd second
+		touch secondf
+		mkdir third
+		cd third
+		touch thirdf
+		mkdir fourth
+		cd fourth
+		touch fourthf
+		mkdir fifth
+		cd fifth
+		touch fifthf
+
+	-Creating 10 directories and removing them in random ordering
+		mkdir d1
+		mkdir d2
+		mkdir d3
+		mkdir d4
+		mkdir d5
+		mkdir d6
+		mkdir d7
+		mkdir d8
+		mkdir d9
+		mkdir d10
+		rmdir d9
+		rmdir d2
+		rmdir d4
+		rmdir d1
+		rmdir d8
+		rmdir d5
+		rmdir d3
+		rmdir d6
+		rmdir d10
+		rmdir d7
+
 	-Creating and Deleting 10 files
+		touch f1
+		touch f2
+		touch f3
+		touch f4
+		touch f5
+		touch f6
+		touch f7
+		touch f8
+		touch f9
+		touch f10
+		rm f9
+		rm f2
+		rm f4
+		rm f1
+		rm f8
+		rm f5
+		rm f3
+		rm f6
+		rm f10
+		rm f7
+		
 	-Writing less than a blocks worth of characters and reading the data
+		touch testfile
+		echo "OneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytes------>END" >> testfile
+		cat testfile
+
 	-Writing more than a blocks worth of characters and reading the data
+		touch testfile
+		echo "TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/100TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/200TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/300TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/400TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/500TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/600TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/700TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/800TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/900TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1000TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1100TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1200TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1300TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1400TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1500TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1600TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1700TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1800TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1900TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes2000" >> testfile
+cat testfile
+
+	-trying to create two files with the same name
+		touch testfile
+		touch testfile
+
+	-trying to create two directories with the same
+		mkdir testdir
+		mkdir testdir
+
+	-trying to delete a file/directory that doesn't exist
+		ls
+		rmdir nodir
+		rm nofile
+
 	
-	
+
+/*********************************************************************************/	
 int findFirstFreeInode();
 	This function is used to locate the first available iNode in the iNode region of the blocks array. If an available iNode is not found the function will return -1, otherwise, the block index is returned. 
 
