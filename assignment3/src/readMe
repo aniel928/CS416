@@ -6,6 +6,8 @@ Quick Important Notes:
 	Total iNode Blocks: 323
 	Blocks Per iNode: 100
 	Maximum Path Size: 50
+		In order to increase space in the file we made the path size 50 so be careful when creating/nesting long file/directory names
+	using touch to create a file is working properly however when it is executed it displays the error "touch: setting times of '<FILENAME>': Function not implemented" which we were told would not be an issue.
 
 blocks[INODEBLOCKS + DATABLOCKS] is an array of block indices, partitioned into two regions. The first region references iNodes and the second references data blocks.
 
@@ -30,26 +32,28 @@ The iNode struct is exactly 512 bytes and contains:
 /*********************************************************************************/
 Things We tested*
 	-Creating 10 nested directories
-		mkdir first
-		cd first
-		mkdir second
-		cd second
-		mkdir third
-		cd third
-		mkdir fourth
-		cd fourth
-		mkdir fifth
-		cd fifth
-		mkdir sixth
-		cd sixth
-		mkdir seventh
-		cd seventh
-		mkdir eighth
-		cd eighth
-		mkdir ninth
-		cd ninth
-		mkdir tenth
-		cd tenth
+		mkdir d1
+		cd d1
+		mkdir d2
+		cd d2
+		mkdir d3
+		cd d3
+		mkdir d4
+		cd d4
+		mkdir d5
+		cd d5
+		mkdir d6
+		cd d6
+		mkdir d7
+		cd d7
+		mkdir d8
+		cd d8
+		mkdir d9
+		cd d9
+		mkdir d10
+		cd d10
+
+		//success
 
 	-Using 'touch' to create 50 files
 		touch f1
@@ -57,6 +61,8 @@ Things We tested*
 		touch f3
 		..
 		touch f50
+
+		//success
 
 	-Creating 5 files in 5 directories
 		mkdir first
@@ -75,6 +81,8 @@ Things We tested*
 		cd fifth
 		touch fifthf
 
+		//success
+
 	-Creating 10 directories and removing them in random ordering
 		mkdir d1
 		mkdir d2
@@ -86,7 +94,7 @@ Things We tested*
 		mkdir d8
 		mkdir d9
 		mkdir d10
-		rmdir d9
+		rmdir d10
 		rmdir d2
 		rmdir d4
 		rmdir d1
@@ -94,8 +102,10 @@ Things We tested*
 		rmdir d5
 		rmdir d3
 		rmdir d6
-		rmdir d10
+		rmdir d9
 		rmdir d7
+
+		//success
 
 	-Creating and Deleting 10 files
 		touch f1
@@ -118,29 +128,37 @@ Things We tested*
 		rm f6
 		rm f10
 		rm f7
+
+		//success
 		
 	-Writing less than a blocks worth of characters and reading the data
 		touch testfile
 		echo "OneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytesOneHundredBytes------>END" >> testfile
 		cat testfile
 
+		//success
 	-Writing more than a blocks worth of characters and reading the data
 		touch testfile
 		echo "TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/100TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/200TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/300TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/400TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/500TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/600TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/700TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/800TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes/900TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1000TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1100TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1200TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1300TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1400TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1500TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1600TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1700TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1800TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes1900TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes////TwoThousandBytes2000" >> testfile
 cat testfile
 
+		//success
+
 	-trying to create two files with the same name
 		touch testfile
 		touch testfile
 
+		//*success 
 	-trying to create two directories with the same
 		mkdir testdir
 		mkdir testdir
-
+		
+		//success
 	-trying to delete a file/directory that doesn't exist
 		ls
 		rmdir nodir
 		rm nofile
+		//success
 
 	
 
