@@ -1,13 +1,16 @@
 Anne Whitman: alh220
 Michael Mazzola: mjm706
 
+
+TODO: Check path length
+	touch error? maybe?
 Quick Important Notes:
-	Total Data Blocks: 32445
-	Total iNode Blocks: 323
-	Blocks Per iNode: 100
-	Maximum Path Size: 50
+	-Total Data Blocks: 32445
+	-Total iNode Blocks: 323
+	-Blocks Per iNode: 100
+	-Maximum Path Size: 50
 		In order to increase space in the file we made the path size 50 so be careful when creating/nesting long file/directory names
-	using touch to create a file is working properly however when it is executed it displays the error "touch: setting times of '<FILENAME>': Function not implemented" which we were told would not be an issue.
+	-using touch to create a file is working properly however when it is executed it displays the error "touch: setting times of '<FILENAME>': Function not implemented" which Dan acknowledged is OK.
 
 blocks[INODEBLOCKS + DATABLOCKS] is an array of block indices, partitioned into two regions. The first region references iNodes and the second references data blocks.
 
