@@ -266,6 +266,12 @@ void sfs_destroy(void *userdata){
 int sfs_getattr(const char *path, struct stat *statbuf){
 	fprintf(stderr, "in get attr\n");
 	int retstat = 0;
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_getattr(path=\"%s\", statbuf=0x%08x)\n",	  path, statbuf);
 
 	//take path and find inode
@@ -316,6 +322,12 @@ int sfs_getattr(const char *path, struct stat *statbuf){
 int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	int retstat = 0;
 	fprintf(stderr,"create\n");
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_create(path=\"%s\", mode=0%03o, fi=0x%08x)\n", path, mode, fi);
 
 	//check to make sure path doens't already exist
@@ -380,6 +392,13 @@ int sfs_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 int sfs_unlink(const char *path){
 	fprintf(stderr,"unlink");
 	int retstat = 0;
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
+
 	log_msg("sfs_unlink(path=\"%s\")\n", path);
 
 	//find inode, if doen'st exist return error
@@ -392,9 +411,7 @@ int sfs_unlink(const char *path){
 	char buffer [BLOCK_SIZE];
 	memset(buffer, 0, BLOCK_SIZE);
 	block_read(block, buffer);
-	
-	//TODO: check to see if any other blocks are linked (if we implement indirection)
-	
+		
 	//declare zeroed out buffer to clear out blocks in file
 	char buffer2[BLOCK_SIZE];
 	memset(buffer2, 0, BLOCK_SIZE);
@@ -450,11 +467,15 @@ int sfs_unlink(const char *path){
  * Changed in version 2.2
  */
 int sfs_open(const char *path, struct fuse_file_info *fi){
-  fprintf(stderr,"open");
-  int retstat = 0;
-  log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n",
-  path, fi);
-	
+	fprintf(stderr,"open");
+	int retstat = 0;
+	log_msg("\nsfs_open(path\"%s\", fi=0x%08x)\n", path, fi);
+  
+  	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	//see if it exists.
 	int block = findInode(path);
 	//if doesn't exist, return error
@@ -483,6 +504,12 @@ int sfs_open(const char *path, struct fuse_file_info *fi){
 int sfs_release(const char *path, struct fuse_file_info *fi){
 	fprintf(stderr,"release\n");
 	int retstat = 0;
+	
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_release(path=\"%s\", fi=0x%08x)\n", path, fi);
 
     //make sure the path exists
@@ -516,6 +543,12 @@ int sfs_release(const char *path, struct fuse_file_info *fi){
 int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 	fprintf(stderr,"read\n");
 	int retstat = 0;
+	
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",path, buf, size, offset, fi);
 	
 	//get inode
@@ -581,6 +614,12 @@ int sfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse
 int sfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 	fprintf(stderr,"write");
 	int retstat = 0;
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
 
 	//find path of file and make sure it exists
@@ -620,13 +659,13 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 			
 			//if offset isn't pointing to end of file, return error.
 			if(offset != ((inode*)buffer)->size){
-				return 0; //TODO: put in readme. Overwriting random bits in file is not allowed we append, or do nothing.
-							//TODO: check for better errno.
+				log_msg("Overwrite not implemented.\n");
+				return 0; 
 			}
 			
 			//if offset points to a block we don't have yet. (Like if file is 300 bytes asking for offset 315.
 			if(offset > ((inode*)buffer)->size){
-				return 0; //TODO: find error code.
+				return ESPIPE; 
 			}
 			
 			//keep track of how much you've written with this
@@ -708,6 +747,12 @@ int sfs_write(const char *path, const char *buf, size_t size, off_t offset, stru
 int sfs_mkdir(const char *path, mode_t mode){
 	fprintf(stderr,"mkdir");
 	int retstat = 0;
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
   
 	//check to see if path already exists and return error
@@ -775,6 +820,12 @@ int sfs_mkdir(const char *path, mode_t mode){
 int sfs_rmdir(const char *path){
 	fprintf(stderr,"rmdir\n");
 	int retstat = 0;
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("sfs_rmdir(path=\"%s\")\n",	path);
   
   	//find block number of inode and/or make sure inode exists  
@@ -840,6 +891,12 @@ int sfs_rmdir(const char *path){
 int sfs_opendir(const char *path, struct fuse_file_info *fi){
 	int retstat = 0;
 	fprintf(stderr, "opendir\n");
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_opendir\n");//(path=\"%s\", fi=0x%08x)\n",path, fi);
 
 	//check for existence.
@@ -883,6 +940,12 @@ int sfs_opendir(const char *path, struct fuse_file_info *fi){
  * Introduced in version 2.3
  */
 int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
+	
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
+
 	log_msg("\nsfs_readdir: %s\n", path);
 	int retstat = 0;
 
@@ -960,6 +1023,11 @@ int sfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offse
 int sfs_releasedir(const char *path, struct fuse_file_info *fi){
 	int retstat = 0;
 	fprintf(stderr,"releasedir");	
+
+	//make sure filename isn't longer than max size (causes segfault)
+	if(strlen(path) > PATHSIZE){
+		return ENAMETOOLONG; 
+	}
 
 	//make sure file exists	
 	int block = findInode(path);
